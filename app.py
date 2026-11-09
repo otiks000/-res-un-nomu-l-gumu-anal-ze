@@ -17,16 +17,20 @@ st.set_page_config(
 )
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.markdown("Augšupielādē savu Word (.docx) līgumu un saņem tūlītēju analīzi un augstākās kvalitātes atskaites.")
+st.markdown("Augšupielādē savu līgumu (**Word, PDF vai Attēlu**) un saņem tūlītēju analīzi un atskaites.")
 
 # Sānu josla
 st.sidebar.header("🔑 Piekļuves iestatījumi")
 api_key = st.sidebar.text_input("Ievadi Gemini API atslēgu", type="password")
 
-uploaded_file = st.file_uploader("Izvēlies vai ievelc savu līguma Word failu (.docx):", type=["docx"])
+# Atļaujam Word, PDF un attēlu formātus
+uploaded_file = st.file_uploader(
+    "Izvēlies vai ievelc līguma failu (.docx, .pdf, .png, .jpg):",
+    type=["docx", "pdf", "png", "jpg", "jpeg"]
+)
 
 SYSTEM_PROMPT = """
-Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir profesionāli izanalizēt īres līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
+Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir profesionāli izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
 
 Formatē savu atbildi precīzi ar šādām sadaļām:
 
@@ -46,7 +50,6 @@ Formatē savu atbildi precīzi ar šādām sadaļām:
 # Funkcija glīta Word dokumenta ģenerēšanai
 def generate_pretty_docx(analysis_text):
     doc = docx.Document()
-    
     title = doc.add_heading("ĪRES LĪGUMA JURIDISKĀ ANALĪZE", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
@@ -86,11 +89,10 @@ def generate_pretty_docx(analysis_text):
     doc_io.seek(0)
     return doc_io
 
-# Profesionāla PDF ģenerēšanas klase ar Unicode un latviešu valodas atbalstu
+# Profesionāla PDF ģenerēšanas klase
 class PDFReport(FPDF):
     def header(self):
-        # Augšējā dekoratīvā līnija un virsraksts
-        self.set_fill_color(30, 41, 59) # Tumši zils/pelēks tonis
+        self.set_fill_color(30, 41, 59)
         self.rect(0, 0, 210, 15, 'F')
         self.set_font("DejaVu", "B", 10)
         self.set_text_color(255, 255, 255)
@@ -99,14 +101,12 @@ class PDFReport(FPDF):
         self.ln(20)
 
     def footer(self):
-        # Apakšējā līnija un lapas numurs
         self.set_y(-15)
         self.set_font("DejaVu", "", 8)
         self.set_text_color(150, 150, 150)
         self.cell(0, 10, f"Lappuse {self.page_no()} | Sagatavots ar AI Juridisko Asistentu", 0, 0, "C")
 
 def generate_pretty_pdf(analysis_text):
-    # Lejupielādējam Unicode fontu latviešu burtiem, ja tāda vēl nav
     font_path = "DejaVuSans.ttf"
     font_bold_path = "DejaVuSans-Bold.ttf"
     
@@ -125,13 +125,11 @@ def generate_pretty_pdf(analysis_text):
     pdf = PDFReport()
     pdf.add_page()
     
-    # Pievienojam Unicode fontu
     if os.path.exists(font_path):
         pdf.add_font("DejaVu", "", font_path, uni=True)
     if os.path.exists(font_bold_path):
         pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
     
-    # Dokumenta pamatinformācija
     pdf.set_font("DejaVu", "B", 14)
     pdf.set_text_color(30, 41, 59)
     pdf.cell(0, 10, "Dzīvojamās telpas īres līguma juridiskā risku atskaite", ln=True)
@@ -141,7 +139,6 @@ def generate_pretty_pdf(analysis_text):
     pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}", ln=True)
     pdf.ln(5)
     
-    # Apstrādājam analīzes tekstu pa rindām
     lines = analysis_text.split('\n')
     for line in lines:
         line_str = line.strip()
@@ -149,26 +146,24 @@ def generate_pretty_pdf(analysis_text):
             pdf.ln(3)
             continue
             
-        # Pārbaudām virsrakstus un piešķiram tiem atbilstošas krāsas
         if line_str.startswith("## "):
             pdf.ln(4)
             pdf.set_font("DejaVu", "B", 11)
             
             if "Kritiski riski" in line_str or "🔴" in line_str:
-                pdf.set_text_color(220, 38, 38) # Sarkans
+                pdf.set_text_color(220, 38, 38)
             elif "Brīdinājumi" in line_str or "🟡" in line_str:
-                pdf.set_text_color(217, 119, 6) # Oranžs
+                pdf.set_text_color(217, 119, 6)
             elif "Ieteikumi" in line_str or "🟢" in line_str:
-                pdf.set_text_color(22, 163, 74) # Zaļš
+                pdf.set_text_color(22, 163, 74)
             else:
-                pdf.set_text_color(30, 41, 59)  # Pārējie
+                pdf.set_text_color(30, 41, 59)
                 
             clean_title = line_str.replace("## ", "").replace("📊", "").replace("🔴", "").replace("🟡", "").replace("🟢", "").strip()
             pdf.cell(0, 7, clean_title, ln=True)
             pdf.set_font("DejaVu", "", 9.5)
             pdf.set_text_color(40, 40, 40)
         else:
-            # Parasts rindkopas teksts ar pilnu latviešu valodas atbalstu
             pdf.multi_cell(0, 5.5, line_str)
             
     pdf_buffer = io.BytesIO()
@@ -180,27 +175,48 @@ def generate_pretty_pdf(analysis_text):
 # Analīzes izpilde
 if st.button("🔍 Analizēt līgumu tagad", type="primary"):
     if not api_key:
-        st.error("⚠️ Lūdzu, ievadi sev Gemini API atslēgu sānu joslā!")
+        st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
     elif uploaded_file is None:
-        st.error("⚠️ Lūdzu, augšupielādē Word (.docx) failu analīzei!")
+        st.error("⚠️ Lūdzu, augšupielādē līguma failu (.docx, .pdf vai attēlu)!")
     else:
         try:
-            bytes_data = uploaded_file.getvalue()
-            target_stream = io.BytesIO(bytes_data)
-            doc = docx.Document(target_stream)
-            contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
-            if not contract_text.strip():
-                st.warning("⚠️ Fails ir tukšs.")
-            else:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+            file_extension = uploaded_file.name.split('.')[-1].lower()
+            
+            with st.spinner("Notiek līguma nolasīšana un juridiskā analīze..."):
+                if file_extension == 'docx':
+                    # Word failu nolasīšana caur python-docx
+                    bytes_data = uploaded_file.getvalue()
+                    target_stream = io.BytesIO(bytes_data)
+                    doc = docx.Document(target_stream)
+                    contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+                    
+                    full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                    response = model.generate_content(full_prompt, stream=True)
+                    
+                else:
+                    # PDF un attēlu (.pdf, .png, .jpg) tieša nodošana Gemini multimodalajam modelim
+                    file_bytes = uploaded_file.getvalue()
+                    
+                    # Nosakām pareizu MIME tipu
+                    mime_type_map = {
+                        'pdf': 'application/pdf',
+                        'png': 'image/png',
+                        'jpg': 'image/jpeg',
+                        'jpeg': 'image/jpeg'
+                    }
+                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
+                    
+                    file_part = {
+                        'mime_type': mime_type,
+                        'data': file_bytes
+                    }
+                    
+                    response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
                 
                 st.markdown("### 📋 Analīzes rezultāts:")
-                
-                # Reāllaika atbildes izvadīšana
-                response = model.generate_content(full_prompt, stream=True)
                 full_response_text = st.write_stream(response)
                 
                 st.success("✅ Analīze veiksmīgi pabeigta!")
