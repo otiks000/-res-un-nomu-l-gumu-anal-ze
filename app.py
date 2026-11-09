@@ -7,7 +7,6 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-# Konfigurējam lapas platumu, lai viss izskatītos glīti
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠", layout="centered")
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
@@ -16,7 +15,7 @@ st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai 
 # Sānu izvēlne API atslēgai
 api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
 
-# Faila/Foto vai teksta ievade (atbalstām docx un doc)
+# Precizēti failu tipi, īpaši izceļot docx un doc
 uploaded_file = st.file_uploader(
     "Augšupielādē līgumu (PDF, Word, TXT, MD) vai nofotografē to (JPG, PNG)", 
     type=["txt", "md", "pdf", "docx", "doc", "jpg", "jpeg", "png"]
@@ -24,7 +23,7 @@ uploaded_file = st.file_uploader(
 
 user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
-# Inicializējam sesijas stāvokli
+# Inicializējam sesijas mainīgos
 if 'document_text' not in st.session_state:
     st.session_state['document_text'] = None
 if 'file_type' not in st.session_state:
@@ -32,6 +31,7 @@ if 'file_type' not in st.session_state:
 if 'original_docx_bytes' not in st.session_state:
     st.session_state['original_docx_bytes'] = None
 
+# Failu augšupielādes un nolasīšanas loģika
 if uploaded_file is not None:
     try:
         file_extension = uploaded_file.name.split('.')[-1].lower()
@@ -55,14 +55,19 @@ if uploaded_file is not None:
             
         elif file_extension in ['docx', 'doc']:
             st.session_state['file_type'] = "text"
-            uploaded_file.seek(0)
+            # Nolasām faila baitus un saglabājam sesijā
             file_bytes = uploaded_file.read()
             st.session_state['original_docx_bytes'] = file_bytes
             
+            # Pārvēršam baitus atpakaļ plūsmā, lai python-docx varētu to nolasīt
             doc = docx.Document(BytesIO(file_bytes))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
-            st.session_state['document_text'] = extracted_text
-            st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
+            
+            if not extracted_text.strip():
+                st.warning("Word fails šķiet tukšs vai satur tikai attēlus.")
+            else:
+                st.session_state['document_text'] = extracted_text
+                st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
             
         elif file_extension in ['txt', 'md']:
             st.session_state['document_text'] = uploaded_file.read().decode("utf-8")
@@ -70,13 +75,13 @@ if uploaded_file is not None:
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
-        st.error(f"Kļūda nolasot failu: {read_err}. Ja Word fails nedarbojas, lūdzu, nokopē un ielīmē tā tekstu zemāk esošajā laukā.")
+        st.error(f"Neizdevās nolasīt failu ({uploaded_file.name}): {read_err}")
 
 elif user_text.strip():
     st.session_state['document_text'] = user_text
     st.session_state['file_type'] = "text"
 
-# Palīgfunkcija Word (.docx) baitiem
+# Palīgfunkcijas rezultātu ģenerēšanai
 def create_docx_bytes(text):
     doc = docx.Document()
     doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
@@ -87,7 +92,6 @@ def create_docx_bytes(text):
     doc.save(bio)
     return bio.getvalue()
 
-# Palīgfunkcija PDF baitiem
 def create_pdf_bytes(text):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
@@ -122,14 +126,14 @@ if st.button("Analizēt līgumu"):
     if not api_key:
         st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
     elif not st.session_state.get('document_text'):
-        st.warning("Lūdzu, augšupielādē failu, foto vai ielīmē tekstu!")
+        st.warning("Lūdzu, augšupielādē failu vai ielīmē tekstu!")
     else:
         try:
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-3.8-flash')
             
             system_prompt = """
-            Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt īres līguma tekstu (vai attēlu/PDF) un izsniegt atskaiti latviešu valodā.
+            Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt īres līguma tekstu un izsniegt atskaiti latviešu valodā.
             
             Analīzes noteikumi:
             1. Pārbaudi atbilstību Latvijas Dzīvojamo telpu īres likumam un Civillikumam.
