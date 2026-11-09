@@ -5,7 +5,6 @@ import pdfplumber
 import docx
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen :: canvas # (vai vienkārši canvas)
 from reportlab.pdfgen import canvas
 
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠", layout="centered")
@@ -59,7 +58,6 @@ if uploaded_file is not None:
             file_bytes = uploaded_file.read()
             st.session_state['original_docx_bytes'] = file_bytes
             
-            # Droša Word dokumenta lasīšana caur python-docx
             doc = docx.Document(BytesIO(file_bytes))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
             
@@ -75,7 +73,7 @@ if uploaded_file is not None:
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
-        st.error(f"Kļūda nolasot failu ({uploaded_file.name}): {read_err}")
+        st.error(f"Kļūda nolasot failu: {read_err}")
 
 elif user_text.strip():
     st.session_state['document_text'] = user_text
