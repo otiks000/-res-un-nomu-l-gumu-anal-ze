@@ -50,10 +50,10 @@ if uploaded_file is not None:
         elif file_extension == 'docx':
             file_type = "text"
             uploaded_file.seek(0)
-            # Saglabājam faila baitus sesijā, lai tie nepazustu pogas klikšķa laikā
-            st.session_state['original_docx'] = uploaded_file.read()
+            raw_bytes = uploaded_file.read()
+            st.session_state['original_docx'] = raw_bytes
             
-            doc = docx.Document(BytesIO(st.session_state['original_docx']))
+            doc = docx.Document(BytesIO(raw_bytes))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
             document_data = extracted_text
             st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
@@ -70,8 +70,8 @@ elif user_text.strip():
     document_data = user_text
     file_type = "text"
 
-# Palīgfunkcija Word (.docx) ģenerēšanai no analīzes teksta
-def create_docx(text):
+# Palīgfunkcija Word (.docx) baiti
+def create_docx_bytes(text):
     doc = docx.Document()
     doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
     for line in text.split('\n'):
@@ -80,11 +80,10 @@ def create_docx(text):
     
     bio = BytesIO()
     doc.save(bio)
-    bio.seek(0)
-    return bio
+    return bio.getvalue()
 
-# Palīgfunkcija PDF ģenerēšanai no analīzes teksta
-def create_pdf(text):
+# Palīgfunkcija PDF baiti
+def create_pdf_bytes(text):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
@@ -112,8 +111,7 @@ def create_pdf(text):
     p.drawText(textobject)
     p.showPage()
     p.save()
-    buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
 
 # Analīzes poga
 if st.button("Analizēt līgumu"):
@@ -147,11 +145,13 @@ if st.button("Analizēt līgumu"):
                     response = model.generate_content(full_prompt)
                     
                 st.session_state['analysis_result'] = response.text
+                st.session_state['docx_bytes'] = create_docx_bytes(response.text)
+                st.session_state['pdf_bytes'] = create_pdf_bytes(response.text)
                 
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
 
-# Izvadām rezultātus un visas lejupielādes pogas DROŠĀ VIETĀ sesijas iekšienē
+# Izvadām analīzi un atsevišķi sagatavotās lejupielādes pogas
 if 'analysis_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 Juridiskās analīzes rezultāts:")
@@ -159,13 +159,13 @@ if 'analysis_result' in st.session_state:
     
     st.write("### 📥 Lejupielādes iespējas:")
     
-    # Ja lietotājs bija augšupielādējis Word failu, piedāvājam to lejupielādēt atpakaļ
     if 'original_docx' in st.session_state:
         st.download_button(
-            label="📄 Lejupielādēt oriģinālo failu Word (.docx) formātā",
+            label="📄 Lejupielādēt oriģinālo failu Word (.docx)",
             data=st.session_state['original_docx'],
             file_name="oriinalais_ligums.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="btn_orig_docx"
         )
     
     col1, col2, col3 = st.columns(3)
@@ -175,23 +175,24 @@ if 'analysis_result' in st.session_state:
             label="📥 Labojumi TXT",
             data=st.session_state['analysis_result'],
             file_name="ires_liguma_labojumi.txt",
-            mime="text/plain"
+            mime="text/plain",
+            key="btn_txt"
         )
         
     with col2:
-        docx_file = create_docx(st.session_state['analysis_result'])
         st.download_button(
-            label="📥 Labojumi Word",
-            data=docx_file,
+            label="📥 Labojumi Word (.docx)",
+            data=st.session_state['docx_bytes'],
             file_name="ires_liguma_labojumi.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="btn_docx"
         )
         
     with col3:
-        pdf_file = create_pdf(st.session_state['analysis_result'])
         st.download_button(
             label="📥 Labojumi PDF",
-            data=pdf_file,
+            data=st.session_state['pdf_bytes'],
             file_name="ires_liguma_labojumi.pdf",
-            mime="application/pdf"
+            mime="application/pdf",
+            key="btn_pdf"
         )
