@@ -1,71 +1,137 @@
 import streamlit as st
-from google import genai
+import google.generativeai as genai
+from PIL import Image
+import pdfplumber
 import docx
-import io
+from io import BytesIO
 
-st.set_page_config(
-    page_title="Dzīvokļu un Nomas Līgumu AI Skeneris",
-    page_icon="🏠",
-    layout="centered"
+st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠")
+
+st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
+st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai ielīmē tekstu, lai saņemtu juridisko risku atskaiti.")
+
+# Sānu izvēlne API atslēgai
+api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
+
+# Faila/Foto vai teksta ievade (pievienots 'docx')
+uploaded_file = st.file_uploader(
+    "Augšupielādē līgumu (PDF, Word, TXT, MD) vai nofotografē to (JPG, PNG)", 
+    type=["txt", "md", "pdf", "docx", "jpg", "jpeg", "png"]
 )
 
-st.title("🏠 Dzīvokļu un Nomas Līgumu AI Skeneris")
-st.markdown("Augšupielādē īres līgumu (`.docx`) vai ielīmē tā tekstu un saņem juridisko risku analīzi.")
+user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
-api_key = st.sidebar.text_input("Ievadi Gemini API atslēgu", type="password")
+document_data = None
+file_type = None
 
-uploaded_file = st.file_uploader("Ievietojiet Word līguma failu (.docx):")
-pasted_text = st.text_area("Vai ielīmē līguma tekstu šeit:", height=200)
+if uploaded_file is not None:
+    file_extension = uploaded_file.name.split('.')[-1].lower()
+    
+    if file_extension in ['jpg', 'jpeg', 'png']:
+        try:
+            document_data = Image.open(uploaded_file)
+            file_type = "image"
+            st.success(f"Attēls veiksmīgi pievienots: {uploaded_file.name}")
+            st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
+        except Exception as img_err:
+            st.error(f"Neizdevās nolasīt attēlu: {img_err}")
+            
+    elif file_extension == 'pdf':
+        file_type = "pdf_text"
+        with pdfplumber.open(uploaded_file) as pdf:
+            extracted_text = ""
+            for page in pdf.pages:
+                extracted_text += page.extract_text() + "\n"
+        document_data = extracted_text
+        st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
+        
+    elif file_extension == 'docx':
+        file_type = "text"
+        doc = docx.Document(uploaded_file)
+        extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        document_data = extracted_text
+        st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
+        
+    elif file_extension in ['txt', 'md']:
+        document_data = uploaded_file.read().decode("utf-8")
+        file_type = "text"
+        st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
-SYSTEM_PROMPT = """
-Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir profesionāli izanalizēt augšupielādēto īres līguma tekstu latviešu valodā, pārbaudot tā atbilstību Latvijas Dzīvojamo telpu īres likumam un Civillikumam.
+elif user_text:
+    document_data = user_text
+    file_type = "text"
 
-Atskaites struktūra:
-- 🔴 Kritiski riski: (Punkti, kas var radīt finansiālus zaudējumus, nesamērīgi līgumsodi virs 10%, neskaidri nosacījumi)
-- 🟡 Brīdinājumi: (Vietas, kurām jāpievērš uzmanība)
-- 🟢 Zaļie ieteikumi un labojumi: (Konkrēti labojumi un juridiski korekti formulējumi līgumam)
-"""
+# Palīgfunkcija, lai izveidotu Word failu lejupielādei no teksta
+def create_docx(text):
+    doc = docx.Document()
+    doc.add_heading('Īres Līguma Juridiskā Analīze', 0)
+    for line in text.split('\n'):
+        if line.strip():
+            doc.add_paragraph(line)
+    
+    bio = BytesIO()
+    doc.save(bio)
+    bio.seek(0)
+    return bio
 
-
-def read_docx(file_bytes):
-    doc = docx.Document(io.BytesIO(file_bytes))
-    parts = [p.text for p in doc.paragraphs if p.text.strip()]
-    for table in doc.tables:
-        for row in table.rows:
-            cells = [c.text.strip() for c in row.cells if c.text.strip()]
-            if cells:
-                parts.append(" | ".join(cells))
-    return "\n".join(parts)
-
-
-if st.button("🔍 Analizēt līgumu", type="primary"):
+# Analīzes poga
+if st.button("Analizēt līgumu"):
     if not api_key:
-        st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
-    elif uploaded_file is None and not pasted_text.strip():
-        st.error("⚠️ Augšupielādē .docx failu vai ielīmē līguma tekstu!")
+        st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
+    elif document_data is None:
+        st.warning("Lūdzu, augšupielādē failu, foto vai ielīmē tekstu!")
     else:
         try:
-            if uploaded_file is not None:
-                if not uploaded_file.name.lower().endswith(".docx"):
-                    st.error("⚠️ Atbalstīti tikai .docx faili.")
-                    st.stop()
-                contract_text = read_docx(uploaded_file.getvalue())
-            else:
-                contract_text = pasted_text
-
-            if not contract_text.strip():
-                st.warning("⚠️ Neizdevās nolasīt tekstu.")
-            else:
-                with st.spinner("Notiek līguma juridiskā analīze... Uzgaidi mirkli."):
-                    client = genai.Client(api_key=api_key)
-                    full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                    response = client.models.generate_content(
-                        model="gemini-3.8-flash",
-                        contents=full_prompt,
-                    )
-                    st.success("✅ Analīze veiksmīgi pabeigta!")
-                    st.markdown("---")
-                    st.markdown(response.text)
-
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-3.8-flash')
+            
+            system_prompt = """
+            Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt īres līguma tekstu (vai attēlu/PDF) un izsniegt atskaiti latviešu valodā.
+            
+            Analīzes noteikumi:
+            1. Pārbaudi atbilstību Latvijas Dzīvojamo telpu īres likumam un Civillikumam.
+            2. Identificē slēptos riskus, nesamērīgus līgumsodus (kas pārsniedz 10%), neskaidrus depozīta atgriešanas nosacījumus, vienpusējas īres maksas mainīšanas un izlikšanas kārtību.
+            
+            Atskaites struktūra:
+            - 🔴 Kritiski riski (Punkti, kas var radīt finansiālus vai juridiskus zaudējumus)
+            - 🟡 Brīdinājumi (Punkti, kuriem jāpievērš uzmanība vai kas jāprecizē)
+            - 🟢 Zaļie ieteikumi (Precīzi teikumu labojumi, ko ieteikt ierakstīt līgumā)
+            """
+            
+            with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
+                if file_type == "image":
+                    response = model.generate_content([system_prompt, document_data])
+                else:
+                    full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
+                    response = model.generate_content(full_prompt)
+                    
+                st.session_state['analysis_result'] = response.text
+                
         except Exception as e:
-            st.error(f"❌ Kļūda: {str(e)}")
+            st.error(f"Kļūda apstrādē: {e}")
+
+# Ja analīzes rezultāts eksistē sesijā, parādām to un abas lejupielādes pogas
+if 'analysis_result' in st.session_state:
+    st.markdown("---")
+    st.subheader("📊 Juridiskās analīzes rezultāts:")
+    st.markdown(st.session_state['analysis_result'])
+    
+    st.write("### Lejupielādēt atskaiti:")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.download_button(
+            label="📥 Lejupielādēt kā TXT",
+            data=st.session_state['analysis_result'],
+            file_name="ires_liguma_analize.txt",
+            mime="text/plain"
+        )
+        
+    with col2:
+        docx_file = create_docx(st.session_state['analysis_result'])
+        st.download_button(
+            label="📥 Lejupielādēt kā Word (.docx)",
+            data=docx_file,
+            file_name="ires_liguma_analize.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
