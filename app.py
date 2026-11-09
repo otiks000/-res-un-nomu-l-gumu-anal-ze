@@ -28,42 +28,45 @@ file_type = None
 original_docx_bytes = None
 
 if uploaded_file is not None:
-    file_extension = uploaded_file.name.split('.')[-1].lower()
-    
-    if file_extension in ['jpg', 'jpeg', 'png']:
-        try:
+    try:
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        
+        if file_extension in ['jpg', 'jpeg', 'png']:
             document_data = Image.open(uploaded_file)
             file_type = "image"
             st.success(f"Attēls veiksmīgi pievienots: {uploaded_file.name}")
             st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
-        except Exception as img_err:
-            st.error(f"Neizdevās nolasīt attēlu: {img_err}")
+                
+        elif file_extension == 'pdf':
+            file_type = "pdf_text"
+            with pdfplumber.open(uploaded_file) as pdf:
+                extracted_text = ""
+                for page in pdf.pages:
+                    text = page.extract_text()
+                    if text:
+                        extracted_text += text + "\n"
+            document_data = extracted_text
+            st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
             
-    elif file_extension == 'pdf':
-        file_type = "pdf_text"
-        with pdfplumber.open(uploaded_file) as pdf:
-            extracted_text = ""
-            for page in pdf.pages:
-                extracted_text += page.extract_text() + "\n"
-        document_data = extracted_text
-        st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
-        
-    elif file_extension == 'docx':
-        file_type = "text"
-        uploaded_file.seek(0)
-        original_docx_bytes = uploaded_file.read()
-        
-        doc = docx.Document(BytesIO(original_docx_bytes))
-        extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
-        document_data = extracted_text
-        st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
-        
-    elif file_extension in ['txt', 'md']:
-        document_data = uploaded_file.read().decode("utf-8")
-        file_type = "text"
-        st.success(f"Teksta fails pievienots: {uploaded_file.name}")
+        elif file_extension == 'docx':
+            file_type = "text"
+            uploaded_file.seek(0)
+            original_docx_bytes = uploaded_file.read()
+            
+            doc = docx.Document(BytesIO(original_docx_bytes))
+            extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
+            document_data = extracted_text
+            st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
+            
+        elif file_extension in ['txt', 'md']:
+            document_data = uploaded_file.read().decode("utf-8")
+            file_type = "text"
+            st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
-elif user_text:
+    except Exception as read_err:
+        st.error(f"Kļūda nolasot failu ({uploaded_file.name}): {read_err}. Pamēģini ielīmēt tekstu zemāk esošajā laukā.")
+
+elif user_text.strip():
     document_data = user_text
     file_type = "text"
 
@@ -90,9 +93,7 @@ def create_pdf(text):
     textobject.setTextOrigin(40, height - 40)
     textobject.setFont("Helvetica", 10)
     
-    # Sadalām tekstu pa rindiņām, lai tas ietilptu lapā
     for line in text.split('\n'):
-        # Vienkāršota rindas garuma kontrole, lai neizietu ārpus lapas
         safe_line = line.encode('ascii', 'ignore').decode('ascii')
         if len(safe_line) > 90:
             chunks = [safe_line[i:i+90] for i in range(0, len(safe_line), 90)]
@@ -101,7 +102,6 @@ def create_pdf(text):
         else:
             textobject.textLine(safe_line)
             
-        # Ja teksta ir par daudz vienai lapai, sākam jaunu lapu
         if textobject.getY() < 40:
             p.drawText(textobject)
             p.showPage()
@@ -119,7 +119,7 @@ def create_pdf(text):
 if st.button("Analizēt līgumu"):
     if not api_key:
         st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
-    elif document_data is None:
+    elif not document_data:
         st.warning("Lūdzu, augšupielādē failu, foto vai ielīmē tekstu!")
     else:
         try:
@@ -151,7 +151,7 @@ if st.button("Analizēt līgumu"):
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
 
-# Ja analīzes rezultāts eksistē sesijā, parādām to un piedāvājam visas lejupielādes opcijas
+# Izvadām rezultātus un lejupielādes pogas
 if 'analysis_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 Juridiskās analīzes rezultāts:")
@@ -159,7 +159,6 @@ if 'analysis_result' in st.session_state:
     
     st.write("### 📥 Lejupielādes iespējas:")
     
-    # Ja lietotājs augšupielādēja Word failu, piedāvājam lejupielādēt oriģinālo failu atpakaļ Word formātā
     if original_docx_bytes is not None:
         st.download_button(
             label="📄 Lejupielādēt oriģinālo failu Word (.docx) formātā",
