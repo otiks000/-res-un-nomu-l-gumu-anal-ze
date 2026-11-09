@@ -17,34 +17,33 @@ st.set_page_config(
 )
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.markdown("Augšupielādē savu līgumu (**Word, PDF vai Attēlu**) un saņem tūlītēju analīzi ar Gemini 3.8 Flash.")
+st.markdown("Augšupielādē savu līgumu un saņem tūlītēju analīzi ar Gemini 3.8 Flash.")
 
 # Sānu josla
 st.sidebar.header("🔑 Piekļuves iestatījumi")
 api_key = st.sidebar.text_input("Ievadi Gemini API atslēgu", type="password")
 
-# Atļaujam Word, PDF un attēlu formātus
 uploaded_file = st.file_uploader(
     "Izvēlies vai ievelc līguma failu (.docx, .pdf, .png, .jpg):",
     type=["docx", "pdf", "png", "jpg", "jpeg"]
 )
 
 SYSTEM_PROMPT = """
-Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir profesionāli izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
+Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir ātri un kodolīgi izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
 
-Formatē savu atbildi precīzi ar šādām sadaļām:
+Formatē savu atbildi īsi, strukturēti un uz lietas ar šādām sadaļām:
 
 ## 📊 Kopējais novērtējums
-[Īss kopsavilkums 1-2 teikumos par līguma drošību un kopējo riska līmeni]
+[Īss kopsavilkums 1 teikumā]
 
 ## 🔴 Kritiski riski
-[Uzskaitījums ar bīstamajiem punktiem, nesamērīgiem sodiem vai likumpārkāpumiem]
+[Tikai galvenie bīstamie punkti, bez liekām ūdens frāzēm]
 
 ## 🟡 Brīdinājumi
-[Uzskaitījums ar neskaidriem vai īrniekam nelabvēlīgiem nosacījumiem]
+[Galvenie slēptie āķi]
 
 ## 🟢 Ieteikumi un labojumi
-[Konkrēti teksta labojumi un juridiski korekti formulējumi]
+[Konkrēti un īsi labojumi]
 """
 
 # Funkcija glīta Word dokumenta ģenerēšanai
@@ -177,70 +176,71 @@ if st.button("🔍 Analizēt līgumu ar Gemini 3.8 Flash", type="primary"):
     if not api_key:
         st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
     elif uploaded_file is None:
-        st.error("⚠️ Lūdzu, augšupielādē līguma failu (.docx, .pdf vai attēlu)!")
+        st.error("⚠️ Lūdzu, augšupielādē līguma failu!")
     else:
         try:
             genai.configure(api_key=api_key)
-            # Pareizais modeļa nosaukums API izsaukumam
             model = genai.GenerativeModel('gemini-3.8-flash')
             
             file_extension = uploaded_file.name.split('.')[-1].lower()
             
-            with st.spinner("Notiek līguma nolasīšana un juridiskā analīze ar Gemini 3.8 Flash..."):
-                if file_extension == 'docx':
-                    bytes_data = uploaded_file.getvalue()
-                    target_stream = io.BytesIO(bytes_data)
-                    doc = docx.Document(target_stream)
-                    contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-                    
-                    full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                    response = model.generate_content(full_prompt, stream=True)
-                    
-                else:
-                    file_bytes = uploaded_file.getvalue()
-                    mime_type_map = {
-                        'pdf': 'application/pdf',
-                        'png': 'image/png',
-                        'jpg': 'image/jpeg',
-                        'jpeg': 'image/jpeg'
-                    }
-                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
-                    
-                    file_part = {
-                        'mime_type': mime_type,
-                        'data': file_bytes
-                    }
-                    
-                    response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
+            # Uzreiz parādām sadaļu un palaižam straumēšanu bez bremzējoša st.spinner
+            st.markdown("### 📋 Analīzes rezultāts:")
+            
+            if file_extension == 'docx':
+                bytes_data = uploaded_file.getvalue()
+                target_stream = io.BytesIO(bytes_data)
+                doc = docx.Document(target_stream)
+                contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
                 
-                st.markdown("### 📋 Analīzes rezultāts:")
-                full_response_text = st.write_stream(response)
+                full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                response = model.generate_content(full_prompt, stream=True)
                 
-                st.success("✅ Analīze veiksmīgi pabeigta!")
-                st.markdown("---")
+            else:
+                file_bytes = uploaded_file.getvalue()
+                mime_type_map = {
+                    'pdf': 'application/pdf',
+                    'png': 'image/png',
+                    'jpg': 'image/jpeg',
+                    'jpeg': 'image/jpeg'
+                }
+                mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
                 
-                st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
-                col1, col2 = st.columns(2)
+                file_part = {
+                    'mime_type': mime_type,
+                    'data': file_bytes
+                }
                 
-                with col1:
-                    docx_file = generate_pretty_docx(full_response_text)
-                    st.download_button(
-                        label="📄 Lejupielādēt Word (.docx)",
-                        data=docx_file,
-                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                    
-                with col2:
-                    pdf_file = generate_pretty_pdf(full_response_text)
-                    st.download_button(
-                        label="📄 Lejupielādēt PDF (.pdf)",
-                        data=pdf_file,
-                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
+                response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
+            
+            # Teksts sāks drukāties uz ekrāna uzreiz, tiklīdz serveris atdod pirmo vārdu
+            full_response_text = st.write_stream(response)
+            
+            st.success("✅ Analīze veiksmīgi pabeigta!")
+            st.markdown("---")
+            
+            st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                docx_file = generate_pretty_docx(full_response_text)
+                st.download_button(
+                    label="📄 Lejupielādēt Word (.docx)",
+                    data=docx_file,
+                    file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True
+                )
+                
+            with col2:
+                pdf_file = generate_pretty_pdf(full_response_text)
+                st.download_button(
+                    label="📄 Lejupielādēt PDF (.pdf)",
+                    data=pdf_file,
+                    file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
                     
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
