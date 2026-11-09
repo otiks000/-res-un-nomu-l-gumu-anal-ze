@@ -2,3 +2,5 @@ streamlit
 google-generativeai
 Pillow
 pdfplumber
+python-docx
+reportlab
