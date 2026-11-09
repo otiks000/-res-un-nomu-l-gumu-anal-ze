@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.markdown("Augšupielādē savu līgumu (**Word, PDF vai Attēlu**) un saņem tūlītēju analīzi un atskaites.")
+st.markdown("Augšupielādē savu līgumu (**Word, PDF vai Attēlu**) un saņem tūlītēju analīzi ar Gemini 3.8.")
 
 # Sānu josla
 st.sidebar.header("🔑 Piekļuves iestatījumi")
@@ -104,7 +104,7 @@ class PDFReport(FPDF):
         self.set_y(-15)
         self.set_font("DejaVu", "", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f"Lappuse {self.page_no()} | Sagatavots ar AI Juridisko Asistentu", 0, 0, "C")
+        self.cell(0, 10, f"Lappuse {self.page_no()} | Sagatavots ar Gemini 3.8 AI Asistentu", 0, 0, "C")
 
 def generate_pretty_pdf(analysis_text):
     font_path = "DejaVuSans.ttf"
@@ -173,7 +173,7 @@ def generate_pretty_pdf(analysis_text):
     return pdf_buffer
 
 # Analīzes izpilde
-if st.button("🔍 Analizēt līgumu tagad", type="primary"):
+if st.button("🔍 Analizēt līgumu ar Gemini 3.8", type="primary"):
     if not api_key:
         st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
     elif uploaded_file is None:
@@ -181,13 +181,13 @@ if st.button("🔍 Analizēt līgumu tagad", type="primary"):
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Izmantojam Gemini 3.8 modeli
+            model = genai.GenerativeModel('gemini-3.8')
             
             file_extension = uploaded_file.name.split('.')[-1].lower()
             
-            with st.spinner("Notiek līguma nolasīšana un juridiskā analīze..."):
+            with st.spinner("Notiek līguma nolasīšana un juridiskā analīze ar Gemini 3.8..."):
                 if file_extension == 'docx':
-                    # Word failu nolasīšana caur python-docx
                     bytes_data = uploaded_file.getvalue()
                     target_stream = io.BytesIO(bytes_data)
                     doc = docx.Document(target_stream)
@@ -197,10 +197,7 @@ if st.button("🔍 Analizēt līgumu tagad", type="primary"):
                     response = model.generate_content(full_prompt, stream=True)
                     
                 else:
-                    # PDF un attēlu (.pdf, .png, .jpg) tieša nodošana Gemini multimodalajam modelim
                     file_bytes = uploaded_file.getvalue()
-                    
-                    # Nosakām pareizu MIME tipu
                     mime_type_map = {
                         'pdf': 'application/pdf',
                         'png': 'image/png',
@@ -222,7 +219,6 @@ if st.button("🔍 Analizēt līgumu tagad", type="primary"):
                 st.success("✅ Analīze veiksmīgi pabeigta!")
                 st.markdown("---")
                 
-                # Lejupielādes pogas
                 st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
                 col1, col2 = st.columns(2)
                 
