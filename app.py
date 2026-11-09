@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+import pdfplumber
 
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠")
 
@@ -29,9 +30,14 @@ if uploaded_file is not None:
         file_type = "image"
         st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
     elif file_extension == 'pdf':
-        document_data = uploaded_file
-        file_type = "pdf"
-        st.success(f"PDF fails pielādēts: {uploaded_file.name}")
+        file_type = "pdf_text"
+        # Automātiski izvelkam tekstu no PDF faila
+        with pdfplumber.open(uploaded_file) as pdf:
+            extracted_text = ""
+            for page in pdf.pages:
+                extracted_text += page.extract_text() + "\n"
+        document_data = extracted_text
+        st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
     elif file_extension in ['txt', 'md']:
         document_data = uploaded_file.read().decode("utf-8")
         file_type = "text"
@@ -48,7 +54,7 @@ if st.button("Analizēt līgumu"):
     else:
         try:
             genai.configure(api_key=api_key)
-            # Izmantojam vienīgi gemini-3.8-flash modeli
+            # Izmantojam vienīgi gemini-3.8-flash modeli, kā vienojāmies
             model = genai.GenerativeModel('gemini-3.8-flash')
             
             system_prompt = """
@@ -64,15 +70,11 @@ if st.button("Analizēt līgumu"):
             - 🟢 Zaļie ieteikumi (Precīzi teikumu labojumi, ko ieteikt ierakstīt līgumā)
             """
             
-            with st.spinner("AI lasa un analizē dokumentu..."):
+            with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
                 if file_type == "image":
                     response = model.generate_content([system_prompt, document_data])
-                elif file_type == "pdf":
-                    with st.spinner("Augšupielādēju PDF failu Gemini serverim..."):
-                        # Droša PDF augšupielāde izmantojot faila objektu tieši
-                        sample_file = genai.upload_file(document_data, mime_type="application/pdf")
-                        response = model.generate_content([system_prompt, sample_file])
                 else:
+                    # Gan PDF teksta gadījumā, gan parastam tekstam nosūtām promptu + saturu
                     full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
                     response = model.generate_content(full_prompt)
                     
