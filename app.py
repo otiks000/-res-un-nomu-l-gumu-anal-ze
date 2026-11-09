@@ -61,7 +61,6 @@ if st.button("Analizēt līgumu"):
     else:
         try:
             genai.configure(api_key=api_key)
-            # Izmantojam vienīgi gemini-3.8-flash modeli
             model = genai.GenerativeModel('gemini-3.8-flash')
             
             system_prompt = """
@@ -79,13 +78,27 @@ if st.button("Analizēt līgumu"):
             
             with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
                 if file_type == "image":
-                    # Attēla gadījumā nosūtām sistēmas promptu un PIL Image objektu tieši modelim
                     response = model.generate_content([system_prompt, document_data])
                 else:
                     full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
                     response = model.generate_content(full_prompt)
                     
-                st.markdown(response.text)
+                # Saglabājam rezultātu sesijas atmiņā, lai poga to neizdzēstu
+                st.session_state['analysis_result'] = response.text
                 
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
+
+# Ja analīzes rezultāts eksistē sesijā, parādām to un lejupielādes pogu
+if 'analysis_result' in st.session_state:
+    st.markdown("---")
+    st.subheader("📊 Juridiskās analīzes rezultāts:")
+    st.markdown(st.session_state['analysis_result'])
+    
+    # Lejupielādes poga `.txt` formātā
+    st.download_button(
+        label="📥 Lejupielādēt atskaiti kā TXT failu",
+        data=st.session_state['analysis_result'],
+        file_name="ires_liguma_analize.txt",
+        mime="text/plain"
+    )
