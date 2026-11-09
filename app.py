@@ -6,7 +6,7 @@ import pdfplumber
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠")
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.write("Ievadi API atslēgu, augšupielādē līguma PDF, nofotografē to vai ielīmē tekstu, lai saņemtu juridisko risku atskaiti.")
+st.write("Ievadi API atslēgu, augšupielādē līguma PDF, attēlu vai ielīmē tekstu, lai saņemtu juridisko risku atskaiti.")
 
 # Sānu izvēlne API atslēgai
 api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
@@ -26,26 +26,33 @@ if uploaded_file is not None:
     file_extension = uploaded_file.name.split('.')[-1].lower()
     
     if file_extension in ['jpg', 'jpeg', 'png']:
-        document_data = Image.open(uploaded_file)
-        file_type = "image"
-        st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
+        try:
+            document_data = Image.open(uploaded_file)
+            file_type = "image"
+            st.success(f"Attēls veiksmīgi pievienots: {uploaded_file.name}")
+            st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
+        except Exception as img_err:
+            st.error(f"Neizdevās nolasīt attēlu: {img_err}")
+            
     elif file_extension == 'pdf':
         file_type = "pdf_text"
-        # Automātiski izvelkam tekstu no PDF faila
         with pdfplumber.open(uploaded_file) as pdf:
             extracted_text = ""
             for page in pdf.pages:
                 extracted_text += page.extract_text() + "\n"
         document_data = extracted_text
         st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
+        
     elif file_extension in ['txt', 'md']:
         document_data = uploaded_file.read().decode("utf-8")
         file_type = "text"
+        st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
 elif user_text:
     document_data = user_text
     file_type = "text"
 
+# Analīzes poga
 if st.button("Analizēt līgumu"):
     if not api_key:
         st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
@@ -54,7 +61,7 @@ if st.button("Analizēt līgumu"):
     else:
         try:
             genai.configure(api_key=api_key)
-            # Izmantojam vienīgi gemini-3.8-flash modeli, kā vienojāmies
+            # Izmantojam vienīgi gemini-3.8-flash modeli
             model = genai.GenerativeModel('gemini-3.8-flash')
             
             system_prompt = """
@@ -72,9 +79,9 @@ if st.button("Analizēt līgumu"):
             
             with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
                 if file_type == "image":
+                    # Attēla gadījumā nosūtām sistēmas promptu un PIL Image objektu tieši modelim
                     response = model.generate_content([system_prompt, document_data])
                 else:
-                    # Gan PDF teksta gadījumā, gan parastam tekstam nosūtām promptu + saturu
                     full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
                     response = model.generate_content(full_prompt)
                     
