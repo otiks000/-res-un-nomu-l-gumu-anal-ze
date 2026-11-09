@@ -23,71 +23,74 @@ uploaded_file = st.file_uploader(
 
 user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
-document_data = None
-file_type = None
+# Nodrošinām, ka sesijas stāvokļi ir inicializēti
+if 'document_text' not in st.session_state:
+    st.session_state['document_text'] = None
+if 'file_type' not in st.session_state:
+    st.session_state['file_type'] = None
+if 'original_docx_bytes' not in st.session_state:
+    st.session_state['original_docx_bytes'] = None
 
 if uploaded_file is not None:
     try:
         file_extension = uploaded_file.name.split('.')[-1].lower()
         
         if file_extension in ['jpg', 'jpeg', 'png']:
-            document_data = Image.open(uploaded_file)
-            file_type = "image"
+            st.session_state['document_text'] = Image.open(uploaded_file)
+            st.session_state['file_type'] = "image"
             st.success(f"Attēls veiksmīgi pievienots: {uploaded_file.name}")
-            st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
+            st.image(st.session_state['document_text'], caption="Augšupielādētais līguma attēls", use_column_width=True)
                 
         elif file_extension == 'pdf':
-            file_type = "pdf_text"
+            st.session_state['file_type'] = "pdf_text"
             with pdfplumber.open(uploaded_file) as pdf:
                 extracted_text = ""
                 for page in pdf.pages:
                     text = page.extract_text()
                     if text:
                         extracted_text += text + "\n"
-            document_data = extracted_text
+            st.session_state['document_text'] = extracted_text
             st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
             
         elif file_extension == 'docx':
-            file_type = "text"
+            st.session_state['file_type'] = "text"
             uploaded_file.seek(0)
-            raw_bytes = uploaded_file.read()
-            st.session_state['original_docx'] = raw_bytes
+            file_bytes = uploaded_file.read()
+            st.session_state['original_docx_bytes'] = file_bytes
             
-            doc = docx.Document(BytesIO(raw_bytes))
+            doc = docx.Document(BytesIO(file_bytes))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
-            document_data = extracted_text
+            st.session_state['document_text'] = extracted_text
             st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
             
         elif file_extension in ['txt', 'md']:
-            document_data = uploaded_file.read().decode("utf-8")
-            file_type = "text"
+            st.session_state['document_text'] = uploaded_file.read().decode("utf-8")
+            st.session_state['file_type'] = "text"
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
         st.error(f"Kļūda nolasot failu: {read_err}")
 
 elif user_text.strip():
-    document_data = user_text
-    file_type = "text"
+    st.session_state['document_text'] = user_text
+    st.session_state['file_type'] = "text"
 
-# Palīgfunkcija Word (.docx) baiti
+# Palīgfunkcija Word (.docx) baitiem
 def create_docx_bytes(text):
     doc = docx.Document()
     doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
     for line in text.split('\n'):
         if line.strip():
             doc.add_paragraph(line)
-    
     bio = BytesIO()
     doc.save(bio)
     return bio.getvalue()
 
-# Palīgfunkcija PDF baiti
+# Palīgfunkcija PDF baitiem
 def create_pdf_bytes(text):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
-    
     textobject = p.beginText()
     textobject.setTextOrigin(40, height - 40)
     textobject.setFont("Helvetica", 10)
@@ -117,7 +120,7 @@ def create_pdf_bytes(text):
 if st.button("Analizēt līgumu"):
     if not api_key:
         st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
-    elif not document_data:
+    elif not st.session_state.get('document_text'):
         st.warning("Lūdzu, augšupielādē failu, foto vai ielīmē tekstu!")
     else:
         try:
@@ -138,10 +141,10 @@ if st.button("Analizēt līgumu"):
             """
             
             with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
-                if file_type == "image":
-                    response = model.generate_content([system_prompt, document_data])
+                if st.session_state['file_type'] == "image":
+                    response = model.generate_content([system_prompt, st.session_state['document_text']])
                 else:
-                    full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
+                    full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{st.session_state['document_text']}"
                     response = model.generate_content(full_prompt)
                     
                 st.session_state['analysis_result'] = response.text
@@ -151,7 +154,7 @@ if st.button("Analizēt līgumu"):
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
 
-# Izvadām analīzi un atsevišķi sagatavotās lejupielādes pogas
+# Izvadām rezultātus un lejupielādes pogas
 if 'analysis_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 Juridiskās analīzes rezultāts:")
@@ -159,13 +162,13 @@ if 'analysis_result' in st.session_state:
     
     st.write("### 📥 Lejupielādes iespējas:")
     
-    if 'original_docx' in st.session_state:
+    if st.session_state.get('original_docx_bytes') is not None:
         st.download_button(
-            label="📄 Lejupielādēt oriģinālo failu Word (.docx)",
-            data=st.session_state['original_docx'],
-            file_name="oriinalais_ligums.docx",
+            label="📄 Lejupielādēt oriģinālo Word (.docx) failu",
+            data=st.session_state['original_docx_bytes'],
+            file_name="originalais_ligums.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key="btn_orig_docx"
+            key="dl_orig_docx"
         )
     
     col1, col2, col3 = st.columns(3)
@@ -176,7 +179,7 @@ if 'analysis_result' in st.session_state:
             data=st.session_state['analysis_result'],
             file_name="ires_liguma_labojumi.txt",
             mime="text/plain",
-            key="btn_txt"
+            key="dl_txt"
         )
         
     with col2:
@@ -185,7 +188,7 @@ if 'analysis_result' in st.session_state:
             data=st.session_state['docx_bytes'],
             file_name="ires_liguma_labojumi.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key="btn_docx"
+            key="dl_docx"
         )
         
     with col3:
@@ -194,5 +197,5 @@ if 'analysis_result' in st.session_state:
             data=st.session_state['pdf_bytes'],
             file_name="ires_liguma_labojumi.pdf",
             mime="application/pdf",
-            key="btn_pdf"
+            key="dl_pdf"
         )
