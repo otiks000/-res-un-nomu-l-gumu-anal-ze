@@ -29,7 +29,7 @@ if uploaded_file is not None:
         file_type = "image"
         st.image(document_data, caption="Augšupielādētais līguma attēls", use_column_width=True)
     elif file_extension == 'pdf':
-        document_data = uploaded_file.read()
+        document_data = uploaded_file
         file_type = "pdf"
         st.success(f"PDF fails pielādēts: {uploaded_file.name}")
     elif file_extension in ['txt', 'md']:
@@ -48,7 +48,8 @@ if st.button("Analizēt līgumu"):
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            # Izmantojam vienīgi gemini-3.8-flash modeli
+            model = genai.GenerativeModel('gemini-3.8-flash')
             
             system_prompt = """
             Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt īres līguma tekstu (vai attēlu/PDF) un izsniegt atskaiti latviešu valodā.
@@ -67,8 +68,9 @@ if st.button("Analizēt līgumu"):
                 if file_type == "image":
                     response = model.generate_content([system_prompt, document_data])
                 elif file_type == "pdf":
-                    with st.spinner("Apstrādāju PDF failu..."):
-                        sample_file = genai.upload_file(uploaded_file, mime_type="application/pdf")
+                    with st.spinner("Augšupielādēju PDF failu Gemini serverim..."):
+                        # Droša PDF augšupielāde izmantojot faila objektu tieši
+                        sample_file = genai.upload_file(document_data, mime_type="application/pdf")
                         response = model.generate_content([system_prompt, sample_file])
                 else:
                     full_prompt = f"{system_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{document_data}"
