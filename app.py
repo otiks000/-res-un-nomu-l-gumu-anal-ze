@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 import docx
 import io
 
@@ -12,10 +12,8 @@ st.set_page_config(
 st.title("🏠 Dzīvokļu un Nomas Līgumu AI Skeneris")
 st.markdown("Augšupielādē savu īres līgumu (`.docx`) un saņem juridisko risku analīzi.")
 
-# Sānu josla API atslēgai
 api_key = st.sidebar.text_input("Ievadi Gemini API atslēgu", type="password")
 
-# Faila augšupielāde
 uploaded_file = st.file_uploader("Ievietojiet savu Word līguma failu (.docx):", type=["docx"])
 
 SYSTEM_PROMPT = """
@@ -34,29 +32,40 @@ if st.button("🔍 Analizēt līgumu", type="primary"):
         st.error("⚠️ Lūdzu, augšupielādē Word (.docx) failu analīzei!")
     else:
         try:
-            # Izmantojam .getvalue(), kas nolasa failu tieši atmiņā bez tīkla bufera kļūdām
             bytes_data = uploaded_file.getvalue()
-            
+
             if len(bytes_data) == 0:
                 st.error("⚠️ Augšupielādētais fails ir tukšs.")
             else:
-                target_stream = io.BytesIO(bytes_data)
-                doc = docx.Document(target_stream)
-                contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-                
+                doc = docx.Document(io.BytesIO(bytes_data))
+
+                # Rindkopas
+                paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+
+                # Tabulas
+                for table in doc.tables:
+                    for row in table.rows:
+                        cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                        if cells:
+                            paragraphs.append(" | ".join(cells))
+
+                contract_text = "\n".join(paragraphs)
+
                 if not contract_text.strip():
                     st.warning("⚠️ Fails ir tukšs vai no tā neizdevās nolasīt tekstu.")
                 else:
                     with st.spinner("Notiek līguma juridiskā analīze... Uzgaidi mirkli."):
-                        genai.configure(api_key=api_key)
-                        model = genai.GenerativeModel('gemini-1.5-flash')
-                        
+                        client = genai.Client(api_key=api_key)
+
                         full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                        response = model.generate_content(full_prompt)
-                        
+                        response = client.models.generate_content(
+                            model="gemini-3.8-flash",
+                            contents=full_prompt,
+                        )
+
                         st.success("✅ Analīze veiksmīgi pabeigta!")
                         st.markdown("---")
                         st.markdown(response.text)
-                        
+
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
