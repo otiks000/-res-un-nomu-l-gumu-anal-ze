@@ -10,40 +10,46 @@ from reportlab.pdfgen import canvas
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠", layout="centered")
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai ielīmē tekstu, lai saņemtu juridisko risku atskaiti.")
+st.write("Augšupielādē savu īres līgumu (Word .docx, PDF vai attēlu), lai saņemtu juridisko risku un labojumu atskaiti.")
 
 # Sānu izvēlne API atslēgai
 api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
 
-# Failu augšupielāde
+# Faila augšupielādes komponente ar paplašinātu tipu atbalstu
 uploaded_file = st.file_uploader(
-    "Augšupielādē līgumu (PDF, Word, TXT, MD) vai nofotografē to (JPG, PNG)", 
-    type=["txt", "md", "pdf", "docx", "doc", "jpg", "jpeg", "png"]
+    "Izvēlies vai ievelc failu šeit (.docx, .doc, .pdf, .txt, attēls):", 
+    type=["docx", "doc", "pdf", "txt", "md", "jpg", "jpeg", "png"]
 )
-
-user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
 # Inicializējam sesijas mainīgos
 if 'document_text' not in st.session_state:
     st.session_state['document_text'] = None
 if 'file_type' not in st.session_state:
     st.session_state['file_type'] = None
-if 'original_docx_bytes' not in st.session_state:
-    st.session_state['original_docx_bytes'] = None
+if 'original_file_bytes' not in st.session_state:
+    st.session_state['original_file_bytes'] = None
+if 'original_filename' not in st.session_state:
+    st.session_state['original_filename'] = "ligums.docx"
 
 if uploaded_file is not None:
     try:
         file_extension = uploaded_file.name.split('.')[-1].lower()
+        st.session_state['original_filename'] = uploaded_file.name
+        
+        # Saglabājam faila baitus sesijā tieši lejupielādei vēlāk
+        uploaded_file.seek(0)
+        st.session_state['original_file_bytes'] = uploaded_file.read()
         
         if file_extension in ['jpg', 'jpeg', 'png']:
+            uploaded_file.seek(0)
             st.session_state['document_text'] = Image.open(uploaded_file)
             st.session_state['file_type'] = "image"
             st.success(f"Attēls veiksmīgi pievienots: {uploaded_file.name}")
-            st.image(st.session_state['document_text'], caption="Augšupielādētais līguma attēls", use_column_width=True)
+            st.image(st.session_state['document_text'], caption="Augšupielādētais attēls", use_column_width=True)
                 
         elif file_extension == 'pdf':
             st.session_state['file_type'] = "pdf_text"
-            with pdfplumber.open(uploaded_file) as pdf:
+            with pdfplumber.open(BytesIO(st.session_state['original_file_bytes'])) as pdf:
                 extracted_text = ""
                 for page in pdf.pages:
                     text = page.extract_text()
@@ -54,32 +60,25 @@ if uploaded_file is not None:
             
         elif file_extension in ['docx', 'doc']:
             st.session_state['file_type'] = "text"
-            uploaded_file.seek(0)
-            file_bytes = uploaded_file.read()
-            st.session_state['original_docx_bytes'] = file_bytes
-            
-            doc = docx.Document(BytesIO(file_bytes))
+            # Droša Word nolasīšana no baitu bufera
+            doc = docx.Document(BytesIO(st.session_state['original_file_bytes']))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
             
             if not extracted_text.strip():
-                st.warning("Word fails nesatur tekstu vai tas ir tukšs.")
+                st.warning("Word fails šķiet tukšs vai nesatur nolasāmu tekstu.")
             else:
                 st.session_state['document_text'] = extracted_text
-                st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
+                st.success(f"Word fails veiksmīgi nolasīts un sagatavots: {uploaded_file.name}")
             
         elif file_extension in ['txt', 'md']:
-            st.session_state['document_text'] = uploaded_file.read().decode("utf-8")
+            st.session_state['document_text'] = st.session_state['original_file_bytes'].decode("utf-8", errors="ignore")
             st.session_state['file_type'] = "text"
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
-        st.error(f"Kļūda nolasot failu: {read_err}")
+        st.error(f"Kļūda nolasot failu ({uploaded_file.name}): {read_err}")
 
-elif user_text.strip():
-    st.session_state['document_text'] = user_text
-    st.session_state['file_type'] = "text"
-
-# Palīgfunkcijas Word un PDF ģenerēšanai
+# Palīgfunkcijas rezultātu ģenerēšanai
 def create_docx_bytes(text):
     doc = docx.Document()
     doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
@@ -124,7 +123,7 @@ if st.button("Analizēt līgumu"):
     if not api_key:
         st.error("Lūdzu, ievadi Gemini API atslēgu sānu izvēlnē!")
     elif not st.session_state.get('document_text'):
-        st.warning("Lūdzu, augšupielādē failu vai ielīmē tekstu!")
+        st.warning("Lūdzu, augšupielādē failu analīzei!")
     else:
         try:
             genai.configure(api_key=api_key)
@@ -143,7 +142,7 @@ if st.button("Analizēt līgumu"):
             - 🟢 Zaļie ieteikumi (Precīzi teikumu labojumi, ko ieteikt ierakstīt līgumā)
             """
             
-            with st.spinner("AI lasa un analizē dokumentu ar gemini-3.8-flash..."):
+            with st.spinner("AI lasa un analizē dokumentu..."):
                 if st.session_state['file_type'] == "image":
                     response = model.generate_content([system_prompt, st.session_state['document_text']])
                 else:
@@ -165,13 +164,14 @@ if 'analysis_result' in st.session_state:
     
     st.write("### 📥 Lejupielādes iespējas:")
     
-    if st.session_state.get('original_docx_bytes') is not None:
+    # Ja lietotājs augšupielādēja failu, piedāvājam to lejupielādēt atpakaļ
+    if st.session_state.get('original_file_bytes') is not None:
         st.download_button(
-            label="📄 Lejupielādēt oriģinālo Word (.docx) failu",
-            data=st.session_state['original_docx_bytes'],
-            file_name="originalais_ligums.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            key="dl_orig_docx"
+            label="📄 Lejupielādēt oriģinālo augšupielādēto failu",
+            data=st.session_state['original_file_bytes'],
+            file_name=st.session_state['original_filename'],
+            mime="application/octet-stream",
+            key="dl_orig_file"
         )
     
     col1, col2, col3 = st.columns(3)
