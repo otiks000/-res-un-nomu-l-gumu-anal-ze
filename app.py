@@ -7,7 +7,8 @@ from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
-st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠")
+# Konfigurējam lapas platumu, lai viss izskatītos glīti
+st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠", layout="centered")
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
 st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai ielīmē tekstu, lai saņemtu juridisko risku atskaiti.")
@@ -15,15 +16,15 @@ st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai 
 # Sānu izvēlne API atslēgai
 api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
 
-# Faila/Foto vai teksta ievade
+# Faila/Foto vai teksta ievade (atbalstām docx un doc)
 uploaded_file = st.file_uploader(
     "Augšupielādē līgumu (PDF, Word, TXT, MD) vai nofotografē to (JPG, PNG)", 
-    type=["txt", "md", "pdf", "docx", "jpg", "jpeg", "png"]
+    type=["txt", "md", "pdf", "docx", "doc", "jpg", "jpeg", "png"]
 )
 
 user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
-# Nodrošinām, ka sesijas stāvokļi ir inicializēti
+# Inicializējam sesijas stāvokli
 if 'document_text' not in st.session_state:
     st.session_state['document_text'] = None
 if 'file_type' not in st.session_state:
@@ -52,7 +53,7 @@ if uploaded_file is not None:
             st.session_state['document_text'] = extracted_text
             st.success(f"PDF fails veiksmīgi nolasīts: {uploaded_file.name}")
             
-        elif file_extension == 'docx':
+        elif file_extension in ['docx', 'doc']:
             st.session_state['file_type'] = "text"
             uploaded_file.seek(0)
             file_bytes = uploaded_file.read()
@@ -69,7 +70,7 @@ if uploaded_file is not None:
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
-        st.error(f"Kļūda nolasot failu: {read_err}")
+        st.error(f"Kļūda nolasot failu: {read_err}. Ja Word fails nedarbojas, lūdzu, nokopē un ielīmē tā tekstu zemāk esošajā laukā.")
 
 elif user_text.strip():
     st.session_state['document_text'] = user_text
