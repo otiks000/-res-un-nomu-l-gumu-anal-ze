@@ -25,7 +25,6 @@ user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
 document_data = None
 file_type = None
-original_docx_bytes = None
 
 if uploaded_file is not None:
     try:
@@ -51,9 +50,10 @@ if uploaded_file is not None:
         elif file_extension == 'docx':
             file_type = "text"
             uploaded_file.seek(0)
-            original_docx_bytes = uploaded_file.read()
+            # Saglabājam faila baitus sesijā, lai tie nepazustu pogas klikšķa laikā
+            st.session_state['original_docx'] = uploaded_file.read()
             
-            doc = docx.Document(BytesIO(original_docx_bytes))
+            doc = docx.Document(BytesIO(st.session_state['original_docx']))
             extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()])
             document_data = extracted_text
             st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
@@ -64,13 +64,13 @@ if uploaded_file is not None:
             st.success(f"Teksta fails pievienots: {uploaded_file.name}")
 
     except Exception as read_err:
-        st.error(f"Kļūda nolasot failu ({uploaded_file.name}): {read_err}. Pamēģini ielīmēt tekstu zemāk esošajā laukā.")
+        st.error(f"Kļūda nolasot failu: {read_err}")
 
 elif user_text.strip():
     document_data = user_text
     file_type = "text"
 
-# Palīgfunkcija Word (.docx) ģenerēšanai no teksta
+# Palīgfunkcija Word (.docx) ģenerēšanai no analīzes teksta
 def create_docx(text):
     doc = docx.Document()
     doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
@@ -83,7 +83,7 @@ def create_docx(text):
     bio.seek(0)
     return bio
 
-# Palīgfunkcija PDF ģenerēšanai no teksta
+# Palīgfunkcija PDF ģenerēšanai no analīzes teksta
 def create_pdf(text):
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
@@ -151,7 +151,7 @@ if st.button("Analizēt līgumu"):
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
 
-# Izvadām rezultātus un lejupielādes pogas
+# Izvadām rezultātus un visas lejupielādes pogas DROŠĀ VIETĀ sesijas iekšienē
 if 'analysis_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 Juridiskās analīzes rezultāts:")
@@ -159,10 +159,11 @@ if 'analysis_result' in st.session_state:
     
     st.write("### 📥 Lejupielādes iespējas:")
     
-    if original_docx_bytes is not None:
+    # Ja lietotājs bija augšupielādējis Word failu, piedāvājam to lejupielādēt atpakaļ
+    if 'original_docx' in st.session_state:
         st.download_button(
             label="📄 Lejupielādēt oriģinālo failu Word (.docx) formātā",
-            data=original_docx_bytes,
+            data=st.session_state['original_docx'],
             file_name="oriinalais_ligums.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
@@ -171,7 +172,7 @@ if 'analysis_result' in st.session_state:
     
     with col1:
         st.download_button(
-            label="📥 Lejupielādēt labojumus TXT",
+            label="📥 Labojumi TXT",
             data=st.session_state['analysis_result'],
             file_name="ires_liguma_labojumi.txt",
             mime="text/plain"
@@ -180,7 +181,7 @@ if 'analysis_result' in st.session_state:
     with col2:
         docx_file = create_docx(st.session_state['analysis_result'])
         st.download_button(
-            label="📥 Lejupielādēt labojumus Word",
+            label="📥 Labojumi Word",
             data=docx_file,
             file_name="ires_liguma_labojumi.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -189,7 +190,7 @@ if 'analysis_result' in st.session_state:
     with col3:
         pdf_file = create_pdf(st.session_state['analysis_result'])
         st.download_button(
-            label="📥 Lejupielādēt labojumus PDF",
+            label="📥 Labojumi PDF",
             data=pdf_file,
             file_name="ires_liguma_labojumi.pdf",
             mime="application/pdf"
