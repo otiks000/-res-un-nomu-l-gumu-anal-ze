@@ -17,7 +17,7 @@ st.set_page_config(
 )
 
 st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.markdown("Augšupielādē savu līgumu un saņem tūlītēju reāllaika straumēšanas analīzi ar Gemini 3.8 Flash.")
+st.markdown("Augšupielādē savu līgumu un saņem tūlītēju reāllaika straumēšanas analīzi.")
 
 # Sānu josla
 st.sidebar.header("🔑 Piekļuves iestatījumi")
@@ -103,7 +103,7 @@ class PDFReport(FPDF):
         self.set_y(-15)
         self.set_font("DejaVu", "", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f"Lappuse {self.page_no()} | Sagatavots ar Gemini 3.8 Flash", 0, 0, "C")
+        self.cell(0, 10, f"Lappuse {self.page_no()} | Sagatavots ar AI Juridisko Asistentu", 0, 0, "C")
 
 def generate_pretty_pdf(analysis_text):
     font_path = "DejaVuSans.ttf"
@@ -171,8 +171,11 @@ def generate_pretty_pdf(analysis_text):
     pdf_buffer.seek(0)
     return pdf_buffer
 
+# Vienkāršota poga
+analyze_button = st.button("🔍 Analizēt līgumu", type="primary")
+
 # Analīzes izpilde
-if st.button("🔍 Analizēt līgumu ar Gemini 3.8 Flash", type="primary"):
+if analyze_button:
     if not api_key:
         st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
     elif uploaded_file is None:
@@ -184,41 +187,41 @@ if st.button("🔍 Analizēt līgumu ar Gemini 3.8 Flash", type="primary"):
             
             file_extension = uploaded_file.name.split('.')[-1].lower()
             
+            # st.spinner automātiski parāda smuki riņķojošu aplīti un tekstu, kamēr notiek apstrāde
+            with st.spinner("🔄 Notiek līguma analīze un risku izvērtēšana..."):
+                if file_extension == 'docx':
+                    bytes_data = uploaded_file.getvalue()
+                    target_stream = io.BytesIO(bytes_data)
+                    doc = docx.Document(target_stream)
+                    contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+                    
+                    full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                    response = model.generate_content(full_prompt, stream=True)
+                    
+                else:
+                    file_bytes = uploaded_file.getvalue()
+                    mime_type_map = {
+                        'pdf': 'application/pdf',
+                        'png': 'image/png',
+                        'jpg': 'image/jpeg',
+                        'jpeg': 'image/jpeg'
+                    }
+                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
+                    
+                    file_part = {
+                        'mime_type': mime_type,
+                        'data': file_bytes
+                    }
+                    
+                    response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
+            
             st.markdown("### 📋 Analīzes rezultāts reāllaikā:")
             
-            if file_extension == 'docx':
-                bytes_data = uploaded_file.getvalue()
-                target_stream = io.BytesIO(bytes_data)
-                doc = docx.Document(target_stream)
-                contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-                
-                full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                response = model.generate_content(full_prompt, stream=True)
-                
-            else:
-                file_bytes = uploaded_file.getvalue()
-                mime_type_map = {
-                    'pdf': 'application/pdf',
-                    'png': 'image/png',
-                    'jpg': 'image/jpeg',
-                    'jpeg': 'image/jpeg'
-                }
-                mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
-                
-                file_part = {
-                    'mime_type': mime_type,
-                    'data': file_bytes
-                }
-                
-                response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
-            
-            # Ģenerators, kas reāllaikā padod vārdus ekrānam un vienlaikus saglabā tos atmiņā
             def stream_and_collect():
                 for chunk in response:
                     if hasattr(chunk, 'text') and chunk.text:
                         yield chunk.text
 
-            # st.write_stream tagad patiešām drukās tekstu uz ekrāna pakāpeniski
             full_response_text = st.write_stream(stream_and_collect())
             
             if full_response_text:
