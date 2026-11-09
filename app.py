@@ -4,6 +4,8 @@ from PIL import Image
 import pdfplumber
 import docx
 from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 st.set_page_config(page_title="Īres Līgumu AI Skeneris", page_icon="🏠")
 
@@ -13,7 +15,7 @@ st.write("Ievadi API atslēgu, augšupielādē līgumu (PDF, Word, attēlu) vai 
 # Sānu izvēlne API atslēgai
 api_key = st.sidebar.text_input("Gemini API Atslēga:", type="password")
 
-# Faila/Foto vai teksta ievade (pievienots 'docx')
+# Faila/Foto vai teksta ievade
 uploaded_file = st.file_uploader(
     "Augšupielādē līgumu (PDF, Word, TXT, MD) vai nofotografē to (JPG, PNG)", 
     type=["txt", "md", "pdf", "docx", "jpg", "jpeg", "png"]
@@ -23,6 +25,7 @@ user_text = st.text_area("Vai arī ielīmē līguma tekstu šeit tieši:")
 
 document_data = None
 file_type = None
+original_docx_bytes = None
 
 if uploaded_file is not None:
     file_extension = uploaded_file.name.split('.')[-1].lower()
@@ -47,7 +50,10 @@ if uploaded_file is not None:
         
     elif file_extension == 'docx':
         file_type = "text"
-        doc = docx.Document(uploaded_file)
+        uploaded_file.seek(0)
+        original_docx_bytes = uploaded_file.read()
+        
+        doc = docx.Document(BytesIO(original_docx_bytes))
         extracted_text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
         document_data = extracted_text
         st.success(f"Word fails veiksmīgi nolasīts: {uploaded_file.name}")
@@ -61,10 +67,10 @@ elif user_text:
     document_data = user_text
     file_type = "text"
 
-# Palīgfunkcija, lai izveidotu Word failu lejupielādei no teksta
+# Palīgfunkcija Word (.docx) ģenerēšanai no teksta
 def create_docx(text):
     doc = docx.Document()
-    doc.add_heading('Īres Līguma Juridiskā Analīze', 0)
+    doc.add_heading('Īres Līguma Juridiskā Analīze un Labojumi', 0)
     for line in text.split('\n'):
         if line.strip():
             doc.add_paragraph(line)
@@ -73,6 +79,41 @@ def create_docx(text):
     doc.save(bio)
     bio.seek(0)
     return bio
+
+# Palīgfunkcija PDF ģenerēšanai no teksta
+def create_pdf(text):
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    
+    textobject = p.beginText()
+    textobject.setTextOrigin(40, height - 40)
+    textobject.setFont("Helvetica", 10)
+    
+    # Sadalām tekstu pa rindiņām, lai tas ietilptu lapā
+    for line in text.split('\n'):
+        # Vienkāršota rindas garuma kontrole, lai neizietu ārpus lapas
+        safe_line = line.encode('ascii', 'ignore').decode('ascii')
+        if len(safe_line) > 90:
+            chunks = [safe_line[i:i+90] for i in range(0, len(safe_line), 90)]
+            for chunk in chunks:
+                textobject.textLine(chunk)
+        else:
+            textobject.textLine(safe_line)
+            
+        # Ja teksta ir par daudz vienai lapai, sākam jaunu lapu
+        if textobject.getY() < 40:
+            p.drawText(textobject)
+            p.showPage()
+            textobject = p.beginText()
+            textobject.setTextOrigin(40, height - 40)
+            textobject.setFont("Helvetica", 10)
+            
+    p.drawText(textobject)
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return buffer
 
 # Analīzes poga
 if st.button("Analizēt līgumu"):
@@ -110,28 +151,47 @@ if st.button("Analizēt līgumu"):
         except Exception as e:
             st.error(f"Kļūda apstrādē: {e}")
 
-# Ja analīzes rezultāts eksistē sesijā, parādām to un abas lejupielādes pogas
+# Ja analīzes rezultāts eksistē sesijā, parādām to un piedāvājam visas lejupielādes opcijas
 if 'analysis_result' in st.session_state:
     st.markdown("---")
     st.subheader("📊 Juridiskās analīzes rezultāts:")
     st.markdown(st.session_state['analysis_result'])
     
-    st.write("### Lejupielādēt atskaiti:")
-    col1, col2 = st.columns(2)
+    st.write("### 📥 Lejupielādes iespējas:")
+    
+    # Ja lietotājs augšupielādēja Word failu, piedāvājam lejupielādēt oriģinālo failu atpakaļ Word formātā
+    if original_docx_bytes is not None:
+        st.download_button(
+            label="📄 Lejupielādēt oriģinālo failu Word (.docx) formātā",
+            data=original_docx_bytes,
+            file_name="oriinalais_ligums.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+    
+    col1, col2, col3 = st.columns(3)
     
     with col1:
         st.download_button(
-            label="📥 Lejupielādēt kā TXT",
+            label="📥 Lejupielādēt labojumus TXT",
             data=st.session_state['analysis_result'],
-            file_name="ires_liguma_analize.txt",
+            file_name="ires_liguma_labojumi.txt",
             mime="text/plain"
         )
         
     with col2:
         docx_file = create_docx(st.session_state['analysis_result'])
         st.download_button(
-            label="📥 Lejupielādēt kā Word (.docx)",
+            label="📥 Lejupielādēt labojumus Word",
             data=docx_file,
-            file_name="ires_liguma_analize.docx",
+            file_name="ires_liguma_labojumi.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        
+    with col3:
+        pdf_file = create_pdf(st.session_state['analysis_result'])
+        st.download_button(
+            label="📥 Lejupielādēt labojumus PDF",
+            data=pdf_file,
+            file_name="ires_liguma_labojumi.pdf",
+            mime="application/pdf"
         )
