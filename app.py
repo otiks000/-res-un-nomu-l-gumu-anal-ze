@@ -898,6 +898,7 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 # Poga līguma analīzei
 # ---------------------------------------------------------------
+test_mode = st.checkbox("🧪 Testa režīms (bez Gemini, 0 €): iebūvēts paraugs / Test mode (no Gemini)", key="test_mode")
 force_new = st.checkbox("♻️ Jauna analīze (neizmantot kešu) / New analysis (skip cache)", key="force_new")
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
@@ -1440,6 +1441,69 @@ def render_downloads(result):
 # ---------------------------------------------------------------
 # Analīzes izpilde
 # ---------------------------------------------------------------
+# ---------------------------------------------------------------
+# Testa režīms: iebūvēts parauga rezultāts, Gemini netiek izsaukts (0 €)
+# ---------------------------------------------------------------
+def make_test_analysis():
+    """Parauga analīze testēšanai. Atsauces [[DTIL 12]] ar linkify() kļūst par saitēm uz likumi.lv."""
+    return f"""## 📊 {T['h_overall']}
+Paraugs testēšanai: šo līgumu nevajadzētu parakstīt, kamēr nav labots 2.2. un 4.3. punkts. Galvenie riski ir īres tiesību nenostiprināšana zemesgrāmatā un patvaļīga drošības naudas ieturēšana.
+
+## 🔴 {T['h_crit']}
+K1. 2.2. punkts (Zemesgrāmata): Līgumā nav paredzēta īres tiesību nostiprināšana zemesgrāmatā. Ja īpašnieks mainās, jaunais īpašnieks var prasīt telpas atbrīvot 2 mēnešu laikā. [[DTIL 28]] [[DTIL 35]] [[CL 2174]]
+
+K2. 4.3. punkts (Drošības nauda): Izīrētājs drīkst ieturēt naudu bez saskaņošanas ar īrnieku, nepierādot zaudējumus. [[DTIL 12]]
+
+K3. 7.1. punkts (Līgumsods): Līgumsods 0,5% dienā bez kopējiem griestiem ātri pārsniedz 10% no parāda. [[CL 1716]] [[CL 1717]]
+
+## 🟡 {T['h_warn']}
+B1. 3.1. punkts (Īres maksa): Īres maksas summa ir tukša (EUR _____). [[DTIL 8]] [[DTIL 10]]
+
+B2. 3.4. punkts (Komunālie maksājumi): Nav noteikta rēķinu uzrādīšanas kārtība. [[DTIL 11]]
+
+B3. 6.1.2. punkts (Sīkie remontdarbi): Nav definēts, kas ir sīkie remontdarbi. [[CL 2162]]
+
+B4. 6.1.5. punkts (Apskates): Nav noteikts minimālais brīdinājuma laiks apskatei. [[DTIL 13]] [[DTIL 18]]
+
+B5. 7.1. punkts (VAI): Vārds VAI starp procentiem un līgumsodu rada neskaidrību. [[CL 1722]]
+
+## 🟢 {T['h_recs']}
+K1. 2.2. punkts: Pievienot punktu par īres tiesību nostiprināšanu zemesgrāmatā. {T['label_proposed']}: „Puses vienojas nostiprināt īres tiesības zemesgrāmatā. Izīrētājs 10 darba dienu laikā paraksta nostiprinājuma lūgumu.”
+
+K2. 4.3. punkts: Atļaut ieturēt tikai ar abpusēji parakstītu defektu aktu un izdevumu apliecinošiem dokumentiem.
+
+K3. 7.1. punkts: Noteikt kopējo līgumsoda griestu 10% no parāda.
+
+B1. 3.1. punkts: Ierakstīt īres maksas summu cipariem un vārdiem.
+
+B5. 7.1. punkts: Atstāt vienu mehānismu: vai nu procentus, vai līgumsodu.
+
+## 🔵 {T['h_border']}
+A1. 4.5. punkts (Depozīta atmaksa): Termiņš 1 mēnesis ir pieļaujams, bet garāks par likuma noklusējumu. [[DTIL 12]] {T['label_proposed']}: „Izīrētājs atgriež drošības naudu 10 darba dienu laikā pēc nodošanas-pieņemšanas akta parakstīšanas.”
+
+A2. 1. sadaļa (Bankas konts): Īrniekam nav vietas bankas rekvizītiem.
+
+## ⚪ {T['h_neutral']}
+N1. 2.1. punkts: Vārds „istabu” rakstīts ar divām atstarpēm.
+
+N2. 5.1. punkts: Atsauce uz neesošu 5.7. punktu.
+
+N3. 8. sadaļa: Pušu apzīmējumi „Izīrētājs” un „Iznomātājs” lietoti jaukti.
+"""
+
+
+if analyze_button and test_mode:
+    sample = linkify(make_test_analysis())
+    st.session_state.pop("result", None)
+    st.session_state["terms"] = {"rent": 450.0, "rate_day": 0.5}
+    result = build_downloads(sample + "\n\n## " + T["sources_head"] + "\n" + sources_md())
+    result.update({
+        "analysis": sample,
+        "laws_source": "🧪 TESTA REŽĪMS: iebūvēts paraugs, Gemini netika izsaukts (0.00$)",
+        "cache_note": "🧪 Testa režīms: iebūvēts paraugs, Gemini netika izsaukts (0.00$).",
+    })
+    st.session_state["result"] = result
+    st.rerun()
 if analyze_button:
     # Jauna analīze: izdzēš iepriekšējo saglabāto rezultātu
     st.session_state.pop("result", None)
