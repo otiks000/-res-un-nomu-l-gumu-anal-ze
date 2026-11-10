@@ -20,15 +20,93 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🏠 Dzīvokļu Īres Līgumu AI Skeneris")
-st.markdown("Augšupielādē savu līgumu un saņem tūlītēju reāllaika straumēšanas analīzi.")
+# ---------------------------------------------------------------
+# Interfeisa valoda (tikai lietotāja saskarne; analīze vienmēr ir latviski)
+# ---------------------------------------------------------------
+TR = {
+    "Latviešu": {
+        "title": "🏠 Dzīvokļu Īres Līgumu AI Skeneris",
+        "subtitle": "Augšupielādē savu līgumu un saņem tūlītēju reāllaika straumēšanas analīzi.",
+        "sidebar_header": "🔑 Piekļuves iestatījumi",
+        "api_label": "Ievadi Gemini API atslēgu",
+        "uploader": "Izvēlies vai ievelc līguma failu (.docx, .pdf, .png, .jpg):",
+        "analyze_btn": "🔍 Analizēt līgumu",
+        "err_no_key": "⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!",
+        "err_no_file": "⚠️ Lūdzu, augšupielādē līguma failu!",
+        "spinner_analysis": "🔄 Notiek līguma analīze un risku izvērtēšana...",
+        "law_source": "📚 Likumu avots",
+        "result_live": "### 📋 Analīzes rezultāts reāllaikā:",
+        "result_saved": "### 📋 Analīzes rezultāts:",
+        "proof_spinner": "✏️ Notiek korektūras pārbaude...",
+        "proof_fail": "Korektūras pārbaudi neizdevās veikt",
+        "success": "✅ Analīze veiksmīgi pabeigta!",
+        "dl_header": "### 📥 Lejupielādēt analīzes atskaiti:",
+        "dl_word": "📄 Lejupielādēt Word (.docx)",
+        "dl_pdf": "📄 Lejupielādēt PDF (.pdf)",
+        "word_fail": "Word failu neizdevās izveidot",
+        "pdf_fail": "PDF failu neizdevās izveidot",
+        "err_process": "❌ Kļūda apstrādājot failu",
+    },
+    "English": {
+        "title": "🏠 Apartment Lease AI Scanner",
+        "subtitle": "Upload your contract and get an instant real-time analysis.",
+        "sidebar_header": "🔑 Access settings",
+        "api_label": "Enter your Gemini API key",
+        "uploader": "Choose or drag the contract file (.docx, .pdf, .png, .jpg):",
+        "analyze_btn": "🔍 Analyze contract",
+        "err_no_key": "⚠️ Please enter your Gemini API key in the sidebar!",
+        "err_no_file": "⚠️ Please upload a contract file!",
+        "spinner_analysis": "🔄 Analyzing the contract and assessing risks...",
+        "law_source": "📚 Law source",
+        "result_live": "### 📋 Analysis result (live):",
+        "result_saved": "### 📋 Analysis result:",
+        "proof_spinner": "✏️ Proofreading check in progress...",
+        "proof_fail": "Proofreading check failed",
+        "success": "✅ Analysis completed successfully!",
+        "dl_header": "### 📥 Download the analysis report:",
+        "dl_word": "📄 Download Word (.docx)",
+        "dl_pdf": "📄 Download PDF (.pdf)",
+        "word_fail": "Could not create the Word file",
+        "pdf_fail": "Could not create the PDF file",
+        "err_process": "❌ Error processing the file",
+    },
+    "Русский": {
+        "title": "🏠 ИИ-сканер договоров аренды квартир",
+        "subtitle": "Загрузите договор и получите мгновенный анализ в реальном времени.",
+        "sidebar_header": "🔑 Настройки доступа",
+        "api_label": "Введите API-ключ Gemini",
+        "uploader": "Выберите или перетащите файл договора (.docx, .pdf, .png, .jpg):",
+        "analyze_btn": "🔍 Проанализировать договор",
+        "err_no_key": "⚠️ Пожалуйста, введите API-ключ Gemini в боковой панели!",
+        "err_no_file": "⚠️ Пожалуйста, загрузите файл договора!",
+        "spinner_analysis": "🔄 Идёт анализ договора и оценка рисков...",
+        "law_source": "📚 Источник законов",
+        "result_live": "### 📋 Результат анализа (в реальном времени):",
+        "result_saved": "### 📋 Результат анализа:",
+        "proof_spinner": "✏️ Выполняется корректорская проверка...",
+        "proof_fail": "Не удалось выполнить корректорскую проверку",
+        "success": "✅ Анализ успешно завершён!",
+        "dl_header": "### 📥 Скачать отчёт об анализе:",
+        "dl_word": "📄 Скачать Word (.docx)",
+        "dl_pdf": "📄 Скачать PDF (.pdf)",
+        "word_fail": "Не удалось создать файл Word",
+        "pdf_fail": "Не удалось создать файл PDF",
+        "err_process": "❌ Ошибка при обработке файла",
+    },
+}
+
+lang = st.sidebar.selectbox("🌐 Valoda / Language / Язык", list(TR.keys()))
+T = TR[lang]
+
+st.title(T["title"])
+st.markdown(T["subtitle"])
 
 # Sānu josla
-st.sidebar.header("🔑 Piekļuves iestatījumi")
-api_key = st.sidebar.text_input("Ievadi Gemini API atslēgu", type="password")
+st.sidebar.header(T["sidebar_header"])
+api_key = st.sidebar.text_input(T["api_label"], type="password")
 
 uploaded_file = st.file_uploader(
-    "Izvēlies vai ievelc līguma failu (.docx, .pdf, .png, .jpg):",
+    T["uploader"],
     type=["docx", "pdf", "png", "jpg", "jpeg"]
 )
 
@@ -74,13 +152,14 @@ B) Tas rada NEPAMATOTUS FINANSIĀLUS ZAUDĒJUMUS vienai pusei, piemēram:
    - nesamērīgs līgumsods vai nokavējuma procenti, kas pārsniedz likumā pieļauto;
    - maksājumi, kas pēc likuma vai labas prakses nav jāsedz šai pusei (piemēram, kapitālā remonta vai uzkrājumu fonda maksājumi, ko sedz īrnieks);
    - atbildība par zaudējumiem bez vainas vai bez pierādījumiem;
-   - vienpusēja īres maksas palielināšana bez likumā noteiktā pamata un kārtības.
+   - vienpusēja īres maksas palielināšana bez likumā noteiktā pamata un kārtības;
+   - aizsardzības trūkums īpašnieka maiņas gadījumā: ja līgumā NAV paredzēta īres tiesību nostiprināšana Zemesgrāmatā, jaunais īpašnieks var prasīt atbrīvot telpas, un īrnieks zaudē mājokli un ar to saistītos izdevumus (pārcelšanās, depozīts, iepriekš samaksātā īre). Tas vienmēr jāatzīmē kā KRITISKS risks.
 Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas NAV kritisks.
 
 🟡 BRĪDINĀJUMS - punkts, kas nav līdz galam skaidrs vai kura līgumā trūkst, un kuru vajadzētu pievienot vai precizēt, lai nebūtu šaubu dažādās situācijās:
 - neskaidri vai vispārīgi formulējumi (piemēram, "sīkie remontdarbi", "citi maksājumi", "iepriekš saskaņojot");
 - trūkstoši termiņi, summas, procenti vai kārtība (piemēram, nav noteikts brīdinājuma laiks apskatei, depozīta atmaksas termiņš, rēķinu uzrādīšanas kārtība);
-- situācijas, ko līgums neapskata (piemēram, īpašnieka maiņa, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
+- situācijas, ko līgums neapskata (piemēram, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
 - neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
 Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
 
@@ -460,7 +539,7 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 # Poga līguma analīzei
 # ---------------------------------------------------------------
-analyze_button = st.button("🔍 Analizēt līgumu", type="primary")
+analyze_button = st.button(T["analyze_btn"], type="primary")
 
 
 def build_downloads(report_text):
@@ -478,16 +557,16 @@ def build_downloads(report_text):
 
 
 def render_downloads(result):
-    st.success("✅ Analīze veiksmīgi pabeigta!")
+    st.success(T["success"])
     st.markdown("---")
-    st.markdown("### 📥 Lejupielādēt analīzes atskaiti:")
+    st.markdown(T["dl_header"])
     col1, col2 = st.columns(2)
     today = datetime.date.today()
 
     with col1:
         if result["docx"]:
             st.download_button(
-                label="📄 Lejupielādēt Word (.docx)",
+                label=T["dl_word"],
                 data=result["docx"],
                 file_name=f"Ires_Liguma_Analize_{today}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -495,12 +574,12 @@ def render_downloads(result):
                 key="dl_docx"
             )
         else:
-            st.warning(f"Word failu neizdevās izveidot: {result['docx_err']}")
+            st.warning(f"{T['word_fail']}: {result['docx_err']}")
 
     with col2:
         if result["pdf"]:
             st.download_button(
-                label="📄 Lejupielādēt PDF (.pdf)",
+                label=T["dl_pdf"],
                 data=result["pdf"],
                 file_name=f"Ires_Liguma_Analize_{today}.pdf",
                 mime="application/pdf",
@@ -508,7 +587,7 @@ def render_downloads(result):
                 key="dl_pdf"
             )
         else:
-            st.warning(f"PDF failu neizdevās izveidot: {result['pdf_err']}")
+            st.warning(f"{T['pdf_fail']}: {result['pdf_err']}")
 
 
 # ---------------------------------------------------------------
@@ -519,9 +598,9 @@ if analyze_button:
     st.session_state.pop("result", None)
 
     if not api_key:
-        st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
+        st.error(T["err_no_key"])
     elif uploaded_file is None:
-        st.error("⚠️ Lūdzu, augšupielādē līguma failu!")
+        st.error(T["err_no_file"])
     else:
         try:
             genai.configure(api_key=api_key)
@@ -536,7 +615,7 @@ if analyze_button:
 
             file_extension = uploaded_file.name.split('.')[-1].lower()
 
-            with st.spinner("🔄 Notiek līguma analīze un risku izvērtēšana..."):
+            with st.spinner(T["spinner_analysis"]):
                 active_prompt, laws_source = build_prompt()
                 if file_extension == 'docx':
                     bytes_data = uploaded_file.getvalue()
@@ -566,8 +645,8 @@ if analyze_button:
 
                     response = model.generate_content([active_prompt, file_part], stream=True)
 
-            st.caption(f"📚 Likumu avots: {laws_source}")
-            st.markdown("### 📋 Analīzes rezultāts reāllaikā:")
+            st.caption(f"{T['law_source']}: {laws_source}")
+            st.markdown(T["result_live"])
 
             def stream_and_collect():
                 for chunk in response:
@@ -581,7 +660,7 @@ if analyze_button:
             if full_response_text:
                 try:
                     st.markdown("---")
-                    with st.spinner("✏️ Notiek korektūras pārbaude..."):
+                    with st.spinner(T["proof_spinner"]):
                         if file_extension == 'docx':
                             proof_input = f"{PROOFREAD_PROMPT}\n\nLĪGUMA TEKSTS:\n{contract_text}"
                         else:
@@ -595,7 +674,7 @@ if analyze_button:
 
                     proof_text = st.write_stream(stream_proof())
                 except Exception as e:
-                    st.warning(f"Korektūras pārbaudi neizdevās veikt: {e}")
+                    st.warning(f"{T['proof_fail']}: {e}")
 
             if full_response_text:
                 analysis_all = full_response_text
@@ -613,13 +692,13 @@ if analyze_button:
                 render_downloads(result)
 
         except Exception as e:
-            st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
+            st.error(f"{T['err_process']}: {str(e)}")
 
 elif "result" in st.session_state:
     # Lapa pārlādējās (piem., nospiesta lejupielādes poga): parāda saglabāto analīzi
     saved = st.session_state["result"]
-    st.caption(f"📚 Likumu avots: {saved['laws_source']}")
-    st.markdown("### 📋 Analīzes rezultāts:")
+    st.caption(f"{T['law_source']}: {saved['laws_source']}")
+    st.markdown(T["result_saved"])
     st.markdown(saved["analysis"])
     st.markdown(SOURCES_MD)
     render_downloads(saved)
