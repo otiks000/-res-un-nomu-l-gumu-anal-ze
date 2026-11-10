@@ -1862,7 +1862,7 @@ CHAT_CSS = """
   animation: chatPulse 1.8s infinite; }
 
 .st-key-chat_greeting { position: fixed !important; right: 18px; bottom: 144px; z-index: 1001; width: min(280px, calc(100vw - 40px));
-  animation: chatPop .5s ease-out, chatFade .6s ease-in 15s forwards; }
+  animation: chatPop .5s ease-out, chatFade .6s ease-in 6s forwards; }
 .st-key-chat_greeting button { width: 100%; background: #ffffff; border: 1px solid #d1d5db; border-radius: 16px 16px 4px 16px; padding: 10px 14px;
   text-align: left; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
 .st-key-chat_greeting button p { color: #111827 !important; font-size: 14px; line-height: 1.4; }
@@ -1941,13 +1941,13 @@ def render_chat_widget():
             with st.container(key="chat_greeting"):
                 st.button("👋 " + CHAT_GREETING, key="chat_greet_btn", on_click=chat_toggle, args=(True,))
         with st.container(key="chat_launcher_unread" if unread else "chat_launcher"):
-            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,), help="Atvērt čatu")
+            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,))
         return
 
     with st.container(key="chat_widget"):
         h1, h2 = st.columns([5, 1])
         h1.markdown("**💬 Čats ar līgumu**")
-        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,), help="Paslēpt (saruna saglabāsies)")
+        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,))
         if use_mock:
             st.caption("🧪 Testa režīms: iebūvētas atbildes, Gemini netiek izsaukts (0.00$).")
         else:
@@ -2218,13 +2218,13 @@ def render_chat_widget():
             with st.container(key="chat_greeting"):
                 st.button("👋 " + T["chat_greeting"], key="chat_greet_btn", on_click=chat_toggle, args=(True,))
         with st.container(key="chat_launcher_unread" if unread else "chat_launcher"):
-            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,), help=T["chat_open_help"])
+            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,))
         return
 
     with st.container(key="chat_widget"):
         h1, h2 = st.columns([5, 1])
         h1.markdown(f"**{T['chat_title']}**")
-        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,), help=T["chat_hide_help"])
+        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,))
         st.caption(T["chat_cap_mock"] if use_mock else T["chat_cap_real"])
         box = st.container(height=280, key="chat_msgs")
         prompt = st.chat_input(T["chat_placeholder"], key="chat_widget_input")
