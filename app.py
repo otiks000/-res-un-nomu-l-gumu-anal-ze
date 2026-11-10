@@ -88,6 +88,20 @@ def generate_pretty_docx(analysis_text):
     doc_io.seek(0)
     return doc_io
 
+# Palīgfunkcija teksta attīrīšanai PDF failiem
+def sanitize_for_pdf(text):
+    if not text:
+        return ""
+    return (text
+        .replace("–", "-")
+        .replace("—", "-")
+        .replace("„", "\"")
+        .replace("“", "\"")
+        .replace("”", "\"")
+        .replace("‘", "'")
+        .replace("’", "'")
+    )
+
 # PDF ģenerēšanas klase ar drošu faila un teksta apstrādi
 class PDFReport(FPDF):
     def header(self):
@@ -99,7 +113,7 @@ class PDFReport(FPDF):
             self.set_font("Helvetica", "B", 10)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 4)
-        self.cell(0, 8, "JURIDISKAIS ATZINUMS — IRES LIGUMA ANALIZE", 0, 0, "L")
+        self.cell(0, 8, "JURIDISKAIS ATZINUMS - IRES LIGUMA ANALIZE", 0, 0, "L")
         self.ln(20)
 
     def footer(self):
@@ -139,7 +153,7 @@ def generate_pretty_pdf(analysis_text):
         pdf.set_font("Helvetica", "B", 14)
         
     pdf.set_text_color(30, 41, 59)
-    pdf.cell(0, 10, "Dzivojamas telpas ires liguma juridiska atskaite", ln=True)
+    pdf.cell(0, 10, sanitize_for_pdf("Dzivojamas telpas ires liguma juridiska atskaite"), ln=True)
     
     if pdf.dejavu_loaded:
         pdf.set_font("DejaVu", "", 9)
@@ -147,7 +161,7 @@ def generate_pretty_pdf(analysis_text):
         pdf.set_font("Helvetica", "", 9)
         
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}", ln=True)
+    pdf.cell(0, 5, sanitize_for_pdf(f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"), ln=True)
     pdf.ln(5)
     
     lines = analysis_text.split('\n')
@@ -174,7 +188,7 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_text_color(30, 41, 59)
                 
             clean_title = line_str.replace("##", "").strip()
-            clean_title_pdf = clean_title.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]")
+            clean_title_pdf = sanitize_for_pdf(clean_title.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]"))
             pdf.cell(0, 7, clean_title_pdf, ln=True)
             
             if pdf.dejavu_loaded:
@@ -183,7 +197,7 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_font("Helvetica", "", 9.5)
             pdf.set_text_color(40, 40, 40)
         else:
-            clean_line = line_str.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]")
+            clean_line = sanitize_for_pdf(line_str.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]"))
             pdf.multi_cell(0, 5.5, clean_line)
             
     pdf_buffer = io.BytesIO()
@@ -275,4 +289,3 @@ if analyze_button:
                     
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
-            
