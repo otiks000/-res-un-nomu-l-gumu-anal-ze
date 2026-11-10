@@ -271,4 +271,3 @@ if analyze_button:
                     
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
-            
