@@ -592,7 +592,37 @@ def generate_analysis(cached_model, model, active_prompt, parts):
         except Exception:
             pass
     return model.generate_content([active_prompt] + parts, stream=True)
+@st.cache_data(ttl=datetime.timedelta(days=7), max_entries=100, show_spinner=False)
+def analyze_contract(_api_key, lang_name, kind, content, nonce=0):
+    """Veic pilnu analīzi (galvenā analīze + korektūra) un saglabā rezultātu atmiņā.
+    Kešatmiņas atslēga = valoda + līguma saturs (teksts vai faila baiti) + nonce.
+    Tas pats saturs = tūlītējs rezultāts bez API izsaukuma."""
+    genai.configure(api_key=_api_key)
+    cfg = genai.GenerationConfig(temperature=0, top_p=1, top_k=1)
+    model = genai.GenerativeModel('gemini-3.8-flash', generation_config=cfg)
+    cached_model, laws_source = get_cached_model(_api_key, cfg)
+    active_prompt, _ = build_prompt()
 
+    if kind == 'txt':
+        parts = [f"LĪGUMA TEKSTS ANALĪZEI:\n{content}"]
+        proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{content}"
+    else:
+        mime = {
+            'pdf': 'application/pdf', 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg'
+        }.get(kind, 'application/octet-stream')
+        file_part = {'mime_type': mime, 'data': content}
+        parts = [file_part]
+        proof_input = [build_proof_prompt(), file_part]
+
+    def _collect(resp):
+        return "".join(c.text for c in resp if hasattr(c, 'text') and c.text)
+
+    main_text = linkify(_collect(generate_analysis(cached_model, model, active_prompt, parts)))
+    if not main_text.strip():
+        raise ValueError("Gemini atgrieza tukšu atbildi")  # kļūda netiek saglabāta kešatmiņā
+    proof_text = _collect(model.generate_content(proof_input, stream=True))
+    analysis_all = main_text + ("\n\n" + proof_text if proof_text.strip() else "")
+    return analysis_all, laws_source + (" | ⚡ cache" if cached_model else "")
 
 # ---------------------------------------------------------------
 # Atsauces uz likumi.lv: [[DTIL 28]] -> klikšķināma saite uz attiecīgo pantu
@@ -818,6 +848,7 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 # Poga līguma analīzei
 # ---------------------------------------------------------------
+force_new = st.checkbox("♻️ Jauna analīze (neizmantot kešu) / New analysis (skip cache)", key="force_new")
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
 
@@ -952,83 +983,35 @@ if analyze_button:
                     top_k=1
                 )
             )
-            with st.spinner(T["spinner_analysis"]):
-                cached_model, _ = get_cached_model(
-                    api_key, genai.GenerationConfig(temperature=0, top_p=1, top_k=1)
-                )
             # Ja ielīmēts teksts, izmanto to; citādi - augšupielādēto failu
             if pasted_text.strip():
                 file_extension = "txt"
             else:
                 file_extension = uploaded_file.name.split('.')[-1].lower()
-
-            with st.spinner(T["spinner_analysis"]):
-                active_prompt, laws_source = build_prompt()
-                if file_extension in ('docx', 'txt'):
-                    if file_extension == 'txt':
-                        contract_text = pasted_text.strip()
-                    else:
-                        bytes_data = uploaded_file.getvalue()
-                        target_stream = io.BytesIO(bytes_data)
-                        doc = docx.Document(target_stream)
-                        contract_text = "\n".join(
-                            [p.text for p in doc.paragraphs if p.text.strip()]
-                        )
-
-                    response = generate_analysis(
-                        cached_model, model, active_prompt, [f"LĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"]
-                    )
+                            # Sagatavo saturu: teksts (docx/ielīmēts) vai faila baiti (pdf/attēls)
+            if file_extension in ('docx', 'txt'):
+                kind = 'txt'
+                if file_extension == 'txt':
+                    content = pasted_text.strip()
                 else:
-                    file_bytes = uploaded_file.getvalue()
-                    mime_type_map = {
-                        'pdf': 'application/pdf',
-                        'png': 'image/png',
-                        'jpg': 'image/jpeg',
-                        'jpeg': 'image/jpeg'
-                    }
-                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
+                    content = "\n".join(
+                        [p.text for p in docx.Document(io.BytesIO(uploaded_file.getvalue())).paragraphs if p.text.strip()]
+                    )
+            else:
+                kind, content = file_extension, uploaded_file.getvalue()
 
-                    file_part = {
-                        'mime_type': mime_type,
-                        'data': file_bytes
-                    }
+            _t0 = datetime.datetime.now()
+            with st.spinner(T["spinner_analysis"]):
+                analysis_all, laws_source = analyze_contract(
+                    api_key, T["report_lang_name"], kind, content,
+                    datetime.datetime.now().timestamp() if force_new else 0,
+                )
+            if (datetime.datetime.now() - _t0).total_seconds() < 2:
+                laws_source += " | 💾 0 cost (cache)"
+            st.caption(f"{T['law_source']}: {laws_source}")
+            st.markdown(analysis_all)
 
-                    response = generate_analysis(cached_model, model, active_prompt, [file_part])
-            st.caption(f"{T['law_source']}: {laws_source}" + (" | ⚡ cache" if cached_model else ""))
-            st.markdown(T["result_live"])
-
-            def stream_and_collect():
-                for chunk in response:
-                    if hasattr(chunk, 'text') and chunk.text:
-                        yield chunk.text
-
-            full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
-
-            # Otrā pārbaude: atsevišķa korektūra (bez likumu teksta, tāpēc lētāka)
-            proof_text = ""
-            if full_response_text:
-                try:
-                    st.markdown("---")
-                    with st.spinner(T["proof_spinner"]):
-                        if file_extension in ('docx', 'txt'):
-                            proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{contract_text}"
-                        else:
-                            proof_input = [build_proof_prompt(), file_part]
-                        proof_response = model.generate_content(proof_input, stream=True)
-
-                    def stream_proof():
-                        for chunk in proof_response:
-                            if hasattr(chunk, 'text') and chunk.text:
-                                yield chunk.text
-
-                    proof_text = st.write_stream(stream_proof())
-                except Exception as e:
-                    st.warning(f"{T['proof_fail']}: {e}")
-
-            if full_response_text:
-                analysis_all = full_response_text
-                if proof_text:
-                    analysis_all += "\n\n" + proof_text
+            if analysis_all:
                 st.markdown(sources_md())
                 report_text = analysis_all + "\n\n## " + T["sources_head"] + "\n" + sources_md()
                 result = build_downloads(report_text)
