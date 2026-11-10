@@ -102,7 +102,7 @@ Izmanto tieši šādu virsrakstu struktūru:
 [1-2 teikumos pasaki, vai šo līgumu drīkst parakstīt un kāds ir galvenais risks]
 
 ## 🔴 Kritiski riski
-[Katru punktu numurē ar kodu K1, K2, K3... Formāts: "K1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce sur likumu]]"]
+[Katru punktu numurē ar kodu K1, K2, K3... Formāts: "K1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
 ## 🟡 Brīdinājumi
 [Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
@@ -181,11 +181,6 @@ def load_laws():
             pass
     return "", "nav pieejams"
 
-PROOFREAD_PROMPT = """
-Tu esi ļoti rūpīgs latviešu valodas korektors un līgumu redaktors. Tev ir dots īres līgums. Tavs uzdevums ir atrast VISAS neitrālās rediģēšanas un neuzmanības kļūdas.
-FORMĀTS: Sāc ar virsraksti ## ⚪ Neitrālas piezīmes (korektūra) un numurē N1, N2...
-"""
-
 def build_prompt(base=None):
     laws_text, source = load_laws()
     prompt = base or SYSTEM_PROMPT
@@ -251,4 +246,176 @@ def generate_pretty_docx(analysis_text):
     doc_io.seek(0)
     return doc_io
 
-# PDF un citu palīgfunkciju integrācija paliek nemainīga...
+# PDF ģenerēšanas klase ar garumzīmju un fontu atbalstu
+class PDFReport(FPDF):
+    def header(self):
+        self.set_fill_color(30, 41, 59)
+        self.rect(0, 0, 210, 15, 'F')
+        self.set_font("DejaVu", "B", 10)
+        self.set_text_color(255, 255, 255)
+        self.set_xy(10, 4)
+        self.cell(0, 8, "JURIDISKAIS ATZINUMS — ĪRES LĪGUMA ANALĪZE", 0, 0, "L")
+        self.ln(20)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("DejaVu", "", 8)
+        self.set_text_color(150, 150, 150)
+        self.cell(0, 10, f"Lappuse {self.page_no()} | AI Juridiskais Asistents", 0, 0, "C")
+
+def generate_pretty_pdf(analysis_text):
+    font_path = os.path.join("/tmp", "DejaVuSans.ttf")
+    font_bold_path = os.path.join("/tmp", "DejaVuSans-Bold.ttf")
+    
+    if not os.path.exists(font_path):
+        try:
+            urllib.request.urlretrieve("https://github.com/dejavu-fonts/dejavu-fonts-ttf/raw/master/ttf/DejaVuSans.ttf", font_path)
+        except Exception:
+            pass
+            
+    if not os.path.exists(font_bold_path):
+        try:
+            urllib.request.urlretrieve("https://github.com/dejavu-fonts/dejavu-fonts-ttf/raw/master/ttf/DejaVuSans-Bold.ttf", font_bold_path)
+        except Exception:
+            pass
+
+    pdf = PDFReport()
+    font_available = os.path.exists(font_path) and os.path.exists(font_bold_path)
+    if font_available:
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
+    
+    pdf.add_page()
+    
+    if font_available:
+        pdf.set_font("DejaVu", "B", 14)
+    else:
+        pdf.set_font("Helvetica", "B", 14)
+        
+    pdf.set_text_color(30, 41, 59)
+    pdf.cell(0, 10, "Dzīvojamās telpas īres līguma juridiskā atskaite", ln=True)
+    
+    if font_available:
+        pdf.set_font("DejaVu", "", 9)
+    else:
+        pdf.set_font("Helvetica", "", 9)
+        
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}", ln=True)
+    pdf.ln(5)
+    
+    lines = analysis_text.split('\n')
+    for line in lines:
+        line_str = line.strip()
+        if not line_str:
+            pdf.ln(3)
+            continue
+            
+        if line_str.startswith("#"):
+            pdf.ln(4)
+            if font_available:
+                pdf.set_font("DejaVu", "B", 11)
+            else:
+                pdf.set_font("Helvetica", "B", 11)
+            pdf.set_text_color(30, 41, 59)
+            pdf.cell(0, 7, strip_emoji(line_str).replace("#", "").strip(), ln=True)
+            if font_available:
+                pdf.set_font("DejaVu", "", 9.5)
+            else:
+                pdf.set_font("Helvetica", "", 9.5)
+            pdf.set_text_color(40, 40, 40)
+        else:
+            pdf.multi_cell(0, 5.5, line_str)
+            
+    pdf_buffer = io.BytesIO()
+    pdf_bytes = pdf.output(dest='S')
+    if isinstance(pdf_bytes, str):
+        pdf_bytes = pdf_bytes.encode('latin1', errors='replace')
+    pdf_buffer.write(pdf_bytes)
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+# ---------------------------------------------------------------
+# ANALĪZES POGA UN IZPILDE (ATJAUNOTA)
+# ---------------------------------------------------------------
+analyze_button = st.button("🔍 Analizēt līgumu", type="primary")
+
+if analyze_button:
+    if not api_key:
+        st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
+    elif uploaded_file is None:
+        st.error("⚠️ Lūdzu, augšupielādē līguma failu!")
+    else:
+        try:
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            file_extension = uploaded_file.name.split('.')[-1].lower()
+            final_prompt, law_source_msg = build_prompt()
+            
+            with st.spinner("🔄 Ielādēju likumus un veicu padziļinātu līguma analīzi..."):
+                if file_extension == 'docx':
+                    bytes_data = uploaded_file.getvalue()
+                    target_stream = io.BytesIO(bytes_data)
+                    doc = docx.Document(target_stream)
+                    contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
+                    
+                    full_prompt = f"{final_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                    response = model.generate_content(full_prompt, stream=True)
+                    
+                else:
+                    file_bytes = uploaded_file.getvalue()
+                    mime_type_map = {
+                        'pdf': 'application/pdf',
+                        'png': 'image/png',
+                        'jpg': 'image/jpeg',
+                        'jpeg': 'image/jpeg'
+                    }
+                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
+                    
+                    file_part = {
+                        'mime_type': mime_type,
+                        'data': file_bytes
+                    }
+                    
+                    response = model.generate_content([final_prompt, file_part], stream=True)
+            
+            st.markdown(f"ℹ️ *Juridiskā bāze: {law_source_msg}*")
+            st.markdown("### 📋 Analīzes rezultāts reāllaikā:")
+            
+            def stream_and_collect():
+                for chunk in response:
+                    if hasattr(chunk, 'text') and chunk.text:
+                        yield chunk.text
+
+            full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
+            
+            if full_response_text:
+                st.success("✅ Analīze veiksmīgi pabeigta!")
+                st.markdown("---")
+                st.markdown(SOURCES_MD)
+                st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    docx_file = generate_pretty_docx(full_response_text)
+                    st.download_button(
+                        label="📄 Lejupielādēt Word (.docx)",
+                        data=docx_file,
+                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        use_container_width=True
+                    )
+                    
+                with col2:
+                    pdf_file = generate_pretty_pdf(full_response_text)
+                    st.download_button(
+                        label="📄 Lejupielādēt PDF (.pdf)",
+                        data=pdf_file,
+                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True
+                    )
+                    
+        except Exception as e:
+            st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
