@@ -240,6 +240,30 @@ if T["up_browse"] != TR["English"]["up_browse"]:
         unsafe_allow_html=True,
     )
 
+# Tēma: 🖥️ automātiski (Streamlit/ierīces tēma), ☀️ gaišā vai 🌙 tumšā
+theme = st.sidebar.radio("🎨", ["🖥️", "☀️", "🌙"], horizontal=True, key="theme_choice")
+if theme != "🖥️":
+    _dark = theme == "🌙"
+    _bg, _bg2, _fg, _border = (
+        ("#0e1117", "#1a1c24", "#fafafa", "#3a3d4a") if _dark else ("#ffffff", "#f0f2f6", "#1f2430", "#d0d4dc")
+    )
+    _link = "#6cb4ff" if _dark else "#0b5cd5"
+    st.markdown(
+        "<style>"
+        f".stApp, [data-testid='stHeader'] {{ background: {_bg} !important; }}"
+        f"[data-testid='stSidebar'], [data-testid='stSidebar'] > div {{ background: {_bg2} !important; }}"
+        f".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small {{ color: {_fg} !important; }}"
+        ".stApp button p { color: inherit !important; }"
+        f".stApp a {{ color: {_link} !important; }}"
+        "[data-testid='stAlert'] { background: rgba(128,128,128,0.18) !important; }"
+        f"[data-testid='stAlert'] * {{ color: {_fg} !important; }}"
+        f".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'] {{ background: {_bg2} !important; color: {_fg} !important; }}"
+        f"[data-testid='stFileUploaderDropzoneInstructions'] * {{ color: {_fg} !important; }}"
+        f"[data-testid='stExpander'] {{ border-color: {_border} !important; }}"
+        f"[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * {{ color: {_fg} !important; }}"
+        "</style>",
+        unsafe_allow_html=True,
+    )
 st.title(T["title"])
 st.markdown(T["subtitle"])
 
@@ -768,7 +792,59 @@ def build_downloads(report_text):
             result["pdf_err"] = str(e)
     return result
 
+# ---------------------------------------------------------------
+# Kopsavilkuma panelis (kartītes) un sakļaujamās sadaļas
+# ---------------------------------------------------------------
+SECTION_CODES = {"🔴": "K", "🟡": "B", "🔵": "A", "⚪": "N"}
 
+
+def split_sections(text):
+    """Sadala analīzi sadaļās pēc virsrakstiem '## ...'."""
+    sections, head, body = [], None, []
+    for line in text.split("\n"):
+        if line.startswith("## "):
+            sections.append((head, "\n".join(body)))
+            head, body = line[3:].strip(), []
+        else:
+            body.append(line)
+    sections.append((head, "\n".join(body)))
+    return [(h, b) for h, b in sections if h or b.strip()]
+
+
+def count_items(head, body):
+    """Saskaita punktus (K1, B1, A1, N1...) sadaļā pēc virsraksta emocijzīmes."""
+    for emoji, letter in SECTION_CODES.items():
+        if head and emoji in head:
+            return len(re.findall(r"(?m)^\s*(?:[-*•]\s*)?[*_]*" + letter + r"\d+\b", body))
+    return 0
+
+
+def render_dashboard(text):
+    totals = {"🔴": 0, "🟡": 0, "🔵": 0}
+    for head, body in split_sections(text):
+        for emoji in totals:
+            if head and emoji in head:
+                totals[emoji] += count_items(head, body)
+    cards = [("🔴", "#dc2626", T["h_crit"]), ("🟡", "#d97706", T["h_warn"]), ("🔵", "#2563eb", T["h_border"])]
+    for col, (emoji, color, label) in zip(st.columns(3), cards):
+        col.markdown(
+            f'<div style="border-left:6px solid {color};background:{color}22;border-radius:10px;padding:12px 14px;">'
+            f'<div style="font-size:2rem;font-weight:700;color:{color};line-height:1.1">{totals[emoji]}</div>'
+            f'<div style="font-size:0.85rem;opacity:0.9">{label}</div></div>',
+            unsafe_allow_html=True,
+        )
+
+
+def render_sections(text):
+    """Katra sadaļa ir sakļaujama. Pēc noklusējuma atvērtas: kopējais novērtējums, kritiskie, brīdinājumi."""
+    for head, body in split_sections(text):
+        if head is None:
+            st.markdown(body)
+            continue
+        n = count_items(head, body)
+        label = head + (f" ({n})" if n else "")
+        with st.expander(label, expanded=any(e in head for e in ("📊", "🔴", "🟡"))):
+            st.markdown(body)
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -913,12 +989,14 @@ if analyze_button:
 
         except Exception as e:
             st.error(f"{T['err_process']}: {str(e)}")
+        if "result" in st.session_state:
+            st.rerun()
 
 elif "result" in st.session_state:
     # Lapa pārlādējās (piem., nospiesta lejupielādes poga): parāda saglabāto analīzi
     saved = st.session_state["result"]
     st.caption(f"{T['law_source']}: {saved['laws_source']}")
-    st.markdown(T["result_saved"])
-    st.markdown(saved["analysis"])
+    render_dashboard(saved["analysis"])
+    render_sections(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
