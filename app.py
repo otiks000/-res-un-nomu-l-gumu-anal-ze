@@ -1217,6 +1217,192 @@ def law_tip_map(text):
 def inject_law_tips(text):
     payload = json.dumps(law_tip_map(text), ensure_ascii=False).replace("</", "<\\/")
     components.html(LAW_TIP_JS.replace("__MAP__", payload), height=0)
+# ---------------------------------------------------------------
+# Soda naudas un procentu kalkulators (bez Gemini izsaukumiem)
+# Likumi: Civillikums 1716. (līgumsoda griesti 10%), 1717. (samērīgums), 1722. (līgumsods un procenti),
+# 1724.1 (tiesa samazina pārmērīgu līgumsodu), 1764. un 1765. (procenti, likumiskie procenti 6% gadā)
+# ---------------------------------------------------------------
+RATE_DAY_RE = re.compile(
+    r"(\d+(?:[.,]\d+)?)\s*(?:%|procent\w*)[^.;\n%]{0,160}?(?:par\s+katru\s+(?:\w+\s+){0,3}?dienu|dienā)",
+    re.IGNORECASE,
+)
+RENT_NUM_FIRST_RE = re.compile(r"īres\s+maks\w*[^\n]{0,120}?(\d[\d ]*(?:[.,]\d{1,2})?)\s*(?:EUR|eiro|€)", re.IGNORECASE)
+RENT_CUR_FIRST_RE = re.compile(r"īres\s+maks\w*[^\n]{0,120}?(?:EUR|€)\s*(\d[\d ]*(?:[.,]\d{1,2})?)", re.IGNORECASE)
+CAP_RE = re.compile(
+    r"(?:ne\s+vairāk\s+kā|ne\s+vairāk\s+par|nepārsniedz\w*|līdz)\s+(?:\w+\s+){0,3}?10\s*(?:\(desmit\)\s*)?(?:%|procent)",
+    re.IGNORECASE,
+)
+
+
+def _to_float(raw):
+    try:
+        return float(raw.replace(" ", "").replace(",", "."))
+    except Exception:
+        return None
+
+
+def extract_terms(text):
+    """Mēģina no līguma teksta nolasīt līgumsoda likmi dienā, īres maksu un 10% griestus (bez Gemini)."""
+    terms = {}
+    m = RATE_DAY_RE.search(text)
+    if m:
+        rate = _to_float(m.group(1))
+        if rate and 0 < rate <= 100:
+            terms["rate_day"] = rate
+    for rx in (RENT_NUM_FIRST_RE, RENT_CUR_FIRST_RE):
+        m = rx.search(text)
+        if m:
+            rent = _to_float(m.group(1))
+            if rent and rent > 0:
+                terms["rent"] = rent
+                break
+    if CAP_RE.search(text):
+        terms["cap"] = True
+    return terms
+
+
+def eur(x):
+    return (f"{x:,.2f}".replace(",", " ").replace(".", ",")) + " EUR"
+
+
+def pct(x):
+    return f"{x:g}".replace(".", ",")
+
+
+def _cl(n, text=None):
+    return f"[{text or f'Civillikuma {n}. pants'}]({LAW_LINKS['CL']}#p{n})"
+
+
+def penalty_calc(principal, days, rate, daily, cap_declared):
+    """Aprēķins un vērtējums. daily=True: likme % dienā (līgumsods); False: likme % gadā (nokavējuma procenti)."""
+    statutory = principal * 0.06 * days / 365          # likumiskie procenti 6% gadā (CL 1765.)
+    cap = principal * 0.10                             # līgumsoda griesti (CL 1716. 3. daļa)
+    if daily:
+        total = principal * rate / 100 * days
+        annual = rate * 365
+    else:
+        total = principal * rate / 100 * days / 365
+        annual = rate
+    multiple = annual / 6
+    res = {"total": total, "cap": cap, "statutory": statutory, "annual": annual, "multiple": multiple,
+           "daily": daily, "excess": 0.0, "lawful": total, "days_to_cap": None, "claimable": None}
+
+    if daily:
+        rate_day = rate
+        res["days_to_cap"] = 10 / rate_day
+        res["lawful"] = min(total, cap)
+        res["excess"] = max(0.0, total - cap)
+        res["claimable"] = max(0.0, res["lawful"] - statutory)      # CL 1722.
+        if total > cap + 0.005:
+            res["level"] = "error"
+            res["title"] = "🔴 Pārsniedz likumā noteikto"
+            res["messages"] = [
+                f"Pēc līguma aprēķinātais līgumsods ({eur(total)}) pārsniedz 10% no parāda ({eur(cap)}). "
+                f"Saskaņā ar {_cl(1716, 'Civillikuma 1716. panta')} trešo daļu līgumsods par saistības nepienācīgu izpildi (kavējumu) "
+                f"kopumā nevar pārsniegt 10% no pamatparāda. Pārsnieguma daļa ({eur(res['excess'])}) nav prasāma."
+            ]
+            return res
+        msgs = []
+        if not cap_declared:
+            msgs.append(
+                f"Līgumā nav noteikts kopējais līgumsoda griesti. Ar likmi {pct(rate)}% dienā 10% robeža tiks sasniegta pēc "
+                f"{res['days_to_cap']:.0f} dienām. Saskaņā ar {_cl(1716, 'Civillikuma 1716. panta')} līgumā jābūt norādītam, ka līgumsods kopumā nepārsniedz 10%."
+            )
+        if rate > 0.1:
+            msgs.append(
+                f"Likme {pct(rate)}% dienā atbilst ~{annual:.0f}% gadā, t.i. {multiple:.1f} reižu vairāk nekā likumiskie procenti "
+                f"(6% gadā, {_cl(1765)}). Likums neparedz konkrētu dienas likmes robežu, bet tiesa samazina pārmērīgu līgumsodu "
+                f"({_cl(1717)}, {_cl(1724, 'Civillikuma 1724.¹ pants')}). 0,1% dienā ir biežāk sastopams samērīgs līmenis (informatīvs orientieris, nav likuma norma)."
+            )
+        if msgs:
+            res["level"] = "warning"
+            res["title"] = "🟡 Uzmanību"
+            res["messages"] = msgs
+        else:
+            res["level"] = "success"
+            res["title"] = "🟢 Atbilst normām"
+            res["messages"] = [
+                f"Līgumsods ({eur(total)}) nepārsniedz 10% griestus ({eur(cap)}) saskaņā ar {_cl(1716, 'Civillikuma 1716. panta')}, līgumā griesti ir noteikti, "
+                f"un likme nepārsniedz 0,1% dienā."
+            ]
+        return res
+
+    # nokavējuma procenti (% gadā)
+    if rate <= 6:
+        res["level"], res["title"] = "success", "🟢 Atbilst normām"
+        res["messages"] = [f"Likme ({pct(rate)}% gadā) nepārsniedz likumiskos procentus (6% gadā, {_cl(1765)})."]
+    elif rate <= 36.5:
+        res["level"], res["title"] = "warning", "🟡 Uzmanību"
+        res["messages"] = [
+            f"Likme ({pct(rate)}% gadā) ir {multiple:.1f} reižu augstāka par likumiskajiem procentiem (6% gadā, {_cl(1765)}). "
+            f"Civillikums neparedz konkrētu augšējo robežu, bet nesamērīgi un godīgai darījumu praksei neatbilstoši procenti "
+            f"ir prettiesiski ({_cl(1764)}, {_cl(1717)})."
+        ]
+    else:
+        res["level"], res["title"] = "error", "🔴 Risks"
+        res["messages"] = [
+            f"Likme ({pct(rate)}% gadā, ~{pct(round(rate / 365, 2))}% dienā) ir ļoti augsta ({multiple:.1f} reizes augstāka par likumiskajiem "
+            f"procentiem) un var tikt atzīta par nesamērīgu un prettiesisku ({_cl(1764)}, {_cl(1717)})."
+        ]
+    return res
+
+
+def render_penalty_calculator():
+    """Interaktīvs kalkulators. Lauki tiek aizpildīti no līguma teksta, ja tas tika atrasts."""
+    terms = st.session_state.get("terms") or {}
+    sig = f"{terms.get('rent')}_{terms.get('rate_day')}_{terms.get('cap')}"
+    with st.expander("🧮 Soda naudas un procentu kalkulators", expanded=False):
+        if terms:
+            st.caption("Lauki aizpildīti automātiski no līguma teksta (ja tas tika atrasts). Pārbaudiet un, ja vajag, izlabojiet.")
+        kind = st.radio(
+            "Sankcijas veids",
+            ["Līgumsods / nokavējuma nauda (% dienā)", "Nokavējuma procenti (% gadā)"],
+            key=f"calc_kind_{sig}",
+        )
+        daily = kind.startswith("Līgumsods")
+        c1, c2, c3 = st.columns(3)
+        principal = c1.number_input(
+            "Parāda summa / īres maksa (EUR)", min_value=0.0, value=float(terms.get("rent") or 500.0),
+            step=10.0, format="%.2f", key=f"calc_p_{sig}",
+        )
+        days = c2.number_input("Kavēto dienu skaits", min_value=0, value=30, step=1, key=f"calc_d_{sig}")
+        rate = c3.number_input(
+            "Likme līgumā (% dienā)" if daily else "Likme līgumā (% gadā)", min_value=0.0,
+            value=float(terms.get("rate_day") or 0.1) if daily else 6.0,
+            step=0.01, format="%.3f", key=f"calc_r_{sig}_{int(daily)}",
+        )
+        cap_declared = True
+        if daily:
+            cap_declared = st.checkbox(
+                "Līgumā ir noteikts kopējais līgumsoda griesti (ne vairāk kā 10% no parāda)",
+                value=bool(terms.get("cap")), key=f"calc_cap_{sig}",
+            )
+        if principal <= 0 or days <= 0 or rate <= 0:
+            st.info("Ievadiet summu, dienu skaitu un likmi, lai redzētu aprēķinu.")
+            return
+
+        r = penalty_calc(principal, days, rate, daily, cap_declared)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Pēc līguma noteikumiem", eur(r["total"]))
+        if daily:
+            m2.metric("Likumā pieļaujamais maksimums (10%)", eur(r["cap"]))
+        else:
+            m2.metric("Starpība pret likumiskajiem", eur(max(0.0, r["total"] - r["statutory"])))
+        m3.metric("Likumiskie procenti (6% gadā)", eur(r["statutory"]))
+
+        body = "\n\n".join(f"- {m}" for m in r["messages"])
+        {"success": st.success, "warning": st.warning, "error": st.error}[r["level"]](f"**{r['title']}**\n\n{body}")
+
+        if daily:
+            st.markdown(
+                f"**Ja izīrētājs prasa gan likumiskos procentus, gan līgumsodu** (saskaņā ar {_cl(1722, 'Civillikuma 1722. pantu')}): līgumsodu var prasīt tikai "
+                f"tādā apmērā, kādā tas pārsniedz prasīto procentu summu ({eur(r['statutory'])}). "
+                f"Līgumsods šajā gadījumā: ne vairāk kā **{eur(r['claimable'])}**."
+            )
+        st.caption(
+            "Aprēķins: vienkāršie procenti (bez procentu procentiem). Informatīvs aprēķins, nav juridiska konsultācija. "
+            "Ja izīrētājs ir uzņēmējs vai līgums ir patērētāju līgums, var būt papildu ierobežojumi."
+        )
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1289,6 +1475,7 @@ if analyze_button:
                     )
             else:
                 kind, content = file_extension, uploaded_file.getvalue()
+            st.session_state["terms"] = extract_terms(content) if kind == 'txt' else {}
 
             _t0 = datetime.datetime.now()
             with st.spinner(T["spinner_analysis"]):
@@ -1328,3 +1515,5 @@ elif "result" in st.session_state:
     inject_law_tips(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
+
+render_penalty_calculator()
