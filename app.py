@@ -153,6 +153,73 @@ for _l, _extra in TR_EXTRA.items():
     TR[_l].update(_extra)
 
 # ---------------------------------------------------------------
+# Tulkojumi: pārējais saskarnes teksts (testa režīms, vēsture, pantu skaidrojumi, avoti)
+# ---------------------------------------------------------------
+TR_NEW2 = {
+    "Latviešu": {
+        "test_mode_label": "🧪 Testa režīms (bez Gemini, 0 €): iebūvēts paraugs",
+        "force_new_label": "♻️ Jauna analīze (neizmantot kešu)",
+        "hist_label": "📜 Sesijas vēsture (iepriekšējās analīzes šajā sesijā)",
+        "hist_test": "Testa paraugs",
+        "hist_pasted": "Ielīmēts teksts",
+        "law_head": "📖 Pantu skaidrojumi (pieskarieties pantam)",
+        "law_lv_note": "",
+        "law_means": "Ko tas nozīmē īrniekam",
+        "law_official": "Oficiālais teksts",
+        "law_none": "Skaidrojums nav pieejams. Atveriet pilno tekstu likumi.lv.",
+        "law_open": "Atvērt likumi.lv",
+        "law_disclaimer": "Informatīvs skaidrojums pēc likuma teksta, nav juridiska konsultācija.",
+        "test_laws_source": "🧪 TESTA REŽĪMS: iebūvēts paraugs, Gemini netika izsaukts (0.00$)",
+        "test_note": "🧪 Testa režīms: iebūvēts paraugs, Gemini netika izsaukts (0.00$).",
+        "src_auto": "likumi.lv (automātiski, {n} no {m} likumiem)",
+        "src_backup": "rezerves fails likumi.txt",
+        "src_none": "nav pieejams",
+        "src_failed": "neizdevās",
+    },
+    "English": {
+        "test_mode_label": "🧪 Test mode (no Gemini, €0): built-in sample",
+        "force_new_label": "♻️ New analysis (skip cache)",
+        "hist_label": "📜 Session history (earlier analyses in this session)",
+        "hist_test": "Test sample",
+        "hist_pasted": "Pasted text",
+        "law_head": "📖 Article explanations (tap an article)",
+        "law_lv_note": "The explanations and the official text are in Latvian.",
+        "law_means": "What it means for the tenant",
+        "law_official": "Official text",
+        "law_none": "No explanation available. Open the full text on likumi.lv.",
+        "law_open": "Open on likumi.lv",
+        "law_disclaimer": "Informational explanation based on the text of the law, not legal advice.",
+        "test_laws_source": "🧪 TEST MODE: built-in sample, Gemini was not called ($0.00)",
+        "test_note": "🧪 Test mode: built-in sample, Gemini was not called ($0.00).",
+        "src_auto": "likumi.lv (automatic, {n} of {m} laws)",
+        "src_backup": "backup file likumi.txt",
+        "src_none": "not available",
+        "src_failed": "failed",
+    },
+    "Русский": {
+        "test_mode_label": "🧪 Тестовый режим (без Gemini, 0 €): встроенный образец",
+        "force_new_label": "♻️ Новый анализ (не использовать кэш)",
+        "hist_label": "📜 История сессии (предыдущие анализы в этой сессии)",
+        "hist_test": "Тестовый образец",
+        "hist_pasted": "Вставленный текст",
+        "law_head": "📖 Пояснения к статьям (нажмите на статью)",
+        "law_lv_note": "Пояснения и официальный текст приведены на латышском языке.",
+        "law_means": "Что это значит для арендатора",
+        "law_official": "Официальный текст",
+        "law_none": "Пояснение недоступно. Откройте полный текст на likumi.lv.",
+        "law_open": "Открыть на likumi.lv",
+        "law_disclaimer": "Информационное пояснение по тексту закона, не юридическая консультация.",
+        "test_laws_source": "🧪 ТЕСТОВЫЙ РЕЖИМ: встроенный образец, Gemini не вызывался ($0.00)",
+        "test_note": "🧪 Тестовый режим: встроенный образец, Gemini не вызывался ($0.00).",
+        "src_auto": "likumi.lv (автоматически, {n} из {m} законов)",
+        "src_backup": "резервный файл likumi.txt",
+        "src_none": "недоступно",
+        "src_failed": "не удалось",
+    },
+}
+for _l, _extra in TR_NEW2.items():
+    TR[_l].update(_extra)
+# ---------------------------------------------------------------
 # Tulkojumi: sesija, kalkulators un čats (latviešu, angļu, krievu). Citām valodām tos iztulko Gemini
 # (jo TR["English"] ir pamats tulkošanai). Veidnēs {vārdi} ir vietturi, kas jāsaglabā.
 # ---------------------------------------------------------------
@@ -1113,8 +1180,8 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 # Poga līguma analīzei
 # ---------------------------------------------------------------
-test_mode = st.checkbox("🧪 Testa režīms (bez Gemini, 0 €): iebūvēts paraugs / Test mode (no Gemini)", key="test_mode")
-force_new = st.checkbox("♻️ Jauna analīze (neizmantot kešu) / New analysis (skip cache)", key="force_new")
+test_mode = st.checkbox(T["test_mode_label"], key="test_mode")
+force_new = st.checkbox(T["force_new_label"], key="force_new")
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
 
@@ -2257,6 +2324,112 @@ def render_chat_widget():
 
     components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
     inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(shown(m) for m in mine))
+# ---------------------------------------------------------------
+# Valodas maiņa pēc analīzes: virsraksti, pantu nosaukumi, avoti un atskaites tiek pārslēgti bez jaunas analīzes (bez Gemini)
+# Pārraksta iepriekšējās render_history_picker, render_law_help un law_tip_map definīcijas
+# ---------------------------------------------------------------
+HEAD_EMOJI_KEYS = {"📊": "h_overall", "🔴": "h_crit", "🟡": "h_warn", "🟢": "h_recs", "🔵": "h_border", "⚪": "h_neutral"}
+
+
+def localize_analysis(text):
+    """Sadaļu virsrakstus un pantu atsauču nosaukumus pārslēdz uz pašreizējo saskarnes valodu."""
+    out = []
+    for line in text.split("\n"):
+        if line.startswith("## "):
+            for emoji, key in HEAD_EMOJI_KEYS.items():
+                if emoji in line:
+                    line = f"## {emoji} {T[key]}"
+                    break
+        out.append(line)
+
+    def _relabel(m):
+        form = "cite_dtil" if m.group(3) == "322216" else "cite_cl"
+        return f"[{_label(form, m.group(4))}]({m.group(2)})"
+
+    return LINK_RE.sub(_relabel, "\n".join(out))
+
+
+def localize_source(s):
+    """Likumu avota apraksts pašreizējā valodā."""
+    if s.startswith("🧪"):
+        return T["test_laws_source"]
+    s = re.sub(r"likumi\.lv \(automātiski, (\d+) no (\d+) likumiem\)",
+               lambda m: tfmt("src_auto", n=m.group(1), m=m.group(2)), s)
+    return (s.replace("rezerves fails likumi.txt", T["src_backup"])
+             .replace("nav pieejams", T["src_none"]).replace("neizdevās", T["src_failed"]))
+
+
+def render_history_picker():
+    """Ja šajā sesijā ir vairākas analīzes, ļauj pārslēgties starp tām (bez jauna Gemini izsaukuma)."""
+    hist = st.session_state.get("history", [])
+    if len(hist) < 2:
+        return
+
+    def _pick():
+        session_select(st.session_state["history_pick"])
+
+    def _name(h):
+        return {"Testa paraugs": T["hist_test"], "Ielīmēts teksts": T["hist_pasted"]}.get(h["label"], h["label"])
+
+    st.selectbox(
+        T["hist_label"],
+        options=list(range(len(hist))),
+        format_func=lambda i: f"{hist[i]['time']} · {'🧪' if hist[i]['mode'] == 'test' else '📄'} {_name(hist[i])}",
+        key="history_pick",
+        on_change=_pick,
+    )
+
+
+def render_law_help(text):
+    """Pieskaramas kartes ar skaidrojumu katram analīzē minētajam pantam (izvēlētajā saskarnes valodā)."""
+    seen = []
+    for m in LINK_RE.finditer(text):
+        key = ("DTIL" if m.group(3) == "322216" else "CL", int(m.group(4)))
+        if key not in seen:
+            seen.append(key)
+    if not seen:
+        return
+    st.markdown("### " + T["law_head"])
+    if T["law_lv_note"]:
+        st.caption(T["law_lv_note"])
+    cols = st.columns(2)
+    for i, (code, num) in enumerate(seen):
+        label = _label("cite_dtil" if code == "DTIL" else "cite_cl", num)
+        with cols[i % 2]:
+            box = st.popover(label, use_container_width=True) if hasattr(st, "popover") else st.expander(label)
+            with box:
+                note = ARTICLE_NOTES.get((code, num))
+                excerpt = article_excerpt(code, num, None)
+                if note:
+                    st.markdown(f"**{T['law_means']}:** " + note)
+                if excerpt:
+                    st.markdown(f"**{T['law_official']}:** " + excerpt)
+                if not note and not excerpt:
+                    st.markdown(T["law_none"])
+                st.markdown(f"[{T['law_open']}]({LAW_LINKS[code]}#p{num})")
+                st.caption(T["law_disclaimer"])
+
+
+def law_tip_map(text):
+    """Saliek pilnu skaidrojuma tekstu (bez saīsinājumiem) katram analīzē minētajam pantam (ilgā turēšana / uzvešana)."""
+    tips = {}
+    for m in LINK_RE.finditer(text):
+        code = "DTIL" if m.group(3) == "322216" else "CL"
+        num = int(m.group(4))
+        key = f"{m.group(3)}#p{num}"
+        if key in tips:
+            continue
+        parts = [_label("cite_dtil" if code == "DTIL" else "cite_cl", num)]
+        note = ARTICLE_NOTES.get((code, num))
+        full = article_excerpt(code, num, None)
+        if note:
+            parts.append(f"{T['law_means']}: " + note)
+        if full:
+            parts.append(f"{T['law_official']}: " + full)
+        if not note and not full:
+            parts.append(T["law_none"])
+        tips[key] = "\n\n".join(parts)
+    return tips
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -2425,13 +2598,21 @@ if analyze_button:
             st.rerun()
 if "result" in st.session_state:
     # Parāda saglabāto analīzi (arī pēc lejupielādes, citu elementu izmantošanas vai kļūdas)
-    saved = st.session_state["result"]
+        saved = st.session_state["result"]
+    loc = localize_analysis(saved["analysis"])              # virsraksti un pantu nosaukumi pašreizējā valodā
+    saved.setdefault("lang", T["report_lang_name"])
+    if saved["lang"] != T["report_lang_name"]:              # valoda mainīta: Word un PDF tiek izveidoti no jauna
+        saved.update(build_downloads(loc + "\n\n## " + T["sources_head"] + "\n" + sources_md()))
+        saved["lang"] = T["report_lang_name"]
     render_history_picker()
-    st.caption(f"{T['law_source']}: {saved['laws_source']}")
-    render_dashboard(saved["analysis"])
-    render_sections(saved["analysis"])
-    render_law_help(saved["analysis"])
-    inject_law_tips(saved["analysis"])
+    st.caption(f"{T['law_source']}: {localize_source(saved['laws_source'])}")
+    note = saved.get("cache_note", "")
+    if note:
+        st.info(T["test_note"] if note.startswith("🧪") else note)
+    render_dashboard(loc)
+    render_sections(loc)
+    render_law_help(loc)
+    inject_law_tips(loc)
     st.markdown(sources_md())
     render_downloads(saved)
 render_chat_widget()
