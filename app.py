@@ -129,4 +129,13 @@ def generate_pretty_pdf(analysis_text):
 
     pdf = PDFReport()
     pdf.dejavu_loaded = os.path.exists(font_path) and os.path.exists(font_bold_path)
-    pdf
+    pdf.add_page()
+    
+    if pdf.dejavu_loaded:
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
+        pdf.set_font("DejaVu", "B", 14)
+    else:
+        pdf.set_font("Helvetica", "B", 14)
+        
+    pdf.set_
