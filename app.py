@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 # Lapas konfigurācija
 # ---------------------------------------------------------------
 st.set_page_config(
-    page_title="Dzīvokļu un Nomas Līgumu AI Skeneris",
+    page_title="Īres un nomas līgumu analizētājs",
     page_icon="🏠",
     layout="centered"
 )
@@ -324,13 +324,13 @@ with st.sidebar:
 #   result/terms - aktīvās analīzes rezultāts un līguma dati (tos rāda tālāk esošais kods)
 #   calc_store   - kalkulatora ievades dati katrai analīzei atsevišķi
 # ---------------------------------------------------------------
-def session_add(result, terms, label, mode):
+def session_add(result, terms, label, mode, contract_text=""):
     """Pievieno jaunu analīzi vēsturei un padara to par aktīvo."""
     hist = st.session_state.setdefault("history", [])
     now = datetime.datetime.now()
     entry = {
         "id": now.strftime("%H%M%S%f"), "time": now.strftime("%H:%M:%S"),
-        "label": label, "mode": mode, "result": result, "terms": terms or {},
+        "label": label, "mode": mode, "result": result, "terms": terms or {}, "contract_text": contract_text,
     }
     hist.append(entry)
     del hist[:-10]                                   # glabā pēdējās 10 analīzes
@@ -1548,6 +1548,129 @@ def render_calculator():
             "Aprēķins: vienkāršie procenti (bez procentu procentiem). Informatīvs aprēķins, nav juridiska konsultācija. "
             "Ja izīrētājs ir uzņēmējs vai līgums ir patērētāju līgums, var būt papildu ierobežojumi."
         )
+# ---------------------------------------------------------------
+# Čats ar līgumu (testa režīmā bez Gemini; reālajā režīmā ar līguma kontekstu)
+# Ziņas glabājas st.session_state["messages"]; katra ziņa pieder konkrētai analīzei (entry)
+# ---------------------------------------------------------------
+import unicodedata
+
+CHAT_SYSTEM = (
+    "Tu esi Latvijas īres tiesību palīgs. Atbildi uz lietotāja jautājumu par zemāk doto līguma tekstu un tā analīzi. "
+    "Noteikumi: atbildi īsi un vienkārši latviešu valodā (ja lietotājs raksta citā valodā, atbildi tajā); "
+    "balsties tikai uz līguma tekstu un analīzi; norādi līguma punkta numuru; ja līgumā atbildes nav, to pasaki un neizdomā; "
+    "tas ir informatīvs skaidrojums, nevis juridiska konsultācija. "
+    "Atsauces uz likumiem raksti tikai formātā [[DTIL 12]] vai [[CL 2174]] un tikai tad, ja esi pārliecināts par panta numuru."
+)
+
+# (atslēgvārdu saknes bez garumzīmēm, atbilde). Atbilde ar [[DTIL 27]] atsaucēm kļūst par saitēm.
+MOCK_ANSWERS = [
+    (("majdzivniek", "dzivniek", "suns", "suni", "kakis", "kaki", "kaku", "kakus"),
+     "🧪 **Mājdzīvnieki:** šajā līgumā (6. sadaļa) nav atrunāti noteikumi par mājdzīvnieku turēšanu. Tāpēc nav skaidrs, vai suni vai kaķi "
+     "drīkst turēt, kas atbild par bojājumiem un kā tiek risināti trokšņa vai tīrības strīdi. Ieteikums: pievienot punktu, piemēram, "
+     "„Īrnieks drīkst turēt vienu mājdzīvnieku ar izīrētāja rakstveida piekrišanu un atbild par tā radītajiem bojājumiem.” "
+     "Vispārīgie lietošanas noteikumi: [[DTIL 17]]."),
+    (("uzteik", "izbeig", "atkap", "beigt ligumu", "iziet no"),
+     "🧪 **Uzteikums:** īrniekam ir tiesības vienpusēji atkāpties no līguma, rakstveidā brīdinot izīrētāju vismaz 1 mēnesi iepriekš "
+     "(līgumiem līdz 10 gadiem) [[DTIL 27]] [[DTIL 20]]. Izīrētājs var izbeigt līgumu tikai likumā noteiktajos gadījumos [[DTIL 21]], "
+     "piemēram, ja īre kavēta vairāk nekā 2 mēnešus [[DTIL 24]]. Pārbaudiet, vai līguma uzteikuma punkts atbilst šiem termiņiem."),
+    (("depozit", "drosibas nauda", "drosibas naud"),
+     "🧪 **Drošības nauda:** tā nedrīkst pārsniegt divu mēnešu īres maksu un jāatdod ne vēlāk kā dienā, kad telpa tiek atbrīvota, "
+     "ja līgumā nav noteikts citādi [[DTIL 12]]. Līguma 4.3. punkts ļauj ieturēt naudu bez saskaņošanas, tāpēc ieteicams prasīt "
+     "abpusēji parakstītu defektu aktu."),
+    (("zemesgramat", "pardod", "pardosan", "ipasnieks mainas", "jauns ipasnieks"),
+     "🧪 **Zemesgrāmata:** ja telpu pārdod, jaunajam īpašniekam līgums ir saistošs tikai tad, ja īres tiesības ir ierakstītas "
+     "zemesgrāmatā [[DTIL 28]] [[DTIL 35]]. Pretējā gadījumā viņš var prasīt telpas atbrīvot 2 mēnešu laikā."),
+    (("ligumsod", "soda nauda", "nokavej", "kavej", "procent"),
+     "🧪 **Līgumsods un procenti:** līgumsods par kavējumu kopumā nevar pārsniegt 10% no parāda [[CL 1716]], un tam jābūt samērīgam "
+     "[[CL 1717]]. Konkrētu summu aprēķiniet kalkulatorā lapas apakšā."),
+    (("ires maks", "ires maksa", "paaugstin", "palielin", "cena"),
+     "🧪 **Īres maksa:** līguma laikā to drīkst mainīt tikai tad, ja līgumā ir paredzēti maksas grozīšanas nosacījumi un kārtība [[DTIL 10]]."),
+    (("remont", "bojajum", "salauz"),
+     "🧪 **Remonti:** līguma 6.1.2. punktā „sīkie remontdarbi” nav definēti, tāpēc var rasties strīds, kurš maksā par sadzīves tehnikas "
+     "vai santehnikas bojājumiem. Izīrētājs savukārt nodrošina telpas lietošanas iespēju visu līguma laiku [[DTIL 18]]."),
+]
+
+
+def _norm(text):
+    """Mazie burti bez garumzīmēm, lai atslēgvārdi darbotos arī bez diakritikas."""
+    t = unicodedata.normalize("NFKD", text.lower())
+    return "".join(c for c in t if not unicodedata.combining(c))
+
+
+def mock_chat_answer(question):
+    """Testa režīma atbilde pēc atslēgvārdiem (bez Gemini, 0.00$)."""
+    q = _norm(question)
+    for keys, answer in MOCK_ANSWERS:
+        if any(k in q for k in keys):
+            return answer
+    return (
+        f"🧪 **Testa atbilde:** jautājums saņemts („{question.strip()}”). Testa režīmā Gemini netiek izsaukts. "
+        "Īstajā režīmā atbildi sagatavotu Gemini, balstoties uz līguma tekstu. "
+        "Pamēģiniet jautāt par mājdzīvniekiem, uzteikumu, drošības naudu, zemesgrāmatu, līgumsodu, īres maksu vai remontiem."
+    )
+
+
+def chat_answer(question, entry, previous):
+    """Reālais režīms: jautājums + līguma konteksts uz Gemini."""
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        "gemini-3.8-flash",
+        generation_config=genai.GenerationConfig(temperature=0.2, max_output_tokens=800),
+    )
+    plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
+    parts = [CHAT_SYSTEM]
+    if entry.get("contract_text"):
+        parts.append("LĪGUMA TEKSTS:\n" + entry["contract_text"])
+    parts.append("IEPRIEKŠ SAGATAVOTĀ ANALĪZE:\n" + plain(entry["result"]["analysis"]))
+    if previous:
+        parts.append("IEPRIEKŠĒJĀ SARUNA:\n" + "\n".join(
+            f"{'Lietotājs' if m['role'] == 'user' else 'Palīgs'}: {plain(m['content'])}" for m in previous[-6:]
+        ))
+    parts.append("JAUTĀJUMS: " + question)
+    return linkify(model.generate_content("\n\n".join(parts)).text)
+
+
+def render_chat():
+    """Čata saskarne zem analīzes rezultātiem."""
+    entry = current_entry()
+    if not entry:
+        return
+    msgs = st.session_state.setdefault("messages", [])
+    mine = [m for m in msgs if m["entry"] == entry["id"]]
+    use_mock = test_mode or entry["mode"] == "test"        # testa analīzei nav īsta līguma, tāpēc vienmēr paraugs
+
+    st.markdown("### 💬 Čats ar līgumu")
+    if use_mock:
+        st.caption("🧪 Testa režīms: atbildes ir iebūvēti paraugi, Gemini netiek izsaukts (0.00$).")
+    else:
+        st.caption("Jautājums tiek sūtīts Gemini kopā ar līguma tekstu un analīzi (neliela API maksa par katru jautājumu).")
+
+    for m in mine:
+        with st.chat_message(m["role"]):
+            st.markdown(m["content"])
+
+    prompt = st.chat_input("Uzdodiet jautājumu par šo līgumu (piem., par mājdzīvniekiem vai uzteikumu)")
+    if prompt:
+        msgs.append({"role": "user", "content": prompt, "entry": entry["id"], "mock": use_mock})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        with st.chat_message("assistant"):
+            if use_mock:
+                answer = linkify(mock_chat_answer(prompt))
+            elif not api_key:
+                answer = "⚠️ Ievadiet Gemini API atslēgu sānu joslā vai ieslēdziet testa režīmu."
+            else:
+                try:
+                    with st.spinner("💬 Gemini sagatavo atbildi..."):
+                        answer = chat_answer(prompt, entry, mine)
+                except Exception as e:
+                    answer = f"❌ Neizdevās sagatavot atbildi: {e}"
+            st.markdown(answer)
+        msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
+        mine = [m for m in msgs if m["entry"] == entry["id"]]
+
+    if mine:   # skaidrojumi uz pantu atsaucēm arī čatā (ilgā turēšana / peles uzvešana)
+        inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(m["content"] for m in mine))
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1706,6 +1829,7 @@ if analyze_button:
                 session_add(
                     result, st.session_state.get("terms", {}),
                     "Ielīmēts teksts" if file_extension == "txt" else uploaded_file.name, "real",
+                    contract_text=content if kind == "txt" else "",
                 )
                 render_downloads(result)
 
@@ -1724,5 +1848,5 @@ if "result" in st.session_state:
     inject_law_tips(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
-
+render_chat()
 render_calculator()
