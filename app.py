@@ -597,7 +597,7 @@ def build_prompt(base=None):
 # ---------------------------------------------------------------
 CACHE_MODEL = "models/gemini-3.8-flash"  # modelim jāatbalsta Context Caching
 CACHE_TTL = datetime.timedelta(hours=24)
-
+USE_CONTEXT_CACHE = False
 
 @st.cache_resource(ttl=datetime.timedelta(hours=23, minutes=30), show_spinner=False)
 def create_prompt_cache(api_key, system_text, laws_block):
