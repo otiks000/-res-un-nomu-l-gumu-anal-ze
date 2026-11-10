@@ -95,8 +95,72 @@ TR = {
     },
 }
 
+TR_EXTRA = {
+    "Latviešu": {
+        "report_lang_name": "latviešu",
+        "h_overall": "Kopējais novērtējums", "h_crit": "Kritiski riski", "h_warn": "Brīdinājumi",
+        "h_recs": "Ieteikumi un labojumi", "h_neutral": "Neitrālas piezīmes (korektūra)",
+        "no_proof_errors": "Korektūras kļūdu netika atrasts.",
+        "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
+        "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
+        "law1_name": "Dzīvojamo telpu īres likums", "law2_name": "Civillikuma ceturtā daļa",
+        "cite_dtil": "Dzīvojamo telpu īres likuma {n}. pants", "cite_cl": "Civillikuma {n}. pants",
+        "doc_title": "ĪRES LĪGUMA JURIDISKĀ ANALĪZE", "doc_prepared": "Atskaite sagatavota",
+        "pdf_header": "JURIDISKAIS ATZINUMS — ĪRES LĪGUMA ANALĪZE", "pdf_page": "Lappuse",
+        "pdf_footer": "AI Juridiskais Asistents",
+        "pdf_title": "Dzīvojamās telpas īres līguma juridiskā atskaite", "pdf_date": "Izveides datums",
+        "up_browse": "Izvēlēties failu", "up_drag": "Ievelc failu šeit",
+    },
+    "English": {
+        "report_lang_name": "angļu",
+        "h_overall": "Overall assessment", "h_crit": "Critical risks", "h_warn": "Warnings",
+        "h_recs": "Recommendations and corrections", "h_neutral": "Neutral notes (proofreading)",
+        "no_proof_errors": "No proofreading errors were found.",
+        "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
+        "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
+        "law1_name": "Residential Tenancy Law (Dzīvojamo telpu īres likums)",
+        "law2_name": "Civil Law, Part Four (Civillikums)",
+        "cite_dtil": "Residential Tenancy Law, Art. {n}", "cite_cl": "Civil Law, Art. {n}",
+        "doc_title": "LEGAL ANALYSIS OF THE LEASE AGREEMENT", "doc_prepared": "Report prepared",
+        "pdf_header": "LEGAL OPINION — LEASE AGREEMENT ANALYSIS", "pdf_page": "Page",
+        "pdf_footer": "AI Legal Assistant",
+        "pdf_title": "Legal report on the residential lease agreement", "pdf_date": "Date created",
+        "up_browse": "Browse files", "up_drag": "Drag and drop file here",
+    },
+    "Русский": {
+        "report_lang_name": "krievu",
+        "h_overall": "Общая оценка", "h_crit": "Критические риски", "h_warn": "Предупреждения",
+        "h_recs": "Рекомендации и исправления", "h_neutral": "Нейтральные замечания (корректура)",
+        "no_proof_errors": "Ошибок при корректуре не найдено.",
+        "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
+        "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
+        "law1_name": "Закон о найме жилых помещений (Dzīvojamo telpu īres likums)",
+        "law2_name": "Гражданский закон, часть четвёртая (Civillikums)",
+        "cite_dtil": "Закон о найме жилых помещений, ст. {n}", "cite_cl": "Гражданский закон, ст. {n}",
+        "doc_title": "ЮРИДИЧЕСКИЙ АНАЛИЗ ДОГОВОРА АРЕНДЫ", "doc_prepared": "Отчёт подготовлен",
+        "pdf_header": "ЮРИДИЧЕСКОЕ ЗАКЛЮЧЕНИЕ — АНАЛИЗ ДОГОВОРА АРЕНДЫ", "pdf_page": "Страница",
+        "pdf_footer": "ИИ-юридический помощник",
+        "pdf_title": "Юридический отчёт по договору аренды жилого помещения", "pdf_date": "Дата создания",
+        "up_browse": "Выбрать файл", "up_drag": "Перетащите файл сюда",
+    },
+}
+for _l, _extra in TR_EXTRA.items():
+    TR[_l].update(_extra)
+
 lang = st.sidebar.selectbox("🌐 Valoda / Language / Язык", list(TR.keys()))
 T = TR[lang]
+
+# Faila augšupielādes pogas un uzraksta tulkojums (CSS; ja Streamlit maina struktūru,
+# paliks noklusējuma teksts)
+st.markdown(
+    "<style>"
+    '[data-testid="stFileUploaderDropzone"] button { font-size: 0 !important; }'
+    '[data-testid="stFileUploaderDropzone"] button::after { content: "' + T["up_browse"] + '"; font-size: 0.95rem; }'
+    '[data-testid="stFileUploaderDropzoneInstructions"] > div > span { font-size: 0 !important; }'
+    '[data-testid="stFileUploaderDropzoneInstructions"] > div > span::before { content: "' + T["up_drag"] + '"; font-size: 1rem; }'
+    "</style>",
+    unsafe_allow_html=True,
+)
 
 st.title(T["title"])
 st.markdown(T["subtitle"])
@@ -308,9 +372,49 @@ FORMĀTS:
 """
 
 
+def lang_directive():
+    rl = T["report_lang_name"]
+    return (
+        "Raksti vienkāršā, cilvēcīgā un viegli saprotamā valodā.\n\n"
+        "VALODAS NOTEIKUMI (svarīgi):\n"
+        f"- Visu analīzi (virsrakstus, paskaidrojumus, riskus, brīdinājumus un ieteikumu skaidrojumus) raksti {rl} valodā.\n"
+        "- Nosaki, kādā valodā ir uzrakstīts līgums (latviešu, krievu vai angļu).\n"
+        "- Citātus no līguma raksti oriģinālvalodā.\n"
+        "- Konkrētus formulējumus, ko jāieraksta līgumā (piedāvātie formulējumi un jaunie punkti), VIENMĒR raksti LĪGUMA valodā pēdiņās. "
+        f"Ja līguma valoda NAV {rl}, tad katram šādam formulējumam uzreiz zem tā pievieno tulkojumu {rl} valodā ar atzīmi \"{T['label_translation']}:\". "
+        f"Ja līguma valoda ir {rl}, tulkojumu nepievieno.\n"
+        "- Atsauces uz likumiem raksti tikai formātā [[DTIL 28]] vai [[CL 2174]], neatkarīgi no valodas.\n"
+        "- Sadaļu virsrakstus raksti tieši tā, kā norādīts struktūrā zemāk."
+    )
+
+
+def localize_prompt(text):
+    text = text.replace("Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.", lang_directive())
+    text = text.replace("## 📊 Kopējais novērtējums", "## 📊 " + T["h_overall"])
+    text = text.replace("## 🔴 Kritiski riski", "## 🔴 " + T["h_crit"])
+    text = text.replace("## 🟡 Brīdinājumi", "## 🟡 " + T["h_warn"])
+    text = text.replace("## 🟢 Ieteikumi un labojumi", "## 🟢 " + T["h_recs"])
+    text = text.replace("Piedāvātais formulējums", T["label_proposed"])
+    return text
+
+
+def build_proof_prompt():
+    t = PROOFREAD_PROMPT
+    rl = T["report_lang_name"]
+    t = t.replace("Tu esi ļoti rūpīgs latviešu valodas korektors un līgumu redaktors.",
+                  "Tu esi ļoti rūpīgs korektors un līgumu redaktors, kas pārzina līguma valodu (latviešu, krievu vai angļu).")
+    t = t.replace("## ⚪ Neitrālas piezīmes (korektūra)", "## ⚪ " + T["h_neutral"])
+    t = t.replace("Korektūras kļūdu netika atrasts.", T["no_proof_errors"])
+    t = t.replace("Labojums:", T["label_fix"] + ":")
+    t = t.replace("- Raksti latviešu valodā.",
+                  f"- Skaidrojumus (kas ir nepareizi) raksti {rl} valodā. Citātu no līguma un pareizo variantu raksti līguma oriģinālvalodā. "
+                  "Kļūdas meklē līguma valodas noteikumu ietvaros.")
+    return t
+
+
 def build_prompt(base=None):
     laws_text, source = load_laws()
-    prompt = base or SYSTEM_PROMPT
+    prompt = localize_prompt(base or SYSTEM_PROMPT)
     if laws_text:
         prompt += (
             "\n\nSPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
@@ -324,23 +428,25 @@ def build_prompt(base=None):
 # ---------------------------------------------------------------
 # Atsauces uz likumi.lv: [[DTIL 28]] -> klikšķināma saite uz attiecīgo pantu
 # ---------------------------------------------------------------
-LAW_LINK_INFO = {
-    "DTIL": ("Dzīvojamo telpu īres likuma", "https://likumi.lv/ta/id/322216"),
-    "CL": ("Civillikuma", "https://likumi.lv/ta/id/90220"),
+LAW_LINKS = {
+    "DTIL": "https://likumi.lv/ta/id/322216",
+    "CL": "https://likumi.lv/ta/id/90220",
 }
 CITATION_RE = re.compile(r"\[\[\s*(DTIL|CL)\s+(\d{1,4})\s*\]\]")
 
-SOURCES_MD = (
-    "**Pilni likumu teksti likumi.lv:** "
-    "[Dzīvojamo telpu īres likums](https://likumi.lv/ta/id/322216) · "
-    "[Civillikuma ceturtā daļa](https://likumi.lv/ta/id/90220)"
-)
+
+def sources_md():
+    return (
+        f"**{T['sources_label']}** "
+        f"[{T['law1_name']}]({LAW_LINKS['DTIL']}) · "
+        f"[{T['law2_name']}]({LAW_LINKS['CL']})"
+    )
 
 
 def _citation_to_link(match):
     code, number = match.group(1), match.group(2)
-    name, base = LAW_LINK_INFO[code]
-    return f"[{name} {number}. pants]({base}#p{number})"
+    label = T["cite_dtil" if code == "DTIL" else "cite_cl"].format(n=number)
+    return f"[{label}]({LAW_LINKS[code]}#p{number})"
 
 
 def linkify(text):
@@ -387,13 +493,13 @@ def clean_markdown(text):
 # ---------------------------------------------------------------
 def generate_pretty_docx(analysis_text):
     doc = docx.Document()
-    title = doc.add_heading("ĪRES LĪGUMA JURIDISKĀ ANALĪZE", level=0)
+    title = doc.add_heading(T["doc_title"], level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     p_meta = doc.add_paragraph()
     p_meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run_meta = p_meta.add_run(
-        f"Atskaite sagatavota: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
+        f"{T['doc_prepared']}: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"
     )
     run_meta.font.size = Pt(9)
     run_meta.font.color.rgb = RGBColor(100, 100, 100)
@@ -463,14 +569,14 @@ class PDFReport(FPDF):
         self.set_font("DejaVu", "B", 10)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 4)
-        self.cell(0, 8, "JURIDISKAIS ATZINUMS — ĪRES LĪGUMA ANALĪZE", align="L")
+        self.cell(0, 8, T["pdf_header"], align="L")
         self.set_y(22)
 
     def footer(self):
         self.set_y(-15)
         self.set_font("DejaVu", "", 8)
         self.set_text_color(150, 150, 150)
-        self.cell(0, 10, f"Lappuse {self.page_no()} | AI Juridiskais Asistents", align="C")
+        self.cell(0, 10, f"{T['pdf_page']} {self.page_no()} | {T['pdf_footer']}", align="C")
 
 
 def generate_pretty_pdf(analysis_text):
@@ -490,12 +596,12 @@ def generate_pretty_pdf(analysis_text):
 
     pdf.set_font("DejaVu", "B", 14)
     pdf.set_text_color(30, 41, 59)
-    pdf.cell(0, 10, "Dzīvojamās telpas īres līguma juridiskā atskaite",
+    pdf.cell(0, 10, T["pdf_title"],
              new_x="LMARGIN", new_y="NEXT")
 
     pdf.set_font("DejaVu", "", 9)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}",
+    pdf.cell(0, 5, f"{T['pdf_date']}: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}",
              new_x="LMARGIN", new_y="NEXT")
     pdf.ln(5)
 
@@ -662,9 +768,9 @@ if analyze_button:
                     st.markdown("---")
                     with st.spinner(T["proof_spinner"]):
                         if file_extension == 'docx':
-                            proof_input = f"{PROOFREAD_PROMPT}\n\nLĪGUMA TEKSTS:\n{contract_text}"
+                            proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{contract_text}"
                         else:
-                            proof_input = [PROOFREAD_PROMPT, file_part]
+                            proof_input = [build_proof_prompt(), file_part]
                         proof_response = model.generate_content(proof_input, stream=True)
 
                     def stream_proof():
@@ -680,8 +786,8 @@ if analyze_button:
                 analysis_all = full_response_text
                 if proof_text:
                     analysis_all += "\n\n" + proof_text
-                st.markdown(SOURCES_MD)
-                report_text = analysis_all + "\n\n## Izmantotie avoti\n" + SOURCES_MD
+                st.markdown(sources_md())
+                report_text = analysis_all + "\n\n## " + T["sources_head"] + "\n" + sources_md()
                 result = build_downloads(report_text)
                 result.update({
                     "analysis": analysis_all,
@@ -700,5 +806,5 @@ elif "result" in st.session_state:
     st.caption(f"{T['law_source']}: {saved['laws_source']}")
     st.markdown(T["result_saved"])
     st.markdown(saved["analysis"])
-    st.markdown(SOURCES_MD)
+    st.markdown(sources_md())
     render_downloads(saved)
