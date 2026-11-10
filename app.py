@@ -315,16 +315,67 @@ THEME_HTML = """
 
 with st.sidebar:
     components.html(THEME_HTML, height=50)
+
+# ---------------------------------------------------------------
+# Sesijas pārvaldība (st.session_state): analīžu vēsture un "Sākt no jauna"
+# Struktūra:
+#   history      - saraksts ar analīzēm šajā sesijā (līdz 10): laiks, nosaukums, režīms, rezultāts, līguma dati
+#   active       - kuras analīzes rezultāts tiek rādīts
+#   result/terms - aktīvās analīzes rezultāts un līguma dati (tos rāda tālāk esošais kods)
+#   calc_store   - kalkulatora ievades dati katrai analīzei atsevišķi
+# ---------------------------------------------------------------
+def session_add(result, terms, label, mode):
+    """Pievieno jaunu analīzi vēsturei un padara to par aktīvo."""
+    hist = st.session_state.setdefault("history", [])
+    now = datetime.datetime.now()
+    entry = {
+        "id": now.strftime("%H%M%S%f"), "time": now.strftime("%H:%M:%S"),
+        "label": label, "mode": mode, "result": result, "terms": terms or {},
+    }
+    hist.append(entry)
+    del hist[:-10]                                   # glabā pēdējās 10 analīzes
+    st.session_state["history"] = hist
+    st.session_state["active"] = len(hist) - 1
+    st.session_state["history_pick"] = len(hist) - 1
+    st.session_state["result"] = entry["result"]
+    st.session_state["terms"] = entry["terms"]
+
+
+def session_select(i):
+    """Pārslēdz aktīvo analīzi uz vēstures ierakstu (bez jauna Gemini izsaukuma)."""
+    hist = st.session_state.get("history", [])
+    if 0 <= i < len(hist):
+        st.session_state["active"] = i
+        st.session_state["result"] = hist[i]["result"]
+        st.session_state["terms"] = hist[i]["terms"]
+
+
+def current_entry():
+    hist = st.session_state.get("history", [])
+    i = st.session_state.get("active")
+    return hist[i] if isinstance(i, int) and 0 <= i < len(hist) else None
+
+
+def reset_session():
+    """Notīra analīzes, vēsturi, kalkulatoru un ievades laukus. API atslēga un valoda paliek.
+    Kešs netiek dzēsts, tāpēc jaunu izmaksu nav."""
+    keep = {"api_key_input", "custom_lang"}
+    gen = st.session_state.get("uploader_gen", 0) + 1
+    for k in list(st.session_state.keys()):
+        if k not in keep:
+            del st.session_state[k]
+    st.session_state["uploader_gen"] = gen           # jauna atslēga = tīrs failu augšupielādes lauks
 st.title(T["title"])
 st.markdown(T["subtitle"])
 
 # Sānu josla
 st.sidebar.header(T["sidebar_header"])
 api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
-
+st.sidebar.button("🔄 Notīrīt sesiju / Sākt no jauna", on_click=reset_session, use_container_width=True)
 uploaded_file = st.file_uploader(
     T["uploader"],
-    type=["docx", "pdf", "png", "jpg", "jpeg"]
+    type=["docx", "pdf", "png", "jpg", "jpeg"],
+    key=f"uploader_{st.session_state.get('uploader_gen', 0)}",
 )
 
 pasted_text = st.text_area(T["paste_label"], height=200, key="pasted_text")
@@ -1404,6 +1455,99 @@ def render_penalty_calculator():
             "Aprēķins: vienkāršie procenti (bez procentu procentiem). Informatīvs aprēķins, nav juridiska konsultācija. "
             "Ja izīrētājs ir uzņēmējs vai līgums ir patērētāju līgums, var būt papildu ierobežojumi."
         )
+# ---------------------------------------------------------------
+# Vēstures izvēlne un kalkulators ar sesijā saglabātiem datiem
+# ---------------------------------------------------------------
+def render_history_picker():
+    """Ja šajā sesijā ir vairākas analīzes, ļauj pārslēgties starp tām (bez jauna Gemini izsaukuma)."""
+    hist = st.session_state.get("history", [])
+    if len(hist) < 2:
+        return
+
+    def _pick():
+        session_select(st.session_state["history_pick"])
+
+    st.selectbox(
+        "📜 Sesijas vēsture (iepriekšējās analīzes šajā sesijā)",
+        options=list(range(len(hist))),
+        format_func=lambda i: f"{hist[i]['time']} · {'🧪' if hist[i]['mode'] == 'test' else '📄'} {hist[i]['label']}",
+        key="history_pick",
+        on_change=_pick,
+    )
+
+
+def render_calculator():
+    """Soda naudas kalkulators. Ievades dati tiek saglabāti sesijā katrai analīzei atsevišķi."""
+    entry = current_entry()
+    terms = (entry["terms"] if entry else st.session_state.get("terms")) or {}
+    sig = entry["id"] if entry else "none"
+    store = st.session_state.setdefault("calc_store", {})
+    saved = store.get(sig, {})
+    with st.expander("🧮 Soda naudas un procentu kalkulators", expanded=False):
+        if terms:
+            st.caption("Lauki aizpildīti automātiski no līguma teksta (ja tas tika atrasts). Pārbaudiet un, ja vajag, izlabojiet.")
+        kind = st.radio(
+            "Sankcijas veids",
+            ["Līgumsods / nokavējuma nauda (% dienā)", "Nokavējuma procenti (% gadā)"],
+            index=0 if saved.get("daily", True) else 1,
+            key=f"calc_kind_{sig}",
+        )
+        daily = kind.startswith("Līgumsods")
+        c1, c2, c3 = st.columns(3)
+        principal = c1.number_input(
+            "Parāda summa / īres maksa (EUR)", min_value=0.0,
+            value=float(saved.get("principal", terms.get("rent") or 500.0)),
+            step=10.0, format="%.2f", key=f"calc_p_{sig}",
+        )
+        days = c2.number_input(
+            "Kavēto dienu skaits", min_value=0, value=int(saved.get("days", 30)), step=1, key=f"calc_d_{sig}",
+        )
+        rate = c3.number_input(
+            "Likme līgumā (% dienā)" if daily else "Likme līgumā (% gadā)", min_value=0.0,
+            value=float(saved.get("rate_day", terms.get("rate_day") or 0.1)) if daily else float(saved.get("rate_year", 6.0)),
+            step=0.01, format="%.3f", key=f"calc_r_{sig}_{int(daily)}",
+        )
+        cap_declared = True
+        if daily:
+            cap_declared = st.checkbox(
+                "Līgumā ir noteikts kopējais līgumsoda griesti (ne vairāk kā 10% no parāda)",
+                value=bool(saved.get("cap", terms.get("cap"))), key=f"calc_cap_{sig}",
+            )
+
+        # Saglabā ievades datus sesijā (nepazūd, pārslēdzot analīzes vēsturē)
+        new = dict(saved)
+        new.update({"principal": principal, "days": days, "daily": daily})
+        new["rate_day" if daily else "rate_year"] = rate
+        if daily:
+            new["cap"] = cap_declared
+        store[sig] = new
+
+        if principal <= 0 or days <= 0 or rate <= 0:
+            st.info("Ievadiet summu, dienu skaitu un likmi, lai redzētu aprēķinu.")
+            return
+
+        r = penalty_calc(principal, days, rate, daily, cap_declared)
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Pēc līguma noteikumiem", eur(r["total"]))
+        if daily:
+            m2.metric("Likumā pieļaujamais maksimums (10%)", eur(r["cap"]))
+        else:
+            m2.metric("Starpība pret likumiskajiem", eur(max(0.0, r["total"] - r["statutory"])))
+        m3.metric("Likumiskie procenti (6% gadā)", eur(r["statutory"]))
+
+        body = "\n\n".join(f"- {m}" for m in r["messages"])
+        {"success": st.success, "warning": st.warning, "error": st.error}[r["level"]](f"**{r['title']}**\n\n{body}")
+
+        if daily:
+            st.markdown(
+                f"**Ja izīrētājs prasa gan likumiskos procentus, gan līgumsodu** (saskaņā ar {_cl(1722, 'Civillikuma 1722. pantu')}): līgumsodu var prasīt tikai "
+                f"tādā apmērā, kādā tas pārsniedz prasīto procentu summu ({eur(r['statutory'])}). "
+                f"Līgumsods šajā gadījumā: ne vairāk kā **{eur(r['claimable'])}**."
+            )
+        st.caption(
+            "Aprēķins: vienkāršie procenti (bez procentu procentiem). Informatīvs aprēķins, nav juridiska konsultācija. "
+            "Ja izīrētājs ir uzņēmējs vai līgums ir patērētāju līgums, var būt papildu ierobežojumi."
+        )
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1494,19 +1638,17 @@ N3. 8. sadaļa: Pušu apzīmējumi „Izīrētājs” un „Iznomātājs” liet
 
 if analyze_button and test_mode:
     sample = linkify(make_test_analysis())
-    st.session_state.pop("result", None)
-    st.session_state["terms"] = {"rent": 450.0, "rate_day": 0.5}
     result = build_downloads(sample + "\n\n## " + T["sources_head"] + "\n" + sources_md())
     result.update({
         "analysis": sample,
         "laws_source": "🧪 TESTA REŽĪMS: iebūvēts paraugs, Gemini netika izsaukts (0.00$)",
         "cache_note": "🧪 Testa režīms: iebūvēts paraugs, Gemini netika izsaukts (0.00$).",
     })
-    st.session_state["result"] = result
+    session_add(result, {"rent": 450.0, "rate_day": 0.5}, "Testa paraugs", "test")
     st.rerun()
 if analyze_button:
-    # Jauna analīze: izdzēš iepriekšējo saglabāto rezultātu
-    st.session_state.pop("result", None)
+    # Iepriekšējais rezultāts paliek, līdz tiek saglabāts jauns (nepazūd arī kļūdas gadījumā)
+    prev_result = st.session_state.get("result")
 
     if not api_key:
         st.error(T["err_no_key"])
@@ -1561,17 +1703,20 @@ if analyze_button:
                     "laws_source": laws_source,
                 })
                 # Saglabā, lai analīze nepazustu pēc lejupielādes
-                st.session_state["result"] = result
+                session_add(
+                    result, st.session_state.get("terms", {}),
+                    "Ielīmēts teksts" if file_extension == "txt" else uploaded_file.name, "real",
+                )
                 render_downloads(result)
 
         except Exception as e:
             st.error(f"{T['err_process']}: {str(e)}")
-        if "result" in st.session_state:
+        if st.session_state.get("result") is not prev_result:
             st.rerun()
-
-elif "result" in st.session_state:
-    # Lapa pārlādējās (piem., nospiesta lejupielādes poga): parāda saglabāto analīzi
+if "result" in st.session_state:
+    # Parāda saglabāto analīzi (arī pēc lejupielādes, citu elementu izmantošanas vai kļūdas)
     saved = st.session_state["result"]
+    render_history_picker()
     st.caption(f"{T['law_source']}: {saved['laws_source']}")
     render_dashboard(saved["analysis"])
     render_sections(saved["analysis"])
@@ -1580,4 +1725,4 @@ elif "result" in st.session_state:
     st.markdown(sources_md())
     render_downloads(saved)
 
-render_penalty_calculator()
+render_calculator()
