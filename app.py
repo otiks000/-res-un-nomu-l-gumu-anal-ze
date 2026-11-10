@@ -38,7 +38,7 @@ Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Ta
 Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.
 
 OBLIGĀTĀ PĀRBAUDES SARAKSTS (pārbaudi KATRU no šīm tēmām vienā un tajā pašā secībā; ja līgumā tā trūkst vai ir problemātiska, atzīmē atbilstošā sadaļā):
-1. Pušu dati, īpašuma tiesības un telpu apraksts
+1. Pušu dati un rekvizīti (vai ir paredzēta vieta vārdiem, personas kodiem, adresēm, bankas kontam, tālrunim un e-pastam), īpašuma tiesības un telpu apraksts
 2. Līguma termiņš, pagarināšana un izbeigšanas kārtība (abu pušu tiesības)
 3. Īres maksas apmērs, maksāšanas termiņš un maksas maiņas nosacījumi
 4. Komunālie un apsaimniekošanas maksājumi (arī uzkrājumu fonds, rēķinu uzrādīšana)
@@ -50,12 +50,18 @@ OBLIGĀTĀ PĀRBAUDES SARAKSTS (pārbaudi KATRU no šīm tēmām vienā un tajā
 10. Apakšīre, personu skaits, dzīvnieki un citi lietošanas ierobežojumi
 11. Īres tiesību nostiprināšana Zemesgrāmatā un aizsardzība īpašnieka maiņas gadījumā
 12. Strīdu risināšana un piemērojamais likums
-13. Tukši lauki, nenoteikti termini un nepabeigti līguma fragmenti
+13. Tukši lauki finansiāli un juridiski būtiskos punktos (summas, termiņi, procenti), nenoteikti termini
+
+TUKŠIE LAUKI (svarīgs noteikums):
+- Tukšie lauki, kas jāaizpilda līguma parakstīšanas brīdī un kas ir personas vai identifikācijas dati, NAV kļūda, un tos NEDRĪKST atzīmēt nevienā sadaļā. Tie ir: vārdi, uzvārdi, personas kodi, deklarētās adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, dokumentu numuri, paraksti, līguma noslēgšanas vieta un datums.
+- Tukši vai neskaidri lauki, kas ir FINANSIĀLI vai JURIDISKI BŪTISKI, OBLIGĀTI jāatzīmē: īres maksas summa, drošības depozīta summa, komunālo maksājumu summas vai kārtība, maksājuma termiņš vai datums, nokavējuma procentu vai līgumsoda apmērs, līguma sākuma un beigu termiņš, uzteikuma termiņi, depozīta atmaksas termiņš. Tos atzīmē kā brīdinājumu (vai kā kritisku risku, ja tukšums rada nepamatotu finansiālu risku).
+
+- TRŪKSTOŠA VIETA REKVIZĪTIEM: ja līgumā VISPĀR NAV paredzēta vieta vai punkts, kur norādīt svarīgus datus, tā ir kļūda, kas jāatzīmē kā brīdinājums. Tas attiecas uz: izīrētāja bankas konta (IBAN) un maksājuma saņēmēja datiem, kam jāveic īres maksa; pušu kontaktinformāciju (tālrunis, e-pasts) paziņojumu nosūtīšanai; pušu adresēm vai juridiskajām adresēm; personas kodiem vai reģistrācijas numuriem; kadastra apzīmējumu vai precīzu dzīvokļa adresi; parakstu vietu. Ja šāda vieta līgumā ir, bet tā ir tikai neaizpildīta, tā NAV kļūda.
+- Atšķirība: tukšs lauks "Konta Nr. ________" ir kārtībā, bet līgums, kurā nav nevienas vietas konta numuram vai nav norādīts, kā un kur maksāt īres maksu, ir jāatzīmē.
 
 DARBA METODE:
 - Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
 - Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
-- Lasi līgumu vārdu pa vārdam un atzīmē arī vismazākās kļūdas.
 - Katrā sadaļā punktus kārto tajā secībā, kādā tie ir līgumā (no pirmā līdz pēdējam), nevis pēc svarīguma. Tas nodrošina vienādu rezultātu atkārtotā analīzē.
 - Katram punktam norādi līguma punkta numuru un vienkāršu paskaidrojumu, kāpēc tas ir problēma.
 
@@ -77,14 +83,6 @@ Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas
 - situācijas, ko līgums neapskata (piemēram, īpašnieka maiņa, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
 - neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
 Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
-
-⚪ NEITRĀLA PIEZĪME - rediģēšanas un neuzmanības kļūdas, kas NEIETEKMĒ finansiālo stāvokli un NEPĀRKĀPJ likumu, bet ir pamanāmas:
-- gramatikas, pareizrakstības un drukas kļūdas, trūkstoši vai lieki vārdi, dubultas atstarpes vai pieturzīmes;
-- nekonsekventi termini vai pušu apzīmējumi (piemēram, "Izīrētājs" un "Iznomātājs" vienā līgumā);
-- nepareizi punktu numuri vai atsauces uz neesošiem līguma punktiem;
-- pretrunas starp summām, datumiem vai termiņiem (arī starp cipariem un vārdiem);
-- neveikli vai grūti saprotami teikumi, kuriem nav juridiskas ietekmes.
-Atzīmē VISAS šādas kļūdas, pat vismazākās. Īpašnieks pats izlems, ko labot un ko atstāt.
 
 🟢 IETEIKUMS - konkrēts labojums vai papildinājums ar piedāvātu jaunu formulējumu.
 
@@ -109,13 +107,10 @@ Izmanto tieši šādu virsrakstu struktūru:
 ## 🟡 Brīdinājumi
 [Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
-## ⚪ Neitrālas piezīmes
-[Katru punktu numurē ar kodu N1, N2, N3... Formāts: "N1. Līguma punkta numurs: kas ir nepareizi (piemēram, drukas kļūda, nekonsekvence, pretruna) un kā tas ir uzrakstīts līgumā." Šeit NEDRĪKST būt likuma pārkāpumi vai finansiālu zaudējumu riski.]
-
 ## 🟢 Ieteikumi un labojumi
-[OBLIGĀTI: katram kritiskajam riskam, katram brīdinājumam un katrai neitrālai piezīmei jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2... N1, N2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
+[OBLIGĀTI: katram kritiskajam riskam un katram brīdinājumam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
 
-PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski", "Brīdinājumi" un "Neitrālas piezīmes" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
+PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
 """
 
 
@@ -202,21 +197,29 @@ def load_laws():
     return "", "nav pieejams"
 
 
-AUDIT_PROMPT = """
-Tu esi ļoti rūpīgs līgumu auditors. Tev ir dots līgums un jau sagatavota analīze. Tavs uzdevums ir atrast VISU, kas analīzē netika minēts, un tikai to.
+PROOFREAD_PROMPT = """
+Tu esi ļoti rūpīgs latviešu valodas korektors un līgumu redaktors. Tev ir dots īres līgums. Tavs uzdevums ir atrast VISAS neitrālās rediģēšanas un neuzmanības kļūdas, pat vismazākās. Tu nevērtē līguma juridisko saturu un neanalizē riskus.
 
-Pārlasi līgumu vēlreiz, punktu pa punktam, un atrodi:
-🔴 papildu kritiskus riskus (likuma pārkāpumi vai nepamatoti finansiāli zaudējumi);
-🟡 papildu brīdinājumus (neskaidri vai trūkstoši nosacījumi, kurus vajadzētu precizēt);
-⚪ neitrālas piezīmes: gramatikas, pareizrakstības un drukas kļūdas; lieki vai trūkstoši vārdi; nekonsekventi termini vai pušu apzīmējumi; nepareizi punktu numuri vai atsauces uz neesošiem punktiem; pretrunas starp summām, datumiem vai termiņiem (arī starp cipariem un vārdiem); dubultas atstarpes un pieturzīmes; neveikli teikumi. Šīs kļūdas neietekmē finansiālo stāvokli un nepārkāpj likumu. Īpašnieks pats lems, ko labot.
+MEKLĒ:
+- gramatikas, pareizrakstības un drukas kļūdas (arī garumzīmju un mīkstinājuma zīmju kļūdas);
+- lieki vai trūkstoši vārdi, dubultas atstarpes, nepareizas vai trūkstošas pieturzīmes;
+- nekonsekventi termini vai pušu apzīmējumi (piemēram, "Izīrētājs" un "Iznomātājs", "Īrnieks" un "Nomnieks" vienā līgumā);
+- nepareizi punktu numuri, izlaisti numuri vai atsauces uz neesošiem līguma punktiem;
+- pretrunas starp summām, datumiem vai termiņiem (arī starp cipariem un vārdiem);
+- neveikli vai grūti saprotami teikumi bez juridiskas ietekmes.
 
-NOTEIKUMI:
-- Neatkārto neko, kas jau ir sagatavotajā analīzē (ne kritiskajos, ne brīdinājumos, ne neitrālajās piezīmēs).
-- Katru jauno punktu numurē P1, P2, P3... tajā secībā, kādā tie ir līgumā.
-- Formāts: "P1. [🔴 vai 🟡 vai ⚪] Līguma punkta numurs: kas ir nepareizi un kāpēc. [[atsauce uz likumu, ja piemērojams]] Ieteikums: ko labot. Piedāvātais formulējums: „...”"
-- Atsauces raksti tikai formātā [[DTIL 28]] vai [[CL 2174]] un tikai tad, ja pants ir sniegtajā likumu tekstā. Neizdomā pantu numurus.
-- Sāc atbildi tieši ar virsrakstu: ## 🔍 Papildinājumi pēc atkārtotas pārbaudes
-- Ja tiešām nekā jauna nav, zem virsraksta raksti tikai: Papildinājumu nav.
+NEATZĪMĒ:
+- tukšus laukus, kas jāaizpilda parakstīšanas brīdī (vārdi, uzvārdi, personas kodi, adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, paraksti, vieta un datums);
+- juridiskus riskus, likuma pārkāpumus vai finansiālus jautājumus (tos izvērtē cits modulis).
+
+Īpašnieks pats izlems, ko labot un ko atstāt, tāpēc atzīmē visu.
+
+FORMĀTS:
+- Sāc atbildi tieši ar virsrakstu: ## ⚪ Neitrālas piezīmes (korektūra)
+- Katru piezīmi numurē N1, N2, N3... tajā secībā, kādā tās ir līgumā.
+- Formāts: "N1. Līguma punkta numurs: kas ir nepareizi (kā tas ir uzrakstīts līgumā). Labojums: „pareizais variants”."
+- Ja tiešām nekādu kļūdu nav, zem virsraksta raksti tikai: Korektūras kļūdu netika atrasts.
+- Raksti latviešu valodā.
 """
 
 
@@ -567,37 +570,31 @@ if analyze_button:
 
             full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
 
-            # Otrā pārbaude: auditors meklē visu, kas pirmajā reizē palika neminēts
-            audit_text = ""
+            # Otrā pārbaude: atsevišķa korektūra (bez likumu teksta, tāpēc lētāka)
+            proof_text = ""
             if full_response_text:
                 try:
                     st.markdown("---")
-                    with st.spinner("🔍 Notiek atkārtota pārbaude, lai neviena kļūda netiktu izlaista..."):
-                        audit_base = (
-                            AUDIT_PROMPT
-                            + "\n\nJAU SAGATAVOTĀ ANALĪZE (nepārraksti to, tikai papildini):\n"
-                            + full_response_text
-                        )
-                        audit_prompt, _ = build_prompt(audit_base)
+                    with st.spinner("✏️ Notiek korektūras pārbaude..."):
                         if file_extension == 'docx':
-                            audit_input = f"{audit_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                            proof_input = f"{PROOFREAD_PROMPT}\n\nLĪGUMA TEKSTS:\n{contract_text}"
                         else:
-                            audit_input = [audit_prompt, file_part]
-                        audit_response = model.generate_content(audit_input, stream=True)
+                            proof_input = [PROOFREAD_PROMPT, file_part]
+                        proof_response = model.generate_content(proof_input, stream=True)
 
-                    def stream_audit():
-                        for chunk in audit_response:
+                    def stream_proof():
+                        for chunk in proof_response:
                             if hasattr(chunk, 'text') and chunk.text:
                                 yield chunk.text
 
-                    audit_text = st.write_stream(linkify_stream(stream_audit()))
+                    proof_text = st.write_stream(stream_proof())
                 except Exception as e:
-                    st.warning(f"Atkārtoto pārbaudi neizdevās veikt: {e}")
+                    st.warning(f"Korektūras pārbaudi neizdevās veikt: {e}")
 
             if full_response_text:
                 analysis_all = full_response_text
-                if audit_text:
-                    analysis_all += "\n\n" + audit_text
+                if proof_text:
+                    analysis_all += "\n\n" + proof_text
                 st.markdown(SOURCES_MD)
                 report_text = analysis_all + "\n\n## Izmantotie avoti\n" + SOURCES_MD
                 result = build_downloads(report_text)
