@@ -1671,6 +1671,151 @@ def render_chat():
 
     if mine:   # skaidrojumi uz pantu atsaucēm arī čatā (ilgā turēšana / peles uzvešana)
         inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(m["content"] for m in mine))
+# ---------------------------------------------------------------
+# Peldošs čata logs labajā pusē: 💬 poga, sveiciena burbulis, sarkanais indikators, paslēpšana
+# Ziņas glabājas st.session_state["messages"] (tāpat kā iepriekš). Prasa Streamlit 1.39+ (st.container(key=...))
+# ---------------------------------------------------------------
+import inspect
+
+CHAT_GREETING = "Sveiks. Kādi tev radās jautājumi par šo līgumu?"
+
+CHAT_CSS = """
+<style>
+@keyframes chatPop { 0% {opacity: 0; transform: translateY(16px) scale(.9);} 60% {opacity: 1; transform: translateY(-4px) scale(1.03);} 100% {opacity: 1; transform: none;} }
+@keyframes chatFade { to {opacity: 0; visibility: hidden;} }
+@keyframes chatPulse { 0% {box-shadow: 0 0 0 0 rgba(239,68,68,.55);} 70% {box-shadow: 0 0 0 12px rgba(239,68,68,0);} 100% {box-shadow: 0 0 0 0 rgba(239,68,68,0);} }
+
+.st-key-chat_widget { position: fixed !important; right: 18px; bottom: 72px; width: min(390px, calc(100vw - 24px)); z-index: 1000;
+  padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(128,128,128,.4); box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  background: #ffffff; animation: chatPop .35s ease-out; }
+
+.st-key-chat_launcher, .st-key-chat_launcher_unread { position: fixed !important; right: 18px; bottom: 72px; z-index: 1000; width: 60px; height: 60px; }
+.st-key-chat_launcher button, .st-key-chat_launcher_unread button { width: 60px; height: 60px; min-height: 60px; border-radius: 50%; padding: 0;
+  background: #2563eb; border: none; box-shadow: 0 6px 20px rgba(37,99,235,.5); }
+.st-key-chat_launcher button p, .st-key-chat_launcher_unread button p { color: #ffffff !important; font-size: 26px; line-height: 1; }
+.st-key-chat_launcher_unread::after { content: "1"; position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; border-radius: 11px;
+  background: #ef4444; color: #ffffff; font: 700 12px/22px sans-serif; text-align: center; border: 2px solid #ffffff; pointer-events: none;
+  animation: chatPulse 1.8s infinite; }
+
+.st-key-chat_greeting { position: fixed !important; right: 18px; bottom: 144px; z-index: 1001; width: min(280px, calc(100vw - 40px));
+  animation: chatPop .5s ease-out, chatFade .6s ease-in 15s forwards; }
+.st-key-chat_greeting button { width: 100%; background: #ffffff; border: 1px solid #d1d5db; border-radius: 16px 16px 4px 16px; padding: 10px 14px;
+  text-align: left; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+.st-key-chat_greeting button p { color: #111827 !important; font-size: 14px; line-height: 1.4; }
+
+@media (max-width: 480px) { .st-key-chat_widget { right: 3vw; width: 94vw; } }
+</style>
+"""
+
+CHAT_JS = """
+<script>
+/*__TOKEN__*/
+(function () {
+  var P = window.parent, D = P.document;
+  function sync() {                      // čata loga krāsas = lapas krāsas (arī pēc tēmas pārslēgšanas)
+    try {
+      var w = D.querySelector(".st-key-chat_widget");
+      if (!w) return;
+      var cs = P.getComputedStyle(D.querySelector(".stApp"));
+      var bg = cs.backgroundColor;
+      if (!bg || bg === "transparent" || bg === "rgba(0, 0, 0, 0)") bg = P.getComputedStyle(D.body).backgroundColor;
+      if (!bg || bg === "transparent" || bg === "rgba(0, 0, 0, 0)") bg = "#ffffff";
+      w.style.backgroundColor = bg;
+      w.style.color = cs.color;
+    } catch (e) {}
+  }
+  sync();
+  if (!P.__chatSync) { P.__chatSync = setInterval(sync, 700); }
+  setTimeout(function () {               // ritina ziņas uz leju
+    try {
+      var c = D.querySelector(".st-key-chat_msgs");
+      if (!c) return;
+      var els = Array.prototype.slice.call(c.querySelectorAll("*"));
+      els.push(c);
+      els.forEach(function (el) {
+        var oy = P.getComputedStyle(el).overflowY;
+        if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 4) { el.scrollTop = el.scrollHeight; }
+      });
+    } catch (e) {}
+  }, 200);
+})();
+</script>
+"""
+
+
+def chat_toggle(open_):
+    """Atver vai paslēpj čata logu. Atverot, analīzes sveiciens tiek atzīmēts kā redzēts (sarkanais indikators pazūd)."""
+    st.session_state["chat_open"] = open_
+    e = current_entry()
+    if open_ and e:
+        seen = st.session_state.setdefault("chat_seen", [])
+        if e["id"] not in seen:
+            seen.append(e["id"])
+
+
+def render_chat_widget():
+    """Peldošs čata logs labajā apakšējā stūrī (saruna saglabājas arī paslēpjot)."""
+    if "key" not in inspect.signature(st.container).parameters:
+        render_chat()                       # vecāka Streamlit versija: parastais čats lapas apakšā
+        return
+    entry = current_entry()
+    if not entry:
+        return
+    st.markdown(CHAT_CSS, unsafe_allow_html=True)
+    msgs = st.session_state.setdefault("messages", [])
+    if not any(m["entry"] == entry["id"] for m in msgs):
+        msgs.append({"role": "assistant", "content": CHAT_GREETING, "entry": entry["id"], "mock": False, "greeting": True})
+    mine = [m for m in msgs if m["entry"] == entry["id"]]
+    use_mock = test_mode or entry["mode"] == "test"
+    is_open = st.session_state.get("chat_open", False)
+    unread = entry["id"] not in st.session_state.get("chat_seen", [])
+
+    if not is_open:
+        greeted = st.session_state.setdefault("chat_greeted", [])
+        if unread and entry["id"] not in greeted:           # sveiciena burbulis tiek parādīts vienu reizi katrai analīzei
+            greeted.append(entry["id"])
+            with st.container(key="chat_greeting"):
+                st.button("👋 " + CHAT_GREETING, key="chat_greet_btn", on_click=chat_toggle, args=(True,))
+        with st.container(key="chat_launcher_unread" if unread else "chat_launcher"):
+            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,), help="Atvērt čatu")
+        return
+
+    with st.container(key="chat_widget"):
+        h1, h2 = st.columns([5, 1])
+        h1.markdown("**💬 Čats ar līgumu**")
+        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,), help="Paslēpt (saruna saglabāsies)")
+        if use_mock:
+            st.caption("🧪 Testa režīms: iebūvētas atbildes, Gemini netiek izsaukts (0.00$).")
+        else:
+            st.caption("Jautājums tiek sūtīts Gemini kopā ar līguma tekstu un analīzi.")
+        box = st.container(height=280, key="chat_msgs")
+        prompt = st.chat_input("Uzdodiet jautājumu par līgumu...", key="chat_widget_input")
+
+    with box:                                                # ziņas tiek zīmētas virs ievades lauka
+        for m in mine:
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
+        if prompt:
+            msgs.append({"role": "user", "content": prompt, "entry": entry["id"], "mock": use_mock})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            with st.chat_message("assistant"):
+                if use_mock:
+                    answer = linkify(mock_chat_answer(prompt))
+                elif not api_key:
+                    answer = "⚠️ Ievadiet Gemini API atslēgu sānu joslā vai ieslēdziet testa režīmu."
+                else:
+                    try:
+                        with st.spinner("💬 Gemini sagatavo atbildi..."):
+                            answer = chat_answer(prompt, entry, mine)
+                    except Exception as e:
+                        answer = f"❌ Neizdevās sagatavot atbildi: {e}"
+                st.markdown(answer)
+            msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
+            mine = [m for m in msgs if m["entry"] == entry["id"]]
+
+    components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
+    inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(m["content"] for m in mine))
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1848,5 +1993,5 @@ if "result" in st.session_state:
     inject_law_tips(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
-render_chat()
+render_chat_widget()
 render_calculator()
