@@ -73,7 +73,9 @@ Izmanto tieši šādu virsrakstu struktūru:
 [Punkti ar līguma punkta numuru un paskaidrojumu]
 
 ## 🟢 Ieteikumi un labojumi
-[Skaidri pasaki, kas līgumā ir jāizmaina]
+[OBLIGĀTI: katram punktam, kas minēts sadaļās "Kritiski riski" un "Brīdinājumi", jābūt atbilstošam ieteikumam ar to pašu līguma punkta numuru un konkrētu piedāvāto jauno formulējumu pēdiņās. Neviens atzīmētais punkts nedrīkst palikt bez ieteikuma.]
+
+PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti punktus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds trūkst, pievieno to.
 """
 
 
