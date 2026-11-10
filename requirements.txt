@@ -2,3 +2,5 @@ streamlit
 google-generativeai
 python-docx
 fpdf2
+requests
+beautifulsoup4
