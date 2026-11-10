@@ -152,6 +152,170 @@ TR_EXTRA = {
 for _l, _extra in TR_EXTRA.items():
     TR[_l].update(_extra)
 
+# ---------------------------------------------------------------
+# Tulkojumi: sesija, kalkulators un čats (latviešu, angļu, krievu). Citām valodām tos iztulko Gemini
+# (jo TR["English"] ir pamats tulkošanai). Veidnēs {vārdi} ir vietturi, kas jāsaglabā.
+# ---------------------------------------------------------------
+TR_NEW = {
+    "Latviešu": {
+        "reset_btn": "🔄 Notīrīt sesiju / Sākt no jauna",
+        "cite_cl_gen": "Civillikuma {n}. panta",
+        "cite_cl_acc": "Civillikuma {n}. pantu",
+        # --- kalkulators
+        "calc_title": "🧮 Soda naudas un procentu kalkulators",
+        "calc_autofill": "Lauki aizpildīti automātiski no līguma teksta (ja tas tika atrasts). Pārbaudiet un, ja vajag, izlabojiet.",
+        "calc_kind": "Sankcijas veids",
+        "calc_kind_daily": "Līgumsods / nokavējuma nauda (% dienā)",
+        "calc_kind_annual": "Nokavējuma procenti (% gadā)",
+        "calc_principal": "Parāda summa / īres maksa (EUR)",
+        "calc_days": "Kavēto dienu skaits",
+        "calc_rate_day": "Likme līgumā (% dienā)",
+        "calc_rate_year": "Likme līgumā (% gadā)",
+        "calc_cap": "Līgumā ir noteikts kopējais līgumsoda griesti (ne vairāk kā 10% no parāda)",
+        "calc_enter": "Ievadiet summu, dienu skaitu un likmi, lai redzētu aprēķinu.",
+        "calc_m_contract": "Pēc līguma noteikumiem",
+        "calc_m_cap": "Likumā pieļaujamais maksimums (10%)",
+        "calc_m_diff": "Starpība pret likumiskajiem",
+        "calc_m_stat": "Likumiskie procenti (6% gadā)",
+        "calc_t_error": "🔴 Pārsniedz likumā noteikto",
+        "calc_t_warn": "🟡 Uzmanību",
+        "calc_t_ok": "🟢 Atbilst normām",
+        "calc_t_risk": "🔴 Risks",
+        "calc_msg_exceed": "Pēc līguma aprēķinātais līgumsods ({total}) pārsniedz 10% no parāda ({cap}). Saskaņā ar {cl1716_gen} trešo daļu līgumsods par saistības nepienācīgu izpildi (kavējumu) kopumā nevar pārsniegt 10% no pamatparāda. Pārsnieguma daļa ({excess}) nav prasāma.",
+        "calc_msg_nocap": "Līgumā nav noteikts kopējais līgumsoda griesti. Ar likmi {rate}% dienā 10% robeža tiks sasniegta pēc {days_to_cap} dienām. Saskaņā ar {cl1716_gen} līgumā jābūt norādītam, ka līgumsods kopumā nepārsniedz 10%.",
+        "calc_msg_highrate": "Likme {rate}% dienā atbilst ~{annual}% gadā, t.i. {multiple} reižu vairāk nekā likumiskie procenti (6% gadā, {cl1765}). Likums neparedz konkrētu dienas likmes robežu, bet tiesa samazina pārmērīgu līgumsodu ({cl1717}, {cl1724}). 0,1% dienā ir biežāk sastopams samērīgs līmenis (informatīvs orientieris, nav likuma norma).",
+        "calc_msg_ok_daily": "Līgumsods ({total}) nepārsniedz 10% griestus ({cap}) saskaņā ar {cl1716_gen}, līgumā griesti ir noteikti, un likme nepārsniedz 0,1% dienā.",
+        "calc_msg_ok_annual": "Likme ({rate}% gadā) nepārsniedz likumiskos procentus (6% gadā, {cl1765}).",
+        "calc_msg_warn_annual": "Likme ({rate}% gadā) ir {multiple} reižu augstāka par likumiskajiem procentiem (6% gadā, {cl1765}). Civillikums neparedz konkrētu augšējo robežu, bet nesamērīgi un godīgai darījumu praksei neatbilstoši procenti ir prettiesiski ({cl1764}, {cl1717}).",
+        "calc_msg_risk_annual": "Likme ({rate}% gadā, ~{rate_day}% dienā) ir ļoti augsta ({multiple} reizes augstāka par likumiskajiem procentiem) un var tikt atzīta par nesamērīgu un prettiesisku ({cl1764}, {cl1717}).",
+        "calc_both": "**Ja izīrētājs prasa gan likumiskos procentus, gan līgumsodu** (saskaņā ar {cl1722_acc}): līgumsodu var prasīt tikai tādā apmērā, kādā tas pārsniedz prasīto procentu summu ({statutory}). Līgumsods šajā gadījumā: ne vairāk kā **{claimable}**.",
+        "calc_note": "Aprēķins: vienkāršie procenti (bez procentu procentiem). Informatīvs aprēķins, nav juridiska konsultācija. Ja izīrētājs ir uzņēmējs vai līgums ir patērētāju līgums, var būt papildu ierobežojumi.",
+        # --- čats
+        "chat_title": "💬 Čats ar līgumu",
+        "chat_greeting": "Sveiks. Kādi tev radās jautājumi par šo līgumu?",
+        "chat_placeholder": "Uzdodiet jautājumu par līgumu...",
+        "chat_hide_help": "Paslēpt (saruna saglabāsies)",
+        "chat_open_help": "Atvērt čatu",
+        "chat_cap_mock": "🧪 Testa režīms: iebūvētas atbildes, Gemini netiek izsaukts (0.00$).",
+        "chat_cap_real": "Jautājums tiek sūtīts Gemini kopā ar līguma tekstu un analīzi.",
+        "chat_spinner": "💬 Gemini sagatavo atbildi...",
+        "chat_no_key": "⚠️ Ievadiet Gemini API atslēgu sānu joslā vai ieslēdziet testa režīmu.",
+        "chat_error": "❌ Neizdevās sagatavot atbildi: {error}",
+        "mock_pets": "🧪 **Mājdzīvnieki:** šajā līgumā (6. sadaļa) nav atrunāti noteikumi par mājdzīvnieku turēšanu. Tāpēc nav skaidrs, vai suni vai kaķi drīkst turēt, kas atbild par bojājumiem un kā tiek risināti trokšņa vai tīrības strīdi. Ieteikums: pievienot punktu, piemēram, „Īrnieks drīkst turēt vienu mājdzīvnieku ar izīrētāja rakstveida piekrišanu un atbild par tā radītajiem bojājumiem.” Vispārīgie lietošanas noteikumi: {dtil17}.",
+        "mock_terminate": "🧪 **Uzteikums:** īrniekam ir tiesības vienpusēji atkāpties no līguma, rakstveidā brīdinot izīrētāju vismaz 1 mēnesi iepriekš (līgumiem līdz 10 gadiem) {dtil27} {dtil20}. Izīrētājs var izbeigt līgumu tikai likumā noteiktajos gadījumos {dtil21}, piemēram, ja īre kavēta vairāk nekā 2 mēnešus {dtil24}. Pārbaudiet, vai līguma uzteikuma punkts atbilst šiem termiņiem.",
+        "mock_deposit": "🧪 **Drošības nauda:** tā nedrīkst pārsniegt divu mēnešu īres maksu un jāatdod ne vēlāk kā dienā, kad telpa tiek atbrīvota, ja līgumā nav noteikts citādi {dtil12}. Līguma 4.3. punkts ļauj ieturēt naudu bez saskaņošanas, tāpēc ieteicams prasīt abpusēji parakstītu defektu aktu.",
+        "mock_land": "🧪 **Zemesgrāmata:** ja telpu pārdod, jaunajam īpašniekam līgums ir saistošs tikai tad, ja īres tiesības ir ierakstītas zemesgrāmatā {dtil28} {dtil35}. Pretējā gadījumā viņš var prasīt telpas atbrīvot 2 mēnešu laikā.",
+        "mock_penalty": "🧪 **Līgumsods un procenti:** līgumsods par kavējumu kopumā nevar pārsniegt 10% no parāda {cl1716}, un tam jābūt samērīgam {cl1717}. Konkrētu summu aprēķiniet kalkulatorā lapas apakšā.",
+        "mock_rent": "🧪 **Īres maksa:** līguma laikā to drīkst mainīt tikai tad, ja līgumā ir paredzēti maksas grozīšanas nosacījumi un kārtība {dtil10}.",
+        "mock_repairs": "🧪 **Remonti:** līguma 6.1.2. punktā „sīkie remontdarbi” nav definēti, tāpēc var rasties strīds, kurš maksā par sadzīves tehnikas vai santehnikas bojājumiem. Izīrētājs savukārt nodrošina telpas lietošanas iespēju visu līguma laiku {dtil18}.",
+        "mock_default": "🧪 **Testa atbilde:** jautājums saņemts („{question}”). Testa režīmā Gemini netiek izsaukts. Īstajā režīmā atbildi sagatavotu Gemini, balstoties uz līguma tekstu. Pamēģiniet jautāt par mājdzīvniekiem, uzteikumu, drošības naudu, zemesgrāmatu, līgumsodu, īres maksu vai remontiem.",
+    },
+    "English": {
+        "reset_btn": "🔄 Clear session / Start over",
+        "cite_cl_gen": "Civil Law, Art. {n}",
+        "cite_cl_acc": "Civil Law, Art. {n}",
+        "calc_title": "🧮 Penalty and interest calculator",
+        "calc_autofill": "Fields were filled in automatically from the contract text (where found). Please check them and correct if needed.",
+        "calc_kind": "Type of sanction",
+        "calc_kind_daily": "Contractual penalty / late fee (% per day)",
+        "calc_kind_annual": "Late-payment interest (% per year)",
+        "calc_principal": "Debt amount / rent (EUR)",
+        "calc_days": "Days overdue",
+        "calc_rate_day": "Rate in the contract (% per day)",
+        "calc_rate_year": "Rate in the contract (% per year)",
+        "calc_cap": "The contract sets an overall cap on the penalty (no more than 10% of the debt)",
+        "calc_enter": "Enter the amount, the number of days and the rate to see the calculation.",
+        "calc_m_contract": "Under the contract terms",
+        "calc_m_cap": "Legal maximum (10%)",
+        "calc_m_diff": "Difference vs. statutory interest",
+        "calc_m_stat": "Statutory interest (6% per year)",
+        "calc_t_error": "🔴 Exceeds the legal limit",
+        "calc_t_warn": "🟡 Attention",
+        "calc_t_ok": "🟢 Complies with the rules",
+        "calc_t_risk": "🔴 Risk",
+        "calc_msg_exceed": "The penalty calculated under the contract ({total}) exceeds 10% of the debt ({cap}). Under {cl1716_gen} (part 3), a penalty for late or improper performance cannot in total exceed 10% of the principal debt. The excess ({excess}) cannot be claimed.",
+        "calc_msg_nocap": "The contract sets no overall cap on the penalty. At {rate}% per day the 10% limit will be reached after {days_to_cap} days. Under {cl1716_gen} the contract must state that the penalty in total does not exceed 10%.",
+        "calc_msg_highrate": "A rate of {rate}% per day equals about {annual}% per year, i.e. {multiple} times the statutory interest (6% per year, {cl1765}). The law sets no specific daily rate limit, but a court reduces an excessive penalty ({cl1717}, {cl1724}). 0.1% per day is a more commonly seen proportionate level (an informal benchmark, not a legal rule).",
+        "calc_msg_ok_daily": "The penalty ({total}) does not exceed the 10% cap ({cap}) under {cl1716_gen}, the contract sets the cap, and the rate does not exceed 0.1% per day.",
+        "calc_msg_ok_annual": "The rate ({rate}% per year) does not exceed the statutory interest (6% per year, {cl1765}).",
+        "calc_msg_warn_annual": "The rate ({rate}% per year) is {multiple} times higher than the statutory interest (6% per year, {cl1765}). The Civil Law sets no specific upper limit, but interest that is disproportionate and contrary to fair dealing is unlawful ({cl1764}, {cl1717}).",
+        "calc_msg_risk_annual": "The rate ({rate}% per year, about {rate_day}% per day) is very high ({multiple} times the statutory interest) and may be found disproportionate and unlawful ({cl1764}, {cl1717}).",
+        "calc_both": "**If the landlord claims both statutory interest and a contractual penalty** (under {cl1722_acc}): the penalty can be claimed only to the extent that it exceeds the interest claimed ({statutory}). The penalty in this case: no more than **{claimable}**.",
+        "calc_note": "Calculation: simple interest (no compounding). Informational calculation, not legal advice. If the landlord is a business or the contract is a consumer contract, additional restrictions may apply.",
+        "chat_title": "💬 Chat about the contract",
+        "chat_greeting": "Hello. What questions do you have about this contract?",
+        "chat_placeholder": "Ask a question about the contract...",
+        "chat_hide_help": "Hide (the conversation is kept)",
+        "chat_open_help": "Open chat",
+        "chat_cap_mock": "🧪 Test mode: built-in answers, Gemini is not called ($0.00).",
+        "chat_cap_real": "Your question is sent to Gemini together with the contract text and the analysis.",
+        "chat_spinner": "💬 Gemini is preparing an answer...",
+        "chat_no_key": "⚠️ Enter your Gemini API key in the sidebar or turn on test mode.",
+        "chat_error": "❌ Could not prepare an answer: {error}",
+        "mock_pets": "🧪 **Pets:** this contract (section 6) has no rules on keeping pets. It is therefore unclear whether a dog or a cat is allowed, who is responsible for damage and how noise or cleanliness disputes are resolved. Suggestion: add a clause such as “The Tenant may keep one pet with the Landlord’s written consent and is liable for any damage it causes.” General rules on use of the premises: {dtil17}.",
+        "mock_terminate": "🧪 **Termination:** the tenant may withdraw from the contract unilaterally by giving the landlord at least 1 month’s written notice (for contracts of up to 10 years) {dtil27} {dtil20}. The landlord may terminate the contract only in the cases set out in the law {dtil21}, for example if rent is more than 2 months overdue {dtil24}. Check that the termination clause of the contract matches these periods.",
+        "mock_deposit": "🧪 **Security deposit:** it may not exceed two months’ rent and must be returned no later than the day the premises are vacated, unless the contract says otherwise {dtil12}. Clause 4.3 of the contract allows money to be withheld without agreement, so it is advisable to require a defects report signed by both parties.",
+        "mock_land": "🧪 **Land register:** if the premises are sold, the contract binds the new owner only if the lease rights are entered in the land register {dtil28} {dtil35}. Otherwise the new owner may demand that the premises be vacated within 2 months.",
+        "mock_penalty": "🧪 **Penalty and interest:** a penalty for late payment cannot in total exceed 10% of the debt {cl1716} and must be proportionate {cl1717}. Calculate the exact amount with the calculator at the bottom of the page.",
+        "mock_rent": "🧪 **Rent:** during the contract it may be changed only if the contract sets out conditions and a procedure for changing it {dtil10}.",
+        "mock_repairs": "🧪 **Repairs:** clause 6.1.2 of the contract does not define “minor repairs”, so a dispute may arise over who pays for damage to appliances or plumbing. The landlord, in turn, must keep the premises usable throughout the contract {dtil18}.",
+        "mock_default": "🧪 **Test answer:** your question was received (“{question}”). In test mode Gemini is not called. In real mode Gemini would answer based on the contract text. Try asking about pets, termination, the security deposit, the land register, penalties, rent or repairs.",
+    },
+    "Русский": {
+        "reset_btn": "🔄 Очистить сессию / Начать заново",
+        "cite_cl_gen": "Гражданский закон, ст. {n}",
+        "cite_cl_acc": "Гражданский закон, ст. {n}",
+        "calc_title": "🧮 Калькулятор штрафов и процентов",
+        "calc_autofill": "Поля заполнены автоматически из текста договора (если найдено). Проверьте и при необходимости исправьте.",
+        "calc_kind": "Вид санкции",
+        "calc_kind_daily": "Договорная неустойка / пеня (% в день)",
+        "calc_kind_annual": "Проценты за просрочку (% годовых)",
+        "calc_principal": "Сумма долга / арендная плата (EUR)",
+        "calc_days": "Дней просрочки",
+        "calc_rate_day": "Ставка в договоре (% в день)",
+        "calc_rate_year": "Ставка в договоре (% годовых)",
+        "calc_cap": "В договоре установлен общий предел неустойки (не более 10% от долга)",
+        "calc_enter": "Введите сумму, количество дней и ставку, чтобы увидеть расчёт.",
+        "calc_m_contract": "По условиям договора",
+        "calc_m_cap": "Максимум по закону (10%)",
+        "calc_m_diff": "Разница с законными процентами",
+        "calc_m_stat": "Законные проценты (6% годовых)",
+        "calc_t_error": "🔴 Превышает установленное законом",
+        "calc_t_warn": "🟡 Внимание",
+        "calc_t_ok": "🟢 Соответствует нормам",
+        "calc_t_risk": "🔴 Риск",
+        "calc_msg_exceed": "Рассчитанная по договору неустойка ({total}) превышает 10% от долга ({cap}). Согласно {cl1716_gen} (часть 3), неустойка за ненадлежащее исполнение (просрочку) в совокупности не может превышать 10% от основного долга. Превышающая часть ({excess}) не подлежит взысканию.",
+        "calc_msg_nocap": "В договоре не установлен общий предел неустойки. При ставке {rate}% в день порог в 10% будет достигнут через {days_to_cap} дн. Согласно {cl1716_gen} в договоре должно быть указано, что неустойка в совокупности не превышает 10%.",
+        "calc_msg_highrate": "Ставка {rate}% в день соответствует ~{annual}% годовых, то есть в {multiple} раза выше законных процентов (6% годовых, {cl1765}). Закон не устанавливает конкретного предела дневной ставки, но суд снижает чрезмерную неустойку ({cl1717}, {cl1724}). 0,1% в день — чаще встречающийся соразмерный уровень (ориентир, не норма закона).",
+        "calc_msg_ok_daily": "Неустойка ({total}) не превышает предел в 10% ({cap}) согласно {cl1716_gen}, предел в договоре установлен, а ставка не превышает 0,1% в день.",
+        "calc_msg_ok_annual": "Ставка ({rate}% годовых) не превышает законные проценты (6% годовых, {cl1765}).",
+        "calc_msg_warn_annual": "Ставка ({rate}% годовых) в {multiple} раза выше законных процентов (6% годовых, {cl1765}). Гражданский закон не устанавливает конкретного верхнего предела, но несоразмерные и противоречащие добросовестной практике проценты противоправны ({cl1764}, {cl1717}).",
+        "calc_msg_risk_annual": "Ставка ({rate}% годовых, ~{rate_day}% в день) очень высока (в {multiple} раза выше законных процентов) и может быть признана несоразмерной и противоправной ({cl1764}, {cl1717}).",
+        "calc_both": "**Если арендодатель требует и законные проценты, и неустойку** (согласно {cl1722_acc}): неустойку можно требовать только в части, превышающей заявленную сумму процентов ({statutory}). Неустойка в этом случае: не более **{claimable}**.",
+        "calc_note": "Расчёт: простые проценты (без начисления процентов на проценты). Информационный расчёт, не юридическая консультация. Если арендодатель — предприниматель или договор является потребительским, могут действовать дополнительные ограничения.",
+        "chat_title": "💬 Чат о договоре",
+        "chat_greeting": "Здравствуйте. Какие у вас возникли вопросы по этому договору?",
+        "chat_placeholder": "Задайте вопрос о договоре...",
+        "chat_hide_help": "Скрыть (разговор сохранится)",
+        "chat_open_help": "Открыть чат",
+        "chat_cap_mock": "🧪 Тестовый режим: встроенные ответы, Gemini не вызывается ($0.00).",
+        "chat_cap_real": "Вопрос отправляется в Gemini вместе с текстом договора и анализом.",
+        "chat_spinner": "💬 Gemini готовит ответ...",
+        "chat_no_key": "⚠️ Введите API-ключ Gemini в боковой панели или включите тестовый режим.",
+        "chat_error": "❌ Не удалось подготовить ответ: {error}",
+        "mock_pets": "🧪 **Домашние животные:** в этом договоре (раздел 6) нет правил содержания домашних животных. Поэтому неясно, можно ли держать собаку или кошку, кто отвечает за повреждения и как решаются споры о шуме или чистоте. Рекомендация: добавить пункт, например: «Арендатор может держать одно домашнее животное с письменного согласия арендодателя и отвечает за причинённый им ущерб». Общие правила пользования помещением: {dtil17}.",
+        "mock_terminate": "🧪 **Расторжение:** арендатор вправе в одностороннем порядке отказаться от договора, письменно уведомив арендодателя не менее чем за 1 месяц (для договоров до 10 лет) {dtil27} {dtil20}. Арендодатель может расторгнуть договор только в случаях, предусмотренных законом {dtil21}, например, если просрочка арендной платы превышает 2 месяца {dtil24}. Проверьте, соответствует ли пункт договора о расторжении этим срокам.",
+        "mock_deposit": "🧪 **Залог:** он не может превышать арендную плату за два месяца и должен быть возвращён не позднее дня освобождения помещения, если в договоре не предусмотрено иное {dtil12}. Пункт 4.3 договора позволяет удерживать деньги без согласования, поэтому желательно требовать акт о дефектах, подписанный обеими сторонами.",
+        "mock_land": "🧪 **Земельная книга:** если помещение продаётся, договор обязателен для нового собственника только в том случае, если права аренды внесены в земельную книгу {dtil28} {dtil35}. В противном случае он может потребовать освободить помещение в течение 2 месяцев.",
+        "mock_penalty": "🧪 **Неустойка и проценты:** неустойка за просрочку в совокупности не может превышать 10% от долга {cl1716} и должна быть соразмерной {cl1717}. Точную сумму рассчитайте в калькуляторе внизу страницы.",
+        "mock_rent": "🧪 **Арендная плата:** в течение срока договора её можно изменять только в том случае, если в договоре предусмотрены условия и порядок изменения платы {dtil10}.",
+        "mock_repairs": "🧪 **Ремонт:** в пункте 6.1.2 договора «мелкий ремонт» не определён, поэтому может возникнуть спор о том, кто платит за повреждения бытовой техники или сантехники. Арендодатель, в свою очередь, обеспечивает возможность пользоваться помещением в течение всего срока договора {dtil18}.",
+        "mock_default": "🧪 **Тестовый ответ:** вопрос получен («{question}»). В тестовом режиме Gemini не вызывается. В реальном режиме ответ подготовил бы Gemini на основе текста договора. Попробуйте спросить о домашних животных, расторжении, залоге, земельной книге, неустойке, арендной плате или ремонте.",
+    },
+}
+for _l, _extra in TR_NEW.items():
+    TR[_l].update(_extra)
+
 # Papildu valodas: tulkojumu veic Gemini (kad ievadīta API atslēga)
 EXTRA_LANGS = {
     "Deutsch": "German", "Español": "Spanish", "Français": "French", "Italiano": "Italian",
@@ -371,7 +535,7 @@ st.markdown(T["subtitle"])
 # Sānu josla
 st.sidebar.header(T["sidebar_header"])
 api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
-st.sidebar.button("🔄 Notīrīt sesiju / Sākt no jauna", on_click=reset_session, use_container_width=True)
+st.sidebar.button(T["reset_btn"], on_click=reset_session, use_container_width=True)
 uploaded_file = st.file_uploader(
     T["uploader"],
     type=["docx", "pdf", "png", "jpg", "jpeg"],
@@ -1816,6 +1980,283 @@ def render_chat_widget():
 
     components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
     inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(m["content"] for m in mine))
+# ---------------------------------------------------------------
+# Kalkulators izvēlētajā saskarnes valodā (pārraksta iepriekšējās penalty_calc un render_calculator definīcijas)
+# ---------------------------------------------------------------
+def _dec_comma():
+    """Decimālkomats latviešu un krievu valodā; citās valodās (arī Gemini tulkotajās) decimālpunkts."""
+    return T.get("report_lang_name") in ("latviešu", "krievu")
+
+
+def _n(x, d=2):
+    s = f"{x:,.{d}f}"
+    return s.replace(",", " ").replace(".", ",") if _dec_comma() else s
+
+
+def eur(x):
+    return _n(x, 2) + " EUR"
+
+
+def pct(x):
+    s = f"{x:g}"
+    return s.replace(".", ",") if _dec_comma() else s
+
+
+def _label(form, n):
+    try:
+        return T[form].format(n=n)
+    except Exception:
+        return TR["English"][form].format(n=n)
+
+
+def _cl_links():
+    """Saites uz Civillikuma pantiem ar nosaukumu izvēlētajā valodā (veidnēs: {cl1716_gen}, {cl1765} u.c.)."""
+    def link(n, form="cite_cl", shown=None):
+        return f"[{_label(form, shown or n)}]({LAW_LINKS['CL']}#p{n})"
+    return {
+        "cl1716_gen": link(1716, "cite_cl_gen"), "cl1722_acc": link(1722, "cite_cl_acc"),
+        "cl1716": link(1716), "cl1717": link(1717), "cl1764": link(1764), "cl1765": link(1765),
+        "cl1724": link(1724, shown="1724¹"),
+    }
+
+
+def tfmt(key, **kw):
+    """Aizpilda tulkoto veidni. Ja tulkojumā vietturi sabojāti, izmanto angļu veidni (nekad nenoved pie kļūdas)."""
+    vals = {**_cl_links(), **kw}
+    for tpl in (T.get(key), TR["English"][key]):
+        try:
+            return tpl.format(**vals)
+        except Exception:
+            continue
+    return TR["English"][key]
+
+
+def penalty_calc(principal, days, rate, daily, cap_declared):
+    """Aprēķins un vērtējums. daily=True: likme % dienā (līgumsods); False: likme % gadā (nokavējuma procenti)."""
+    statutory = principal * 0.06 * days / 365          # likumiskie procenti 6% gadā (CL 1765.)
+    cap = principal * 0.10                             # līgumsoda griesti (CL 1716. 3. daļa)
+    if daily:
+        total = principal * rate / 100 * days
+        annual = rate * 365
+    else:
+        total = principal * rate / 100 * days / 365
+        annual = rate
+    multiple = annual / 6
+    res = {"total": total, "cap": cap, "statutory": statutory, "annual": annual, "multiple": multiple,
+           "daily": daily, "excess": 0.0, "lawful": total, "days_to_cap": None, "claimable": None}
+
+    if daily:
+        res["days_to_cap"] = 10 / rate
+        res["lawful"] = min(total, cap)
+        res["excess"] = max(0.0, total - cap)
+        res["claimable"] = max(0.0, res["lawful"] - statutory)      # CL 1722.
+        if total > cap + 0.005:
+            res["level"], res["title"] = "error", T["calc_t_error"]
+            res["messages"] = [tfmt("calc_msg_exceed", total=eur(total), cap=eur(cap), excess=eur(res["excess"]))]
+            return res
+        msgs = []
+        if not cap_declared:
+            msgs.append(tfmt("calc_msg_nocap", rate=pct(rate), days_to_cap=_n(res["days_to_cap"], 0)))
+        if rate > 0.1:
+            msgs.append(tfmt("calc_msg_highrate", rate=pct(rate), annual=_n(annual, 0), multiple=_n(multiple, 1)))
+        if msgs:
+            res["level"], res["title"], res["messages"] = "warning", T["calc_t_warn"], msgs
+        else:
+            res["level"], res["title"] = "success", T["calc_t_ok"]
+            res["messages"] = [tfmt("calc_msg_ok_daily", total=eur(total), cap=eur(cap))]
+        return res
+
+    # nokavējuma procenti (% gadā)
+    if rate <= 6:
+        res["level"], res["title"] = "success", T["calc_t_ok"]
+        res["messages"] = [tfmt("calc_msg_ok_annual", rate=pct(rate))]
+    elif rate <= 36.5:
+        res["level"], res["title"] = "warning", T["calc_t_warn"]
+        res["messages"] = [tfmt("calc_msg_warn_annual", rate=pct(rate), multiple=_n(multiple, 1))]
+    else:
+        res["level"], res["title"] = "error", T["calc_t_risk"]
+        res["messages"] = [tfmt("calc_msg_risk_annual", rate=pct(rate), rate_day=pct(round(rate / 365, 2)), multiple=_n(multiple, 1))]
+    return res
+
+
+def render_calculator():
+    """Soda naudas kalkulators izvēlētajā valodā. Ievades dati tiek saglabāti sesijā katrai analīzei atsevišķi."""
+    entry = current_entry()
+    terms = (entry["terms"] if entry else st.session_state.get("terms")) or {}
+    sig = entry["id"] if entry else "none"
+    store = st.session_state.setdefault("calc_store", {})
+    saved = store.get(sig, {})
+    with st.expander(T["calc_title"], expanded=False):
+        if terms:
+            st.caption(T["calc_autofill"])
+        opts = [T["calc_kind_daily"], T["calc_kind_annual"]]
+        kind = st.radio(
+            T["calc_kind"], opts, index=0 if saved.get("daily", True) else 1, key=f"calc_kind_{sig}",
+        )
+        daily = kind == opts[0]
+        c1, c2, c3 = st.columns(3)
+        principal = c1.number_input(
+            T["calc_principal"], min_value=0.0, value=float(saved.get("principal", terms.get("rent") or 500.0)),
+            step=10.0, format="%.2f", key=f"calc_p_{sig}",
+        )
+        days = c2.number_input(
+            T["calc_days"], min_value=0, value=int(saved.get("days", 30)), step=1, key=f"calc_d_{sig}",
+        )
+        rate = c3.number_input(
+            T["calc_rate_day"] if daily else T["calc_rate_year"], min_value=0.0,
+            value=float(saved.get("rate_day", terms.get("rate_day") or 0.1)) if daily else float(saved.get("rate_year", 6.0)),
+            step=0.01, format="%.3f", key=f"calc_r_{sig}_{int(daily)}",
+        )
+        cap_declared = True
+        if daily:
+            cap_declared = st.checkbox(
+                T["calc_cap"], value=bool(saved.get("cap", terms.get("cap"))), key=f"calc_cap_{sig}",
+            )
+
+        # Saglabā ievades datus sesijā (nepazūd, pārslēdzot analīzes vēsturē vai valodu)
+        new = dict(saved)
+        new.update({"principal": principal, "days": days, "daily": daily})
+        new["rate_day" if daily else "rate_year"] = rate
+        if daily:
+            new["cap"] = cap_declared
+        store[sig] = new
+
+        if principal <= 0 or days <= 0 or rate <= 0:
+            st.info(T["calc_enter"])
+            return
+
+        r = penalty_calc(principal, days, rate, daily, cap_declared)
+        m1, m2, m3 = st.columns(3)
+        m1.metric(T["calc_m_contract"], eur(r["total"]))
+        if daily:
+            m2.metric(T["calc_m_cap"], eur(r["cap"]))
+        else:
+            m2.metric(T["calc_m_diff"], eur(max(0.0, r["total"] - r["statutory"])))
+        m3.metric(T["calc_m_stat"], eur(r["statutory"]))
+
+        body = "\n\n".join(f"- {m}" for m in r["messages"])
+        {"success": st.success, "warning": st.warning, "error": st.error}[r["level"]](f"**{r['title']}**\n\n{body}")
+
+        if daily:
+            st.markdown(tfmt("calc_both", statutory=eur(r["statutory"]), claimable=eur(r["claimable"])))
+        st.caption(T["calc_note"])
+# ---------------------------------------------------------------
+# Čats izvēlētajā saskarnes valodā (pārraksta iepriekšējās mock_chat_answer, chat_answer un render_chat_widget definīcijas)
+# ---------------------------------------------------------------
+MOCK_REFS = {
+    "dtil10": "[[DTIL 10]]", "dtil12": "[[DTIL 12]]", "dtil17": "[[DTIL 17]]", "dtil18": "[[DTIL 18]]",
+    "dtil20": "[[DTIL 20]]", "dtil21": "[[DTIL 21]]", "dtil24": "[[DTIL 24]]", "dtil27": "[[DTIL 27]]",
+    "dtil28": "[[DTIL 28]]", "dtil35": "[[DTIL 35]]", "cl1716": "[[CL 1716]]", "cl1717": "[[CL 1717]]",
+}
+
+# (veidnes atslēga, atslēgvārdu saknes latviešu / angļu / krievu valodā; salīdzina bez garumzīmēm)
+MOCK_TOPICS = [
+    ("mock_pets", ("majdzivniek", "dzivniek", "suns", "suni", "kakis", "kaki", "kaku", "kakus",
+                   "pet", "dog", "cat", "animal", "животн", "собак", "кошк", "питомц")),
+    ("mock_terminate", ("uzteik", "izbeig", "atkap", "terminat", "cancel", "notice", "расторг", "прекрат", "уведомл", "выехат", "съехат")),
+    ("mock_deposit", ("depozit", "drosibas naud", "deposit", "залог", "депозит")),
+    ("mock_land", ("zemesgramat", "pardod", "pardosan", "land regist", "sell", "sold", "new owner", "земельн", "продаж", "продад", "продан", "собственник")),
+    ("mock_penalty", ("ligumsod", "soda naud", "nokavej", "kavej", "procent", "penalt", "fine", "interest", "overdue", "late fee", "неустой", "штраф", "пени", "просроч", "процент")),
+    ("mock_rent", ("ires maks", "paaugstin", "palielin", "cena", "rent", "price", "increase", "арендн", "повыш", "цена")),
+    ("mock_repairs", ("remont", "bojajum", "salauz", "repair", "damage", "broken", "повреждени", "поломк")),
+]
+
+
+def mock_chat_answer(question):
+    """Testa režīma atbilde pēc atslēgvārdiem izvēlētajā valodā (bez Gemini, 0.00$)."""
+    q = _norm(question)
+    for key, words in MOCK_TOPICS:
+        if any(re.search(r"\b" + re.escape(_norm(w)), q) for w in words):
+            return tfmt(key, **MOCK_REFS)
+    return tfmt("mock_default", question=question.strip(), **MOCK_REFS)
+
+
+def chat_answer(question, entry, previous):
+    """Reālais režīms: jautājums + līguma konteksts uz Gemini. Atbilde izvēlētajā saskarnes valodā."""
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(
+        "gemini-3.8-flash",
+        generation_config=genai.GenerationConfig(temperature=0.2, max_output_tokens=800),
+    )
+    plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
+    system = CHAT_SYSTEM.replace(
+        "latviešu valodā (ja lietotājs raksta citā valodā, atbildi tajā)", T["report_lang_name"] + " valodā"
+    )
+    parts = [system]
+    if entry.get("contract_text"):
+        parts.append("LĪGUMA TEKSTS:\n" + entry["contract_text"])
+    parts.append("IEPRIEKŠ SAGATAVOTĀ ANALĪZE:\n" + plain(entry["result"]["analysis"]))
+    if previous:
+        parts.append("IEPRIEKŠĒJĀ SARUNA:\n" + "\n".join(
+            f"{'Lietotājs' if m['role'] == 'user' else 'Palīgs'}: {plain(m['content'])}" for m in previous[-6:]
+        ))
+    parts.append("JAUTĀJUMS: " + question)
+    return linkify(model.generate_content("\n\n".join(parts)).text)
+
+
+def render_chat_widget():
+    """Peldošs čata logs labajā apakšējā stūrī izvēlētajā saskarnes valodā (saruna saglabājas arī paslēpjot)."""
+    if "key" not in inspect.signature(st.container).parameters:
+        render_chat()                       # vecāka Streamlit versija: parastais čats lapas apakšā
+        return
+    entry = current_entry()
+    if not entry:
+        return
+    st.markdown(CHAT_CSS, unsafe_allow_html=True)
+    msgs = st.session_state.setdefault("messages", [])
+    if not any(m["entry"] == entry["id"] for m in msgs):
+        msgs.append({"role": "assistant", "content": "", "entry": entry["id"], "mock": False, "greeting": True})
+    mine = [m for m in msgs if m["entry"] == entry["id"]]
+    use_mock = test_mode or entry["mode"] == "test"
+    is_open = st.session_state.get("chat_open", False)
+    unread = entry["id"] not in st.session_state.get("chat_seen", [])
+
+    if not is_open:
+        greeted = st.session_state.setdefault("chat_greeted", [])
+        if unread and entry["id"] not in greeted:           # sveiciena burbulis tiek parādīts vienu reizi katrai analīzei
+            greeted.append(entry["id"])
+            with st.container(key="chat_greeting"):
+                st.button("👋 " + T["chat_greeting"], key="chat_greet_btn", on_click=chat_toggle, args=(True,))
+        with st.container(key="chat_launcher_unread" if unread else "chat_launcher"):
+            st.button("💬", key="chat_open_btn", on_click=chat_toggle, args=(True,), help=T["chat_open_help"])
+        return
+
+    with st.container(key="chat_widget"):
+        h1, h2 = st.columns([5, 1])
+        h1.markdown(f"**{T['chat_title']}**")
+        h2.button("✕", key="chat_close_btn", on_click=chat_toggle, args=(False,), help=T["chat_hide_help"])
+        st.caption(T["chat_cap_mock"] if use_mock else T["chat_cap_real"])
+        box = st.container(height=280, key="chat_msgs")
+        prompt = st.chat_input(T["chat_placeholder"], key="chat_widget_input")
+
+    def shown(m):                                            # sveiciens vienmēr izvēlētajā valodā
+        return T["chat_greeting"] if m.get("greeting") else m["content"]
+
+    with box:                                                # ziņas tiek zīmētas virs ievades lauka
+        for m in mine:
+            with st.chat_message(m["role"]):
+                st.markdown(shown(m))
+        if prompt:
+            msgs.append({"role": "user", "content": prompt, "entry": entry["id"], "mock": use_mock})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            with st.chat_message("assistant"):
+                if use_mock:
+                    answer = linkify(mock_chat_answer(prompt))
+                elif not api_key:
+                    answer = T["chat_no_key"]
+                else:
+                    try:
+                        with st.spinner(T["chat_spinner"]):
+                            answer = chat_answer(prompt, entry, mine)
+                    except Exception as e:
+                        answer = tfmt("chat_error", error=e)
+                st.markdown(answer)
+            msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
+            mine = [m for m in msgs if m["entry"] == entry["id"]]
+
+    components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
+    inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(shown(m) for m in mine))
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
