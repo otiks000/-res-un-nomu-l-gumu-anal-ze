@@ -88,7 +88,7 @@ def generate_pretty_docx(analysis_text):
     doc_io.seek(0)
     return doc_io
 
-# PDF ģenerēšanas klase ar pilnu garumzīmju atbalstu caur /tmp fontiem
+# PDF ģenerēšanas klase
 class PDFReport(FPDF):
     def header(self):
         self.set_fill_color(30, 41, 59)
@@ -106,7 +106,6 @@ class PDFReport(FPDF):
         self.cell(0, 10, f"Lappuse {self.page_no()} | AI Juridiskais Asistents", 0, 0, "C")
 
 def generate_pretty_pdf(analysis_text):
-    # Saglabā fontus drošajā /tmp mapē Streamlit Cloud vidē
     font_path = os.path.join("/tmp", "DejaVuSans.ttf")
     font_bold_path = os.path.join("/tmp", "DejaVuSans-Bold.ttf")
     
@@ -123,12 +122,16 @@ def generate_pretty_pdf(analysis_text):
             pass
 
     pdf = PDFReport()
-    pdf.add_page()
     
-    # Reģistrē Unicode fontu latviešu valodai
-    if os.path.exists(font_path) and os.path.exists(font_bold_path):
+    # Droši reģistrē fontus FPDF sistēmā
+    font_available = os.path.exists(font_path) and os.path.exists(font_bold_path)
+    if font_available:
         pdf.add_font("DejaVu", "", font_path, uni=True)
         pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
+    
+    pdf.add_page()
+    
+    if font_available:
         pdf.set_font("DejaVu", "B", 14)
     else:
         pdf.set_font("Helvetica", "B", 14)
@@ -136,7 +139,11 @@ def generate_pretty_pdf(analysis_text):
     pdf.set_text_color(30, 41, 59)
     pdf.cell(0, 10, "Dzīvojamās telpas īres līguma juridiskā atskaite", ln=True)
     
-    pdf.set_font("DejaVu", "", 9) if os.path.exists(font_path) else pdf.set_font("Helvetica", "", 9)
+    if font_available:
+        pdf.set_font("DejaVu", "", 9)
+    else:
+        pdf.set_font("Helvetica", "", 9)
+        
     pdf.set_text_color(100, 100, 100)
     pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}", ln=True)
     pdf.ln(5)
@@ -150,7 +157,10 @@ def generate_pretty_pdf(analysis_text):
             
         if line_str.startswith("## "):
             pdf.ln(4)
-            pdf.set_font("DejaVu", "B", 11) if os.path.exists(font_bold_path) else pdf.set_font("Helvetica", "B", 11)
+            if font_available:
+                pdf.set_font("DejaVu", "B", 11)
+            else:
+                pdf.set_font("Helvetica", "B", 11)
             
             if "Kritiski" in line_str or "🔴" in line_str:
                 pdf.set_text_color(220, 38, 38)
@@ -164,7 +174,10 @@ def generate_pretty_pdf(analysis_text):
             clean_title = line_str.replace("##", "").strip()
             pdf.cell(0, 7, clean_title, ln=True)
             
-            pdf.set_font("DejaVu", "", 9.5) if os.path.exists(font_path) else pdf.set_font("Helvetica", "", 9.5)
+            if font_available:
+                pdf.set_font("DejaVu", "", 9.5)
+            else:
+                pdf.set_font("Helvetica", "", 9.5)
             pdf.set_text_color(40, 40, 40)
         else:
             pdf.multi_cell(0, 5.5, line_str)
@@ -258,4 +271,4 @@ if analyze_button:
                     
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
-                    
+            
