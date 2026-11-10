@@ -418,7 +418,62 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 analyze_button = st.button("🔍 Analizēt līgumu", type="primary")
 
+
+def build_downloads(report_text):
+    """Izveido Word un PDF failus (baitos), lai tos varētu lejupielādēt vairākkārt."""
+    result = {"docx": None, "pdf": None, "docx_err": None, "pdf_err": None}
+    try:
+        result["docx"] = generate_pretty_docx(report_text).getvalue()
+    except Exception as e:
+        result["docx_err"] = str(e)
+    try:
+        result["pdf"] = generate_pretty_pdf(report_text).getvalue()
+    except Exception as e:
+        result["pdf_err"] = str(e)
+    return result
+
+
+def render_downloads(result):
+    st.success("✅ Analīze veiksmīgi pabeigta!")
+    st.markdown("---")
+    st.markdown("### 📥 Lejupielādēt analīzes atskaiti:")
+    col1, col2 = st.columns(2)
+    today = datetime.date.today()
+
+    with col1:
+        if result["docx"]:
+            st.download_button(
+                label="📄 Lejupielādēt Word (.docx)",
+                data=result["docx"],
+                file_name=f"Ires_Liguma_Analize_{today}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+                key="dl_docx"
+            )
+        else:
+            st.warning(f"Word failu neizdevās izveidot: {result['docx_err']}")
+
+    with col2:
+        if result["pdf"]:
+            st.download_button(
+                label="📄 Lejupielādēt PDF (.pdf)",
+                data=result["pdf"],
+                file_name=f"Ires_Liguma_Analize_{today}.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+                key="dl_pdf"
+            )
+        else:
+            st.warning(f"PDF failu neizdevās izveidot: {result['pdf_err']}")
+
+
+# ---------------------------------------------------------------
+# Analīzes izpilde
+# ---------------------------------------------------------------
 if analyze_button:
+    # Jauna analīze: izdzēš iepriekšējo saglabāto rezultātu
+    st.session_state.pop("result", None)
+
     if not api_key:
         st.error("⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!")
     elif uploaded_file is None:
@@ -480,37 +535,23 @@ if analyze_button:
             if full_response_text:
                 st.markdown(SOURCES_MD)
                 report_text = full_response_text + "\n\n## Izmantotie avoti\n" + SOURCES_MD
-                st.success("✅ Analīze veiksmīgi pabeigta!")
-                st.markdown("---")
-
-                st.markdown("### 📥 Lejupielādēt analīzes atskaiti:")
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    try:
-                        docx_file = generate_pretty_docx(report_text)
-                        st.download_button(
-                            label="📄 Lejupielādēt Word (.docx)",
-                            data=docx_file,
-                            file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                            use_container_width=True
-                        )
-                    except Exception as e:
-                        st.warning(f"Word failu neizdevās izveidot: {e}")
-
-                with col2:
-                    try:
-                        pdf_file = generate_pretty_pdf(report_text)
-                        st.download_button(
-                            label="📄 Lejupielādēt PDF (.pdf)",
-                            data=pdf_file,
-                            file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.pdf",
-                            mime="application/pdf",
-                            use_container_width=True
-                        )
-                    except Exception as e:
-                        st.warning(f"PDF failu neizdevās izveidot: {e}")
+                result = build_downloads(report_text)
+                result.update({
+                    "analysis": full_response_text,
+                    "laws_source": laws_source,
+                })
+                # Saglabā, lai analīze nepazustu pēc lejupielādes
+                st.session_state["result"] = result
+                render_downloads(result)
 
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
+
+elif "result" in st.session_state:
+    # Lapa pārlādējās (piem., nospiesta lejupielādes poga): parāda saglabāto analīzi
+    saved = st.session_state["result"]
+    st.caption(f"📚 Likumu avots: {saved['laws_source']}")
+    st.markdown("### 📋 Analīzes rezultāts:")
+    st.markdown(saved["analysis"])
+    st.markdown(SOURCES_MD)
+    render_downloads(saved)
