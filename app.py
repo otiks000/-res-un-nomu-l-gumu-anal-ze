@@ -6,6 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from fpdf import FPDF
 import io
 import re
+import json
 import datetime
 import os
 import requests
@@ -147,27 +148,101 @@ TR_EXTRA = {
 for _l, _extra in TR_EXTRA.items():
     TR[_l].update(_extra)
 
-lang = st.sidebar.selectbox("🌐 Valoda / Language / Язык", list(TR.keys()))
-T = TR[lang]
+# Papildu valodas: tulkojumu veic Gemini (kad ievadīta API atslēga)
+EXTRA_LANGS = {
+    "Deutsch": "German", "Español": "Spanish", "Français": "French", "Italiano": "Italian",
+    "Português": "Portuguese", "Polski": "Polish", "Lietuvių": "Lithuanian", "Eesti": "Estonian",
+    "Suomi": "Finnish", "Svenska": "Swedish", "Norsk": "Norwegian", "Dansk": "Danish",
+    "Nederlands": "Dutch", "Українська": "Ukrainian", "Беларуская": "Belarusian", "Türkçe": "Turkish",
+    "Čeština": "Czech", "Slovenčina": "Slovak", "Magyar": "Hungarian", "Română": "Romanian",
+    "Български": "Bulgarian", "Ελληνικά": "Greek", "Српски": "Serbian", "Hrvatski": "Croatian",
+    "Shqip": "Albanian", "Қазақша": "Kazakh", "Հայերեն": "Armenian", "ქართული": "Georgian",
+    "中文": "Chinese", "日本語": "Japanese", "한국어": "Korean", "العربية": "Arabic",
+    "עברית": "Hebrew", "हिन्दी": "Hindi", "اردو": "Urdu", "Tiếng Việt": "Vietnamese",
+    "ไทย": "Thai", "Bahasa Indonesia": "Indonesian", "Filipino": "Filipino",
+}
+OTHER_LANG = "🌍 Cita valoda / Other / Другой…"
 
-# Faila augšupielādes pogas un uzraksta tulkojums (CSS; ja Streamlit maina struktūru,
-# paliks noklusējuma teksts)
-st.markdown(
-    "<style>"
-    '[data-testid="stFileUploaderDropzone"] button { font-size: 0 !important; }'
-    '[data-testid="stFileUploaderDropzone"] button::after { content: "' + T["up_browse"] + '"; font-size: 0.95rem; }'
-    '[data-testid="stFileUploaderDropzoneInstructions"] > div > span { font-size: 0 !important; }'
-    '[data-testid="stFileUploaderDropzoneInstructions"] > div > span::before { content: "' + T["up_drag"] + '"; font-size: 1rem; }'
-    "</style>",
-    unsafe_allow_html=True,
+
+@st.cache_data(show_spinner=False)
+def translate_ui(lang_name, _api_key):
+    """Iztulko visus saskarnes tekstus izvēlētajā valodā (rezultāts tiek saglabāts kešatmiņā)."""
+    genai.configure(api_key=_api_key)
+    model = genai.GenerativeModel(
+        'gemini-3.8-flash',
+        generation_config=genai.GenerationConfig(temperature=0, response_mime_type="application/json"),
+    )
+    base = {k: v for k, v in TR["English"].items() if k != "report_lang_name"}
+    prompt = (
+        f"Translate the values of this JSON object into {lang_name}. They are user-interface texts of a web "
+        "app that analyzes apartment lease contracts. Rules: keep every key unchanged; keep emojis, markdown "
+        "prefixes such as '###', and placeholders such as {n} exactly as they are; keep 'likumi.lv', 'Gemini', "
+        "'API', '.docx', '.pdf' and the Latvian names in parentheses unchanged; if a value is written in "
+        "uppercase keep it uppercase; keep short button labels short. Return ONLY the JSON object.\n\n"
+        + json.dumps(base, ensure_ascii=False)
+    )
+    data = json.loads(model.generate_content(prompt).text)
+    out = dict(TR["English"])
+    for k, v in data.items():
+        if k in base and isinstance(v, str) and v.strip():
+            out[k] = v
+    out["report_lang_name"] = lang_name
+    return out
+
+
+lang_choice = st.sidebar.selectbox(
+    "🌐 Valoda / Language / Язык",
+    list(TR.keys()) + list(EXTRA_LANGS.keys()) + [OTHER_LANG],
 )
+
+if lang_choice in TR:
+    T = TR[lang_choice]
+else:
+    if lang_choice == OTHER_LANG:
+        lang_name = st.sidebar.text_input(
+            "Language (any language in the world / jebkura pasaules valoda)", key="custom_lang"
+        ).strip()
+    else:
+        lang_name = EXTRA_LANGS[lang_choice]
+
+    T = dict(TR["English"])
+    if lang_name:
+        T["report_lang_name"] = lang_name
+        _key = st.session_state.get("api_key_input", "")
+        if _key:
+            try:
+                with st.spinner("🌐 Translating the interface..."):
+                    T = translate_ui(lang_name, _key)
+            except Exception as _e:
+                st.sidebar.warning(f"Interface translation failed, showing English: {str(_e)[:120]}")
+        else:
+            st.sidebar.info(
+                "🌐 Enter your Gemini API key below and the interface and the analysis "
+                "will switch to this language."
+            )
+
+
+def _css_text(text):
+    return text.replace("\\", "").replace('"', "'").replace("\n", " ")
+
+
+# Faila augšupielādes pogas un uzraksta tulkojums: oriģinālais teksts + " / " + tulkojums
+# (CSS; ja Streamlit maina struktūru, paliks tikai noklusējuma teksts)
+if T["up_browse"] != TR["English"]["up_browse"]:
+    st.markdown(
+        "<style>"
+        '[data-testid="stFileUploaderDropzone"] button::after { content: " / ' + _css_text(T["up_browse"]) + '"; white-space: pre; }'
+        '[data-testid="stFileUploaderDropzoneInstructions"] > div > span::after { content: " / ' + _css_text(T["up_drag"]) + '"; }'
+        "</style>",
+        unsafe_allow_html=True,
+    )
 
 st.title(T["title"])
 st.markdown(T["subtitle"])
 
 # Sānu josla
 st.sidebar.header(T["sidebar_header"])
-api_key = st.sidebar.text_input(T["api_label"], type="password")
+api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
 
 uploaded_file = st.file_uploader(
     T["uploader"],
@@ -204,6 +279,7 @@ TUKŠIE LAUKI (svarīgs noteikums):
 DARBA METODE:
 - Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
 - Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
+- NEGRUPĒ: katru atsevišķu problēmu, katru atsevišķu tukšo finansiālo lauku (piemēram, īres summa, depozīta summa, maksājuma datums, termiņš) un katru atsevišķu līguma punktu atzīmē ATSEVIŠĶI ar savu kodu. Nekad nesavieno vairākus punktus vienā ierakstā.
 - Katrā sadaļā punktus kārto tajā secībā, kādā tie ir līgumā (no pirmā līdz pēdējam), nevis pēc svarīguma. Tas nodrošina vienādu rezultātu atkārtotā analīzē.
 - Katram punktam norādi līguma punkta numuru un vienkāršu paskaidrojumu, kāpēc tas ir problēma.
 
@@ -648,6 +724,11 @@ def generate_pretty_pdf(analysis_text):
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
 
+UNSUPPORTED_PDF_SCRIPTS = re.compile(
+    "[\u0590-\u08FF\u0900-\u0DFF\u0E00-\u0EFF\u1000-\u109F\u1780-\u17FF\u3000-\u9FFF\uAC00-\uD7AF]"
+)
+
+
 def build_downloads(report_text):
     """Izveido Word un PDF failus (baitos), lai tos varētu lejupielādēt vairākkārt."""
     result = {"docx": None, "pdf": None, "docx_err": None, "pdf_err": None}
@@ -655,10 +736,14 @@ def build_downloads(report_text):
         result["docx"] = generate_pretty_docx(report_text).getvalue()
     except Exception as e:
         result["docx_err"] = str(e)
-    try:
-        result["pdf"] = generate_pretty_pdf(report_text).getvalue()
-    except Exception as e:
-        result["pdf_err"] = str(e)
+    if UNSUPPORTED_PDF_SCRIPTS.search(report_text):
+        # Fonts DejaVu neatbalsta ķīniešu, japāņu, korejiešu, arābu, hindi, taju u.c. rakstību
+        result["pdf_err"] = "PDF is not available for this script (font limitation). Use the Word file. / Izmantojiet Word failu."
+    else:
+        try:
+            result["pdf"] = generate_pretty_pdf(report_text).getvalue()
+        except Exception as e:
+            result["pdf_err"] = str(e)
     return result
 
 
