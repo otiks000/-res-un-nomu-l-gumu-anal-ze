@@ -2598,7 +2598,7 @@ if analyze_button:
             st.rerun()
 if "result" in st.session_state:
     # Parāda saglabāto analīzi (arī pēc lejupielādes, citu elementu izmantošanas vai kļūdas)
-        saved = st.session_state["result"]
+    saved = st.session_state["result"]
     loc = localize_analysis(saved["analysis"])              # virsraksti un pantu nosaukumi pašreizējā valodā
     saved.setdefault("lang", T["report_lang_name"])
     if saved["lang"] != T["report_lang_name"]:              # valoda mainīta: Word un PDF tiek izveidoti no jauna
