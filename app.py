@@ -192,7 +192,7 @@ LAW_LINK_INFO = {
     "DTIL": ("Dzīvojamo telpu īres likuma", "https://likumi.lv/ta/id/322216"),
     "CL": ("Civillikuma", "https://likumi.lv/ta/id/90220"),
 }
-CITATION_RE = re.compile(r"\[\[\s*(DTIL|CL)\s+(\d{1,4})\s*\]\]")
+CITATION_RE = re.compile(r"\[\[\s*(DTIL\vert{}CL)\s+(\d{1,4})\s*\]\]")
 SOURCES_MD = "**Pilni likumu teksti likumi.lv:** [Dzīvojamo telpu īres likums](https://likumi.lv/ta/id/322216) · [Civillikums](https://likumi.lv/ta/id/90220)"
 
 def _citation_to_link(match):
@@ -336,7 +336,7 @@ def generate_pretty_pdf(analysis_text):
     return pdf_buffer
 
 # ---------------------------------------------------------------
-# ANALĪZES POGA UN IZPILDE (ATJAUNOTA)
+# ANALĪZES POGA UN IZPILDE AR REĀLLAIKA STRAUMĒŠANU UN APLĪTI
 # ---------------------------------------------------------------
 analyze_button = st.button("🔍 Analizēt līgumu", type="primary")
 
@@ -348,11 +348,12 @@ if analyze_button:
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-3.8-flash')
             
             file_extension = uploaded_file.name.split('.')[-1].lower()
             final_prompt, law_source_msg = build_prompt()
             
+            # Rotējošais aplītis un ielādes teksts pirms atbildes sākuma
             with st.spinner("🔄 Ielādēju likumus un veicu padziļinātu līguma analīzi..."):
                 if file_extension == 'docx':
                     bytes_data = uploaded_file.getvalue()
@@ -361,61 +362,4 @@ if analyze_button:
                     contract_text = "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
                     
                     full_prompt = f"{final_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                    response = model.generate_content(full_prompt, stream=True)
-                    
-                else:
-                    file_bytes = uploaded_file.getvalue()
-                    mime_type_map = {
-                        'pdf': 'application/pdf',
-                        'png': 'image/png',
-                        'jpg': 'image/jpeg',
-                        'jpeg': 'image/jpeg'
-                    }
-                    mime_type = mime_type_map.get(file_extension, 'application/octet-stream')
-                    
-                    file_part = {
-                        'mime_type': mime_type,
-                        'data': file_bytes
-                    }
-                    
-                    response = model.generate_content([final_prompt, file_part], stream=True)
-            
-            st.markdown(f"ℹ️ *Juridiskā bāze: {law_source_msg}*")
-            st.markdown("### 📋 Analīzes rezultāts reāllaikā:")
-            
-            def stream_and_collect():
-                for chunk in response:
-                    if hasattr(chunk, 'text') and chunk.text:
-                        yield chunk.text
-
-            full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
-            
-            if full_response_text:
-                st.success("✅ Analīze veiksmīgi pabeigta!")
-                st.markdown("---")
-                st.markdown(SOURCES_MD)
-                st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    docx_file = generate_pretty_docx(full_response_text)
-                    st.download_button(
-                        label="📄 Lejupielādēt Word (.docx)",
-                        data=docx_file,
-                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        use_container_width=True
-                    )
-                    
-                with col2:
-                    pdf_file = generate_pretty_pdf(full_response_text)
-                    st.download_button(
-                        label="📄 Lejupielādēt PDF (.pdf)",
-                        data=pdf_file,
-                        file_name=f"Ires_Liguma_Analize_{datetime.date.today()}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                    
-        except Exception as e:
-            st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
+                    response = model.generate_content(full_prompt
