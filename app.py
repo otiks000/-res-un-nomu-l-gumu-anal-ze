@@ -1,5 +1,6 @@
 import streamlit as st
 import google.generativeai as genai
+from google.generativeai import caching
 import docx
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -541,6 +542,56 @@ def build_prompt(base=None):
             + laws_text
         )
     return prompt, source
+    # ---------------------------------------------------------------
+# Gemini Context Caching: SYSTEM_PROMPT + likumu teksts (TTL 24 stundas)
+# ---------------------------------------------------------------
+CACHE_MODEL = "models/gemini-3.8-flash"  # modelim jāatbalsta Context Caching
+CACHE_TTL = datetime.timedelta(hours=24)
+
+
+@st.cache_resource(ttl=datetime.timedelta(hours=23, minutes=30), show_spinner=False)
+def create_prompt_cache(api_key, system_text, laws_block):
+    """Izveido Gemini kešatmiņu. Streamlit to neveido atkārtoti 23,5 h laikā (Gemini kešatmiņas TTL ir 24 h)."""
+    genai.configure(api_key=api_key)
+    return caching.CachedContent.create(
+        model=CACHE_MODEL,
+        display_name="ires-liguma-skeneris",
+        system_instruction=system_text,
+        contents=[laws_block],
+        ttl=CACHE_TTL,
+    )
+
+
+def get_cached_model(api_key, generation_config):
+    """Atgriež (modelis ar kešatmiņu, likumu avots) vai (None, avots), ja kešatmiņu nevar izmantot."""
+    laws_text, source = load_laws()
+    if not laws_text:
+        return None, source
+    laws_block = (
+        "SPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
+        "Analīzē balsties uz šiem likumu tekstiem. Atsaucies uz pantiem tikai tad, ja tie ir "
+        "šajā tekstā. Ja neesi pārliecināts par panta numuru, nenorādi to un neizdomā.\n\n"
+        + laws_text
+    )
+    try:
+        cache = create_prompt_cache(api_key, localize_prompt(SYSTEM_PROMPT), laws_block)
+        model = genai.GenerativeModel.from_cached_content(
+            cached_content=cache, generation_config=generation_config
+        )
+        return model, source
+    except Exception:
+        # Nav atbalsta, par maz tokenu vai cita kļūda: darbs turpinās bez kešatmiņas
+        return None, source
+
+
+def generate_analysis(cached_model, model, active_prompt, parts):
+    """Ģenerē analīzi ar kešatmiņu; ja tā nav pieejama, izmanto parasto pieprasījumu."""
+    if cached_model is not None:
+        try:
+            return cached_model.generate_content(parts, stream=True)
+        except Exception:
+            pass
+    return model.generate_content([active_prompt] + parts, stream=True)
 
 
 # ---------------------------------------------------------------
@@ -901,7 +952,10 @@ if analyze_button:
                     top_k=1
                 )
             )
-
+            with st.spinner(T["spinner_analysis"]):
+                cached_model, _ = get_cached_model(
+                    api_key, genai.GenerationConfig(temperature=0, top_p=1, top_k=1)
+                )
             # Ja ielīmēts teksts, izmanto to; citādi - augšupielādēto failu
             if pasted_text.strip():
                 file_extension = "txt"
@@ -921,9 +975,9 @@ if analyze_button:
                             [p.text for p in doc.paragraphs if p.text.strip()]
                         )
 
-                    full_prompt = f"{active_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
-                    response = model.generate_content(full_prompt, stream=True)
-
+                    response = generate_analysis(
+                        cached_model, model, active_prompt, [f"LĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"]
+                    )
                 else:
                     file_bytes = uploaded_file.getvalue()
                     mime_type_map = {
@@ -939,9 +993,8 @@ if analyze_button:
                         'data': file_bytes
                     }
 
-                    response = model.generate_content([active_prompt, file_part], stream=True)
-
-            st.caption(f"{T['law_source']}: {laws_source}")
+                    response = generate_analysis(cached_model, model, active_prompt, [file_part])
+            st.caption(f"{T['law_source']}: {laws_source}" + (" | ⚡ cache" if cached_model else ""))
             st.markdown(T["result_live"])
 
             def stream_and_collect():
