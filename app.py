@@ -241,30 +241,80 @@ if T["up_browse"] != TR["English"]["up_browse"]:
         unsafe_allow_html=True,
     )
 
-# Tēma: 🖥️ automātiski (Streamlit/ierīces tēma), ☀️ gaišā vai 🌙 tumšā
-theme = st.sidebar.radio("🎨", ["🖥️", "☀️", "🌙"], horizontal=True, key="theme_choice")
-if theme != "🖥️":
-    _dark = theme == "🌙"
-    _bg, _bg2, _fg, _border = (
-        ("#0e1117", "#1a1c24", "#fafafa", "#3a3d4a") if _dark else ("#ffffff", "#f0f2f6", "#1f2430", "#d0d4dc")
-    )
-    _link = "#6cb4ff" if _dark else "#0b5cd5"
-    st.markdown(
-        "<style>"
-        f".stApp, [data-testid='stHeader'] {{ background: {_bg} !important; }}"
-        f"[data-testid='stSidebar'], [data-testid='stSidebar'] > div {{ background: {_bg2} !important; }}"
-        f".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small {{ color: {_fg} !important; }}"
-        ".stApp button p { color: inherit !important; }"
-        f".stApp a {{ color: {_link} !important; }}"
-        "[data-testid='stAlert'] { background: rgba(128,128,128,0.18) !important; }"
-        f"[data-testid='stAlert'] * {{ color: {_fg} !important; }}"
-        f".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'] {{ background: {_bg2} !important; color: {_fg} !important; }}"
-        f"[data-testid='stFileUploaderDropzoneInstructions'] * {{ color: {_fg} !important; }}"
-        f"[data-testid='stExpander'] {{ border-color: {_border} !important; }}"
-        f"[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * {{ color: {_fg} !important; }}"
-        "</style>",
-        unsafe_allow_html=True,
-    )
+# Tēmas pārslēgšana: 🖥️ automātiski, ☀️ gaišā, 🌙 tumšā, ⚫ OLED (maksimāli melna).
+# Pārslēdz pārlūkā (JavaScript), tāpēc Streamlit netiek pārlādēts un analīze netiek pārtraukta.
+# Izvēle tiek atcerēta pārlūkā.
+import streamlit.components.v1 as components
+
+THEME_HTML = """
+<style>
+  body { margin: 0; font-family: sans-serif; }
+  .row { display: flex; gap: 6px; }
+  button { flex: 1; padding: 8px 0; font-size: 18px; border-radius: 8px; border: 1px solid #888;
+           background: transparent; color: #999; cursor: pointer; }
+  button.on { border-color: #ff4b4b; background: rgba(255,75,75,0.25); color: #fff; }
+</style>
+<div class="row">
+  <button data-t="auto" title="Auto">🖥️</button>
+  <button data-t="light" title="Light">☀️</button>
+  <button data-t="dark" title="Dark">🌙</button>
+  <button data-t="oled" title="OLED">⚫</button>
+</div>
+<script>
+(function () {
+  var P = window.parent, D = P.document;
+  // [fons, sānu josla/lauki, teksts, apmales, saites]
+  var THEMES = {
+    dark:  ["#0e1117", "#1a1c24", "#fafafa", "#3a3d4a", "#6cb4ff"],
+    light: ["#ffffff", "#f0f2f6", "#1f2430", "#d0d4dc", "#0b5cd5"],
+    oled:  ["#000000", "#000000", "#e8e8e8", "#2a2a2a", "#6cb4ff"]
+  };
+  function css(name) {
+    var c = THEMES[name], bg = c[0], bg2 = c[1], fg = c[2], bd = c[3], ln = c[4];
+    var s =
+      ".stApp, [data-testid='stHeader'] { background: " + bg + " !important; }" +
+      "[data-testid='stSidebar'], [data-testid='stSidebar'] > div { background: " + bg2 + " !important; }" +
+      ".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small { color: " + fg + " !important; }" +
+      ".stApp button p { color: inherit !important; }" +
+      ".stApp a { color: " + ln + " !important; }" +
+      "[data-testid='stAlert'] { background: rgba(128,128,128,0.18) !important; }" +
+      "[data-testid='stAlert'] * { color: " + fg + " !important; }" +
+      ".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'] { background: " + bg2 + " !important; color: " + fg + " !important; }" +
+      "[data-testid='stFileUploaderDropzoneInstructions'] * { color: " + fg + " !important; }" +
+      "[data-testid='stExpander'] { border-color: " + bd + " !important; }" +
+      "[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * { color: " + fg + " !important; }" +
+      "[data-baseweb='popover'] > div, [data-baseweb='popover'] [data-testid='stVerticalBlock'] { background: " + bg2 + " !important; }" +
+      "[data-baseweb='popover'] p, [data-baseweb='popover'] li, [data-baseweb='popover'] small { color: " + fg + " !important; }";
+    if (name === "oled") {
+      s += ".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'], [data-baseweb='popover'] > div { border: 1px solid " + bd + " !important; }";
+    }
+    return s;
+  }
+  function apply(t) {
+    var s = D.getElementById("app-theme-style");
+    if (!THEMES[t]) {
+      if (s) s.remove();
+    } else {
+      if (!s) { s = D.createElement("style"); s.id = "app-theme-style"; D.head.appendChild(s); }
+      s.textContent = css(t);
+    }
+    try { P.localStorage.setItem("appTheme", t); } catch (e) {}
+    var bs = document.querySelectorAll("button");
+    for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-t") === t); }
+  }
+  var saved = "auto";
+  try { saved = P.localStorage.getItem("appTheme") || "auto"; } catch (e) {}
+  apply(saved);
+  var btns = document.querySelectorAll("button");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener("click", function () { apply(this.getAttribute("data-t")); });
+  }
+})();
+</script>
+"""
+
+with st.sidebar:
+    components.html(THEME_HTML, height=50)
 st.title(T["title"])
 st.markdown(T["subtitle"])
 
@@ -919,7 +969,6 @@ def render_dashboard(text):
 
 def render_sections(text):
     """Katra sadaļa ir sakļaujama. Pēc noklusējuma atvērtas: kopējais novērtējums, kritiskie, brīdinājumi."""
-    text = add_tooltips(text)
     for head, body in split_sections(text):
         if head is None:
             st.markdown(body)
@@ -1013,7 +1062,7 @@ def article_excerpt(code, num, limit=600):
     raw = article_index(code).get(num, "")
     raw = re.sub(r"^\d+\.?\s*(?:pants\.?)?\s*", "", raw)
     raw = re.sub(r"\s+", " ", raw).strip()
-    return raw if len(raw) <= limit else raw[:limit].rsplit(" ", 1)[0] + "…"
+    return raw if (limit is None or len(raw) <= limit) else raw[:limit].rsplit(" ", 1)[0] + "…"
 
 
 def article_tooltip(code, num):
@@ -1048,15 +1097,126 @@ def render_law_help(text):
             box = st.popover(label, use_container_width=True) if hasattr(st, "popover") else st.expander(label)
             with box:
                 note = ARTICLE_NOTES.get((code, num))
-                excerpt = article_excerpt(code, num, 700)
+                excerpt = article_excerpt(code, num, None)
                 if note:
                     st.markdown("**Ko tas nozīmē īrniekam:** " + note)
                 if excerpt:
-                    st.caption("Oficiālais teksts (izvilkums): " + excerpt)
+                    st.markdown("**Oficiālais teksts:** " + excerpt)
                 if not note and not excerpt:
                     st.markdown("Skaidrojums nav pieejams. Atveriet pilno tekstu likumi.lv.")
                 st.markdown(f"[Atvērt likumi.lv]({LAW_LINKS[code]}#p{num})")
                 st.caption("Informatīvs skaidrojums pēc likuma teksta, nav juridiska konsultācija.")
+# ---------------------------------------------------------------
+# Paskaidrojuma lodziņš uz pantu atsaucēm: peles uzvešana (dators) vai ilga turēšana (telefons/planšete)
+# Parasts pieskāriens joprojām atver pantu likumi.lv. Strādā ar JavaScript pārlūkā (bez Gemini).
+# ---------------------------------------------------------------
+LAW_TIP_JS = """
+<script>
+(function () {
+  var P = window.parent, D = P.document;
+  P.__lawTips = __MAP__;                  // skaidrojumi tiek atjaunoti katru reizi
+  if (P.__lawTipsReady) return;           // apstrādātāji tiek pievienoti tikai vienu reizi
+  P.__lawTipsReady = true;
+
+  var st = D.createElement("style");
+  st.textContent =
+    "a[href*='likumi.lv/ta/id/'] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }" +
+    "#law-tip-bubble { position: fixed; display: none; z-index: 2147483647; max-width: min(92vw, 480px); max-height: 60vh;" +
+    " overflow: auto; background: #1f2430; color: #f3f4f6; border: 1px solid #4b5160; border-radius: 12px;" +
+    " padding: 12px 14px; font: 14px/1.5 sans-serif; white-space: pre-wrap; box-shadow: 0 8px 30px rgba(0,0,0,0.45); }";
+  D.head.appendChild(st);
+  var bubble = D.createElement("div");
+  bubble.id = "law-tip-bubble";
+  D.body.appendChild(bubble);
+
+  function infoOf(el) {
+    var a = el && el.closest ? el.closest("a") : null;
+    if (!a) return null;
+    var m = (a.getAttribute("href") || "").match(/likumi\\.lv\\/ta\\/id\\/(\\d+)#p(\\d+)/);
+    return m ? { a: a, k: m[1] + "#p" + m[2] } : null;
+  }
+  function show(info) {
+    var t = P.__lawTips[info.k];
+    if (!t) return false;
+    info.a.removeAttribute("title");
+    bubble.textContent = t;
+    bubble.style.display = "block";
+    var r = info.a.getBoundingClientRect(), w = bubble.offsetWidth, h = bubble.offsetHeight;
+    var left = Math.max(8, Math.min(r.left, P.innerWidth - w - 8));
+    var top = r.bottom + 8;
+    if (top + h > P.innerHeight - 8) top = Math.max(8, r.top - h - 8);
+    bubble.style.left = left + "px";
+    bubble.style.top = top + "px";
+    return true;
+  }
+  function hide() { bubble.style.display = "none"; }
+
+  var timer = null, held = false, lastTouch = 0, sx = 0, sy = 0;
+  D.addEventListener("touchstart", function (e) {
+    lastTouch = Date.now();
+    if (bubble.contains(e.target)) return;
+    clearTimeout(timer);
+    held = false;
+    var info = infoOf(e.target);
+    hide();
+    if (!info) return;
+    var t = e.touches[0];
+    sx = t.clientX; sy = t.clientY;
+    timer = setTimeout(function () {
+      held = show(info);
+      if (held) setTimeout(function () { held = false; }, 800);
+    }, 450);
+  }, { passive: true });
+  D.addEventListener("touchmove", function (e) {
+    var t = e.touches[0];
+    if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clearTimeout(timer);
+  }, { passive: true });
+  D.addEventListener("touchend", function () { clearTimeout(timer); }, { passive: true });
+  D.addEventListener("touchcancel", function () { clearTimeout(timer); }, { passive: true });
+  D.addEventListener("contextmenu", function (e) { if (infoOf(e.target)) e.preventDefault(); });
+  D.addEventListener("click", function (e) {
+    if (held && infoOf(e.target)) { e.preventDefault(); e.stopPropagation(); held = false; return; }
+    if (!bubble.contains(e.target)) hide();
+  }, true);
+  D.addEventListener("mouseover", function (e) {
+    if (Date.now() - lastTouch < 1000) return;
+    var info = infoOf(e.target);
+    if (info) show(info);
+  });
+  D.addEventListener("mouseout", function (e) {
+    if (Date.now() - lastTouch < 1000) return;
+    if (infoOf(e.target)) hide();
+  });
+})();
+</script>
+"""
+
+
+def law_tip_map(text):
+    """Saliek pilnu skaidrojuma tekstu (bez saīsinājumiem) katram analīzē minētajam pantam."""
+    tips = {}
+    for m in LINK_RE.finditer(text):
+        code = "DTIL" if m.group(3) == "322216" else "CL"
+        num = int(m.group(4))
+        key = f"{m.group(3)}#p{num}"
+        if key in tips:
+            continue
+        parts = [T["cite_dtil" if code == "DTIL" else "cite_cl"].format(n=num)]
+        note = ARTICLE_NOTES.get((code, num))
+        full = article_excerpt(code, num, None)
+        if note:
+            parts.append("Ko tas nozīmē īrniekam: " + note)
+        if full:
+            parts.append("Oficiālais teksts: " + full)
+        if not note and not full:
+            parts.append("Skaidrojums nav pieejams. Atveriet pilno tekstu likumi.lv.")
+        tips[key] = "\n\n".join(parts)
+    return tips
+
+
+def inject_law_tips(text):
+    payload = json.dumps(law_tip_map(text), ensure_ascii=False).replace("</", "<\\/")
+    components.html(LAW_TIP_JS.replace("__MAP__", payload), height=0)
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1165,5 +1325,6 @@ elif "result" in st.session_state:
     render_dashboard(saved["analysis"])
     render_sections(saved["analysis"])
     render_law_help(saved["analysis"])
+    inject_law_tips(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
