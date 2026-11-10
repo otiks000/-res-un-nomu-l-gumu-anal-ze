@@ -31,18 +31,37 @@ uploaded_file = st.file_uploader(
 )
 
 SYSTEM_PROMPT = """
-Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu. 
+Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
 
-Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā. Izmanto tieši šādu virsrakstu struktūru ar krāsu indikatoriem:
+Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.
+
+STINGRI KLASIFIKĀCIJAS NOTEIKUMI (ievēro tieši, katrs punkts drīkst būt tikai VIENĀ sadaļā):
+
+🔴 KRITISKS RISKS ir tikai tas, kas:
+- pārkāpj Latvijas likumu vai ir spēkā neesošs (nelikumīgs);
+- ļauj vienai pusei vienpusēji, bez pamatojuma, izbeigt līgumu vai mainīt īres maksu;
+- paredz neproporcionālus līgumsodus, drošības naudu bez atmaksas vai pilnu atbildību bez vainas;
+- neļauj otrai pusei aizsargāt savas pamattiesības.
+
+🟡 BRĪDINĀJUMS ir tas, kas:
+- ir likumīgs, bet neskaidri formulēts vai nepilnīgs (trūkst termiņu, summu, kārtības);
+- var radīt strīdu, bet nepārkāpj likumu.
+
+🟢 IETEIKUMS ir konkrēts labojums vai papildinājums, kas uzlabo līgumu.
+
+Ja šaubies starp kritisku risku un brīdinājumu, izvēlies BRĪDINĀJUMU, ja vien punkts nepārkāpj likumu.
+Pirms atbildes pārbaudi, lai neviens punkts neatkārtotos vairākās sadaļās.
+
+Izmanto tieši šādu virsrakstu struktūru:
 
 ## 📊 Kopējais novērtējums
 [1-2 teikumos pasaki, vai šo līgumu drīkst parakstīt un kāds ir galvenais risks]
 
 ## 🔴 Kritiski riski
-[Uzskaiti galvenās bīstamās vietas un sodus vienkāršiem vārdiem]
+[Uzskaiti punktus ar līguma punkta numuru un vienkāršu paskaidrojumu]
 
 ## 🟡 Brīdinājumi
-[Norādi uz neskaidriem vai aizdomīgiem punktiem]
+[Uzskaiti punktus ar līguma punkta numuru un vienkāršu paskaidrojumu]
 
 ## 🟢 Ieteikumi un labojumi
 [Skaidri pasaki, kas līgumā ir jāizmaina]
@@ -227,7 +246,14 @@ if analyze_button:
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-3.8-flash')
+            model = genai.GenerativeModel(
+                'gemini-3.8-flash',
+                generation_config=genai.GenerationConfig(
+                    temperature=0,
+                    top_p=1,
+                    top_k=1
+                )
+            )
 
             file_extension = uploaded_file.name.split('.')[-1].lower()
 
@@ -273,7 +299,7 @@ if analyze_button:
                 st.success("✅ Analīze veiksmīgi pabeigta!")
                 st.markdown("---")
 
-                st.markdown("### 📥 Lejupielādēt glītu atskaiti saviem klientiem:")
+                st.markdown("### 📥 Lejupielādēt analīzes atskaiti:")
                 col1, col2 = st.columns(2)
 
                 with col1:
