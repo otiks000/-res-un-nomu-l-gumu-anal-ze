@@ -55,6 +55,8 @@ OBLIGĀTĀ PĀRBAUDES SARAKSTS (pārbaudi KATRU no šīm tēmām vienā un tajā
 DARBA METODE:
 - Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
 - Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
+- Lasi līgumu vārdu pa vārdam un atzīmē arī vismazākās kļūdas.
+- Katrā sadaļā punktus kārto tajā secībā, kādā tie ir līgumā (no pirmā līdz pēdējam), nevis pēc svarīguma. Tas nodrošina vienādu rezultātu atkārtotā analīzē.
 - Katram punktam norādi līguma punkta numuru un vienkāršu paskaidrojumu, kāpēc tas ir problēma.
 
 KLASIFIKĀCIJA (katrs punkts drīkst būt tikai VIENĀ sadaļā):
@@ -75,6 +77,14 @@ Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas
 - situācijas, ko līgums neapskata (piemēram, īpašnieka maiņa, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
 - neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
 Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
+
+⚪ NEITRĀLA PIEZĪME - rediģēšanas un neuzmanības kļūdas, kas NEIETEKMĒ finansiālo stāvokli un NEPĀRKĀPJ likumu, bet ir pamanāmas:
+- gramatikas, pareizrakstības un drukas kļūdas, trūkstoši vai lieki vārdi, dubultas atstarpes vai pieturzīmes;
+- nekonsekventi termini vai pušu apzīmējumi (piemēram, "Izīrētājs" un "Iznomātājs" vienā līgumā);
+- nepareizi punktu numuri vai atsauces uz neesošiem līguma punktiem;
+- pretrunas starp summām, datumiem vai termiņiem (arī starp cipariem un vārdiem);
+- neveikli vai grūti saprotami teikumi, kuriem nav juridiskas ietekmes.
+Atzīmē VISAS šādas kļūdas, pat vismazākās. Īpašnieks pats izlems, ko labot un ko atstāt.
 
 🟢 IETEIKUMS - konkrēts labojums vai papildinājums ar piedāvātu jaunu formulējumu.
 
@@ -99,10 +109,13 @@ Izmanto tieši šādu virsrakstu struktūru:
 ## 🟡 Brīdinājumi
 [Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
-## 🟢 Ieteikumi un labojumi
-[OBLIGĀTI: katram kritiskajam riskam un katram brīdinājumam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
+## ⚪ Neitrālas piezīmes
+[Katru punktu numurē ar kodu N1, N2, N3... Formāts: "N1. Līguma punkta numurs: kas ir nepareizi (piemēram, drukas kļūda, nekonsekvence, pretruna) un kā tas ir uzrakstīts līgumā." Šeit NEDRĪKST būt likuma pārkāpumi vai finansiālu zaudējumu riski.]
 
-PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
+## 🟢 Ieteikumi un labojumi
+[OBLIGĀTI: katram kritiskajam riskam, katram brīdinājumam un katrai neitrālai piezīmei jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2... N1, N2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
+
+PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski", "Brīdinājumi" un "Neitrālas piezīmes" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
 """
 
 
@@ -189,9 +202,27 @@ def load_laws():
     return "", "nav pieejams"
 
 
-def build_prompt():
+AUDIT_PROMPT = """
+Tu esi ļoti rūpīgs līgumu auditors. Tev ir dots līgums un jau sagatavota analīze. Tavs uzdevums ir atrast VISU, kas analīzē netika minēts, un tikai to.
+
+Pārlasi līgumu vēlreiz, punktu pa punktam, un atrodi:
+🔴 papildu kritiskus riskus (likuma pārkāpumi vai nepamatoti finansiāli zaudējumi);
+🟡 papildu brīdinājumus (neskaidri vai trūkstoši nosacījumi, kurus vajadzētu precizēt);
+⚪ neitrālas piezīmes: gramatikas, pareizrakstības un drukas kļūdas; lieki vai trūkstoši vārdi; nekonsekventi termini vai pušu apzīmējumi; nepareizi punktu numuri vai atsauces uz neesošiem punktiem; pretrunas starp summām, datumiem vai termiņiem (arī starp cipariem un vārdiem); dubultas atstarpes un pieturzīmes; neveikli teikumi. Šīs kļūdas neietekmē finansiālo stāvokli un nepārkāpj likumu. Īpašnieks pats lems, ko labot.
+
+NOTEIKUMI:
+- Neatkārto neko, kas jau ir sagatavotajā analīzē (ne kritiskajos, ne brīdinājumos, ne neitrālajās piezīmēs).
+- Katru jauno punktu numurē P1, P2, P3... tajā secībā, kādā tie ir līgumā.
+- Formāts: "P1. [🔴 vai 🟡 vai ⚪] Līguma punkta numurs: kas ir nepareizi un kāpēc. [[atsauce uz likumu, ja piemērojams]] Ieteikums: ko labot. Piedāvātais formulējums: „...”"
+- Atsauces raksti tikai formātā [[DTIL 28]] vai [[CL 2174]] un tikai tad, ja pants ir sniegtajā likumu tekstā. Neizdomā pantu numurus.
+- Sāc atbildi tieši ar virsrakstu: ## 🔍 Papildinājumi pēc atkārtotas pārbaudes
+- Ja tiešām nekā jauna nav, zem virsraksta raksti tikai: Papildinājumu nav.
+"""
+
+
+def build_prompt(base=None):
     laws_text, source = load_laws()
-    prompt = SYSTEM_PROMPT
+    prompt = base or SYSTEM_PROMPT
     if laws_text:
         prompt += (
             "\n\nSPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
@@ -296,6 +327,8 @@ def generate_pretty_docx(analysis_text):
                 color = RGBColor(217, 119, 6)
             elif "Ieteikumi" in line_str or "🟢" in line_str:
                 color = RGBColor(22, 163, 74)
+            elif "Neitrāl" in line_str or "⚪" in line_str:
+                color = RGBColor(100, 116, 139)
             else:
                 color = RGBColor(30, 41, 59)
 
@@ -394,6 +427,8 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_text_color(217, 119, 6)
             elif "Ieteikumi" in raw or "🟢" in raw:
                 pdf.set_text_color(22, 163, 74)
+            elif "Neitrāl" in raw or "⚪" in raw:
+                pdf.set_text_color(100, 116, 139)
             else:
                 pdf.set_text_color(30, 41, 59)
 
@@ -532,12 +567,42 @@ if analyze_button:
 
             full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
 
+            # Otrā pārbaude: auditors meklē visu, kas pirmajā reizē palika neminēts
+            audit_text = ""
             if full_response_text:
+                try:
+                    st.markdown("---")
+                    with st.spinner("🔍 Notiek atkārtota pārbaude, lai neviena kļūda netiktu izlaista..."):
+                        audit_base = (
+                            AUDIT_PROMPT
+                            + "\n\nJAU SAGATAVOTĀ ANALĪZE (nepārraksti to, tikai papildini):\n"
+                            + full_response_text
+                        )
+                        audit_prompt, _ = build_prompt(audit_base)
+                        if file_extension == 'docx':
+                            audit_input = f"{audit_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                        else:
+                            audit_input = [audit_prompt, file_part]
+                        audit_response = model.generate_content(audit_input, stream=True)
+
+                    def stream_audit():
+                        for chunk in audit_response:
+                            if hasattr(chunk, 'text') and chunk.text:
+                                yield chunk.text
+
+                    audit_text = st.write_stream(linkify_stream(stream_audit()))
+                except Exception as e:
+                    st.warning(f"Atkārtoto pārbaudi neizdevās veikt: {e}")
+
+            if full_response_text:
+                analysis_all = full_response_text
+                if audit_text:
+                    analysis_all += "\n\n" + audit_text
                 st.markdown(SOURCES_MD)
-                report_text = full_response_text + "\n\n## Izmantotie avoti\n" + SOURCES_MD
+                report_text = analysis_all + "\n\n## Izmantotie avoti\n" + SOURCES_MD
                 result = build_downloads(report_text)
                 result.update({
-                    "analysis": full_response_text,
+                    "analysis": analysis_all,
                     "laws_source": laws_source,
                 })
                 # Saglabā, lai analīze nepazustu pēc lejupielādes
