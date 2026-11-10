@@ -8,6 +8,8 @@ import io
 import re
 import datetime
 import os
+import requests
+from bs4 import BeautifulSoup
 
 # ---------------------------------------------------------------
 # Lapas konfigurācija
@@ -35,6 +37,21 @@ Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Ta
 
 Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.
 
+OBLIGĀTĀ PĀRBAUDES SARAKSTS (pārbaudi KATRU no šīm tēmām vienā un tajā pašā secībā; ja līgumā tā trūkst vai ir problemātiska, atzīmē atbilstošā sadaļā):
+1. Pušu dati, īpašuma tiesības un telpu apraksts
+2. Līguma termiņš, pagarināšana un izbeigšanas kārtība (abu pušu tiesības)
+3. Īres maksas apmērs, maksāšanas termiņš un maksas maiņas nosacījumi
+4. Komunālie un apsaimniekošanas maksājumi (arī uzkrājumu fonds, rēķinu uzrādīšana)
+5. Drošības depozīts (apmērs, ieturēšana, atmaksas termiņš)
+6. Nokavējuma procenti un līgumsodi (vai nav "VAI" formulējumu, vai sodi ir samērīgi)
+7. Remonts un uzturēšana (kas ir "sīkie remontdarbi", kas maksā par lielajiem)
+8. Dzīvokļa apskates un izīrētāja piekļuve (brīdinājuma laiks, biežums)
+9. Pieņemšanas-nodošanas akts un telpu stāvoklis
+10. Apakšīre, personu skaits, dzīvnieki un citi lietošanas ierobežojumi
+11. Īres tiesību nostiprināšana Zemesgrāmatā un aizsardzība īpašnieka maiņas gadījumā
+12. Strīdu risināšana un piemērojamais likums
+13. Tukši lauki, nenoteikti termini un nepabeigti līguma fragmenti
+
 DARBA METODE:
 - Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
 - Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
@@ -42,24 +59,34 @@ DARBA METODE:
 
 KLASIFIKĀCIJA (katrs punkts drīkst būt tikai VIENĀ sadaļā):
 
-🔴 KRITISKS RISKS - punkti, kas var radīt nopietnus finansiālus vai juridiskus zaudējumus:
-- noteikumi, kas ir pretrunā ar likumu vai var būt spēkā neesoši;
-- vienpusēja līguma izbeigšana, vienpusēja īres maksas maiņa vai izlikšana bez pamatojuma;
-- depozīta paturēšana vai atmaksas nosacījumi, kas ļauj izīrētājam to patvaļīgi neatmaksāt;
-- pārmērīgi līgumsodi, soda naudas vai atbildība bez vainas;
-- svarīgu aizsardzības mehānismu trūkums (piemēram, nav pieņemšanas-nodošanas akta, nav noteikta kārtība strīdu gadījumā, nav tiesību aizsardzības pārdošanas gadījumā);
-- jebkas cits, kas var novest pie lielas naudas zaudēšanas vai mājokļa zaudēšanas.
+🔴 KRITISKS RISKS - punkts ir kritisks, ja tas atbilst vismaz vienam no šiem nosacījumiem:
+A) Tas PĀRKĀPJ LIKUMU vai ir pretrunā ar likuma imperatīvajām normām (Dzīvojamo telpu īres likumu, Civillikumu), tāpēc var būt spēkā neesošs. Vienmēr norādi, kuru likuma pantu tas pārkāpj.
+B) Tas rada NEPAMATOTUS FINANSIĀLUS ZAUDĒJUMUS vienai pusei, piemēram:
+   - depozīta patvaļīga ieturēšana vai neatmaksāšana;
+   - nesamērīgs līgumsods vai nokavējuma procenti, kas pārsniedz likumā pieļauto;
+   - maksājumi, kas pēc likuma vai labas prakses nav jāsedz šai pusei (piemēram, kapitālā remonta vai uzkrājumu fonda maksājumi, ko sedz īrnieks);
+   - atbildība par zaudējumiem bez vainas vai bez pierādījumiem;
+   - vienpusēja īres maksas palielināšana bez likumā noteiktā pamata un kārtības.
+Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas NAV kritisks.
 
-🟡 BRĪDINĀJUMS - punkti, kas nav tieši nelikumīgi, bet var radīt strīdu vai neskaidrību:
-- neskaidri formulējumi (piemēram, "sīkie remontdarbi", "citi maksājumi");
-- trūkstošas summas, termiņi vai kārtība;
-- nosacījumi, kas ir vienpusēji izdevīgi vienai pusei;
-- komunālo maksājumu, uzturēšanas vai remonta sadalījums, kas nav skaidri definēts.
+🟡 BRĪDINĀJUMS - punkts, kas nav līdz galam skaidrs vai kura līgumā trūkst, un kuru vajadzētu pievienot vai precizēt, lai nebūtu šaubu dažādās situācijās:
+- neskaidri vai vispārīgi formulējumi (piemēram, "sīkie remontdarbi", "citi maksājumi", "iepriekš saskaņojot");
+- trūkstoši termiņi, summas, procenti vai kārtība (piemēram, nav noteikts brīdinājuma laiks apskatei, depozīta atmaksas termiņš, rēķinu uzrādīšanas kārtība);
+- situācijas, ko līgums neapskata (piemēram, īpašnieka maiņa, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
+- neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
+Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
 
 🟢 IETEIKUMS - konkrēts labojums vai papildinājums ar piedāvātu jaunu formulējumu.
 
 Pirms atbildes pārbaudi, lai neviens punkts neatkārtotos vairākās sadaļās.
 Ja kādā sadaļā tiešām nav problēmu, to godīgi pasaki, bet vispirms vēlreiz pārbaudi visu līgumu.
+
+ATSAUCES UZ LIKUMIEM:
+- Katram punktam sadaļās "Kritiski riski" un "Brīdinājumi" beigās pievieno juridisko pamatojumu, ja tāds ir sniegtajā likumu tekstā.
+- Atsauci raksti TIKAI šādā formātā: [[DTIL 28]] (Dzīvojamo telpu īres likuma 28. pants) vai [[CL 2174]] (Civillikuma 2174. pants). Cipars ir tikai panta numurs.
+- Ja punktam ir vairāki pamati, raksti vairākas atsauces pēc kārtas, piemēram: [[DTIL 28]] [[CL 2174]].
+- Atsauci drīkst izmantot tikai tad, ja šis pants tiešām ir sniegtajā likumu tekstā. Neizdomā pantu numurus. Ja neesi pārliecināts, atsauci nerakstīt.
+- Nerakstī interneta adreses, tās tiks pievienotas automātiski.
 
 Izmanto tieši šādu virsrakstu struktūru:
 
@@ -67,16 +94,157 @@ Izmanto tieši šādu virsrakstu struktūru:
 [1-2 teikumos pasaki, vai šo līgumu drīkst parakstīt un kāds ir galvenais risks]
 
 ## 🔴 Kritiski riski
-[Punkti ar līguma punkta numuru un paskaidrojumu]
+[Katru punktu numurē ar kodu K1, K2, K3... Formāts: "K1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
 ## 🟡 Brīdinājumi
-[Punkti ar līguma punkta numuru un paskaidrojumu]
+[Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
 ## 🟢 Ieteikumi un labojumi
-[OBLIGĀTI: katram punktam, kas minēts sadaļās "Kritiski riski" un "Brīdinājumi", jābūt atbilstošam ieteikumam ar to pašu līguma punkta numuru un konkrētu piedāvāto jauno formulējumu pēdiņās. Neviens atzīmētais punkts nedrīkst palikt bez ieteikuma.]
+[OBLIGĀTI: katram kritiskajam riskam un katram brīdinājumam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
 
-PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti punktus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds trūkst, pievieno to.
+PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
 """
+
+
+# ---------------------------------------------------------------
+# Likumu teksts: automātiski no likumi.lv (atjaunojas reizi 24 stundās)
+# Ja neizdodas - izmanto rezerves failu likumi.txt (ja tāds ir repozitorijā)
+# ---------------------------------------------------------------
+# Šeit vari pievienot vēl likumus: (nosaukums, adrese ar "-print" beigās, panti vai None)
+# Ja panti ir norādīti, no lielā likuma tiek paņemti tikai šie pantu diapazoni.
+LAW_SOURCES = [
+    ("DZĪVOJAMO TELPU ĪRES LIKUMS", "https://likumi.lv/ta/id/322216-print", None),
+    (
+        "CIVILLIKUMS, CETURTĀ DAĻA (izvilkums: līgumsods, procenti, īre un noma)",
+        "https://likumi.lv/ta/id/90220-print",
+        [(1716, 1726), (1759, 1765), (2100, 2180)],
+    ),
+]
+
+ARTICLE_START = re.compile(r"^(\d{4})(?:\.\d+)?\.?\s+(?!gad)")
+
+
+def filter_articles(text, ranges):
+    """Atstāj tikai tos pantus, kuru numuri ietilpst norādītajos diapazonos."""
+    kept = []
+    include = False
+    for line in text.split("\n"):
+        m = ARTICLE_START.match(line)
+        if m:
+            num = int(m.group(1))
+            include = any(lo <= num <= hi for lo, hi in ranges)
+        if include:
+            kept.append(line)
+    return "\n".join(kept)
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_law(url):
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; IresLigumuSkeneris/1.0)"}
+    r = requests.get(url, headers=headers, timeout=60)
+    r.raise_for_status()
+    r.encoding = "utf-8"
+    soup = BeautifulSoup(r.text, "html.parser")
+    for tag in soup(["script", "style", "nav", "header", "footer", "noscript"]):
+        tag.decompose()
+    text = soup.get_text("\n")
+    lines = [ln.strip() for ln in text.split("\n") if ln.strip()]
+    text = "\n".join(lines)
+    # Noņem lapas apakšas informāciju
+    for marker in ("Tiesību akta pase", "Saistītie dokumenti"):
+        idx = text.find(marker)
+        if idx > 2000:
+            text = text[:idx]
+            break
+    if len(text) < 5000:
+        raise ValueError("Likuma teksts izskatās nepilnīgs")
+    return text
+
+
+def load_laws():
+    """Atgriež (likumu teksts, avota apraksts)."""
+    parts = []
+    for name, url, ranges in LAW_SOURCES:
+        try:
+            text = fetch_law(url)
+            if ranges:
+                text = filter_articles(text, ranges)
+                if len(text) < 2000:
+                    raise ValueError("Nav atrasti vajadzīgie panti")
+            parts.append(f"=== {name} ===\n{text}")
+        except Exception:
+            pass
+    if parts:
+        return "\n\n".join(parts), f"likumi.lv (automātiski, {len(parts)} no {len(LAW_SOURCES)} likumiem)"
+
+    laws_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "likumi.txt")
+    if os.path.exists(laws_path):
+        try:
+            with open(laws_path, "r", encoding="utf-8") as f:
+                txt = f.read().strip()
+            if txt:
+                return txt, "rezerves fails likumi.txt"
+        except Exception:
+            pass
+    return "", "nav pieejams"
+
+
+def build_prompt():
+    laws_text, source = load_laws()
+    prompt = SYSTEM_PROMPT
+    if laws_text:
+        prompt += (
+            "\n\nSPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
+            "Analīzē balsties uz šiem likumu tekstiem. Atsaucies uz pantiem tikai tad, ja tie ir "
+            "šajā tekstā. Ja neesi pārliecināts par panta numuru, nenorādi to un neizdomā.\n\n"
+            + laws_text
+        )
+    return prompt, source
+
+
+# ---------------------------------------------------------------
+# Atsauces uz likumi.lv: [[DTIL 28]] -> klikšķināma saite uz attiecīgo pantu
+# ---------------------------------------------------------------
+LAW_LINK_INFO = {
+    "DTIL": ("Dzīvojamo telpu īres likuma", "https://likumi.lv/ta/id/322216"),
+    "CL": ("Civillikuma", "https://likumi.lv/ta/id/90220"),
+}
+CITATION_RE = re.compile(r"\[\[\s*(DTIL|CL)\s+(\d{1,4})\s*\]\]")
+
+SOURCES_MD = (
+    "**Pilni likumu teksti likumi.lv:** "
+    "[Dzīvojamo telpu īres likums](https://likumi.lv/ta/id/322216) · "
+    "[Civillikuma ceturtā daļa](https://likumi.lv/ta/id/90220)"
+)
+
+
+def _citation_to_link(match):
+    code, number = match.group(1), match.group(2)
+    name, base = LAW_LINK_INFO[code]
+    return f"[{name} {number}. pants]({base}#p{number})"
+
+
+def linkify(text):
+    return CITATION_RE.sub(_citation_to_link, text)
+
+
+def linkify_stream(chunks):
+    """Straumē tekstu un uz vietas pārvērš atsauces [[...]] par saitēm."""
+    buf = ""
+    for chunk in chunks:
+        buf += chunk
+        buf = linkify(buf)
+        hold_from = buf.rfind("[[")
+        if hold_from == -1 and buf.endswith("["):
+            hold_from = len(buf) - 1
+        if hold_from != -1 and "]]" not in buf[hold_from:]:
+            out, buf = buf[:hold_from], buf[hold_from:]
+        else:
+            out, buf = buf, ""
+        if out:
+            yield out
+    if buf:
+        yield linkify(buf)
 
 
 # ---------------------------------------------------------------
@@ -90,7 +258,8 @@ def strip_emoji(text):
 
 
 def clean_markdown(text):
-    """Noņem markdown zīmes (** un __), lai tās neparādās dokumentos."""
+    """Noņem markdown zīmes; saites pārvērš par 'teksts (adrese)' Word un PDF failiem."""
+    text = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r"\1 (\2)", text)
     return text.replace("**", "").replace("__", "")
 
 
@@ -269,6 +438,7 @@ if analyze_button:
             file_extension = uploaded_file.name.split('.')[-1].lower()
 
             with st.spinner("🔄 Notiek līguma analīze un risku izvērtēšana..."):
+                active_prompt, laws_source = build_prompt()
                 if file_extension == 'docx':
                     bytes_data = uploaded_file.getvalue()
                     target_stream = io.BytesIO(bytes_data)
@@ -277,7 +447,7 @@ if analyze_button:
                         [p.text for p in doc.paragraphs if p.text.strip()]
                     )
 
-                    full_prompt = f"{SYSTEM_PROMPT}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
+                    full_prompt = f"{active_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
                     response = model.generate_content(full_prompt, stream=True)
 
                 else:
@@ -295,8 +465,9 @@ if analyze_button:
                         'data': file_bytes
                     }
 
-                    response = model.generate_content([SYSTEM_PROMPT, file_part], stream=True)
+                    response = model.generate_content([active_prompt, file_part], stream=True)
 
+            st.caption(f"📚 Likumu avots: {laws_source}")
             st.markdown("### 📋 Analīzes rezultāts reāllaikā:")
 
             def stream_and_collect():
@@ -304,9 +475,11 @@ if analyze_button:
                     if hasattr(chunk, 'text') and chunk.text:
                         yield chunk.text
 
-            full_response_text = st.write_stream(stream_and_collect())
+            full_response_text = st.write_stream(linkify_stream(stream_and_collect()))
 
             if full_response_text:
+                st.markdown(SOURCES_MD)
+                report_text = full_response_text + "\n\n## Izmantotie avoti\n" + SOURCES_MD
                 st.success("✅ Analīze veiksmīgi pabeigta!")
                 st.markdown("---")
 
@@ -315,7 +488,7 @@ if analyze_button:
 
                 with col1:
                     try:
-                        docx_file = generate_pretty_docx(full_response_text)
+                        docx_file = generate_pretty_docx(report_text)
                         st.download_button(
                             label="📄 Lejupielādēt Word (.docx)",
                             data=docx_file,
@@ -328,7 +501,7 @@ if analyze_button:
 
                 with col2:
                     try:
-                        pdf_file = generate_pretty_pdf(full_response_text)
+                        pdf_file = generate_pretty_pdf(report_text)
                         st.download_button(
                             label="📄 Lejupielādēt PDF (.pdf)",
                             data=pdf_file,
