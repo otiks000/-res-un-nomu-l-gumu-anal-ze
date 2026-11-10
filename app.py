@@ -88,46 +88,27 @@ def generate_pretty_docx(analysis_text):
     doc_io.seek(0)
     return doc_io
 
-# Palīgfunkcija teksta attīrīšanai PDF failiem
-def sanitize_for_pdf(text):
-    if not text:
-        return ""
-    return (text
-        .replace("–", "-")
-        .replace("—", "-")
-        .replace("„", "\"")
-        .replace("“", "\"")
-        .replace("”", "\"")
-        .replace("‘", "'")
-        .replace("’", "'")
-    )
-
-# PDF ģenerēšanas klase ar drošu faila un teksta apstrādi
+# PDF ģenerēšanas klase ar pilnu garumzīmju atbalstu caur /tmp fontiem
 class PDFReport(FPDF):
     def header(self):
         self.set_fill_color(30, 41, 59)
         self.rect(0, 0, 210, 15, 'F')
-        if hasattr(self, 'dejavu_loaded') and self.dejavu_loaded:
-            self.set_font("DejaVu", "B", 10)
-        else:
-            self.set_font("Helvetica", "B", 10)
+        self.set_font("DejaVu", "B", 10)
         self.set_text_color(255, 255, 255)
         self.set_xy(10, 4)
-        self.cell(0, 8, "JURIDISKAIS ATZINUMS - IRES LIGUMA ANALIZE", 0, 0, "L")
+        self.cell(0, 8, "JURIDISKAIS ATZINUMS — ĪRES LĪGUMA ANALĪZE", 0, 0, "L")
         self.ln(20)
 
     def footer(self):
         self.set_y(-15)
-        if hasattr(self, 'dejavu_loaded') and self.dejavu_loaded:
-            self.set_font("DejaVu", "", 8)
-        else:
-            self.set_font("Helvetica", "", 8)
+        self.set_font("DejaVu", "", 8)
         self.set_text_color(150, 150, 150)
         self.cell(0, 10, f"Lappuse {self.page_no()} | AI Juridiskais Asistents", 0, 0, "C")
 
 def generate_pretty_pdf(analysis_text):
-    font_path = "DejaVuSans.ttf"
-    font_bold_path = "DejaVuSans-Bold.ttf"
+    # Saglabā fontus drošajā /tmp mapē Streamlit Cloud vidē
+    font_path = os.path.join("/tmp", "DejaVuSans.ttf")
+    font_bold_path = os.path.join("/tmp", "DejaVuSans-Bold.ttf")
     
     if not os.path.exists(font_path):
         try:
@@ -142,10 +123,10 @@ def generate_pretty_pdf(analysis_text):
             pass
 
     pdf = PDFReport()
-    pdf.dejavu_loaded = os.path.exists(font_path) and os.path.exists(font_bold_path)
     pdf.add_page()
     
-    if pdf.dejavu_loaded:
+    # Reģistrē Unicode fontu latviešu valodai
+    if os.path.exists(font_path) and os.path.exists(font_bold_path):
         pdf.add_font("DejaVu", "", font_path, uni=True)
         pdf.add_font("DejaVu", "B", font_bold_path, uni=True)
         pdf.set_font("DejaVu", "B", 14)
@@ -153,15 +134,11 @@ def generate_pretty_pdf(analysis_text):
         pdf.set_font("Helvetica", "B", 14)
         
     pdf.set_text_color(30, 41, 59)
-    pdf.cell(0, 10, sanitize_for_pdf("Dzivojamas telpas ires liguma juridiska atskaite"), ln=True)
+    pdf.cell(0, 10, "Dzīvojamās telpas īres līguma juridiskā atskaite", ln=True)
     
-    if pdf.dejavu_loaded:
-        pdf.set_font("DejaVu", "", 9)
-    else:
-        pdf.set_font("Helvetica", "", 9)
-        
+    pdf.set_font("DejaVu", "", 9) if os.path.exists(font_path) else pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 5, sanitize_for_pdf(f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}"), ln=True)
+    pdf.cell(0, 5, f"Izveides datums: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}", ln=True)
     pdf.ln(5)
     
     lines = analysis_text.split('\n')
@@ -173,10 +150,7 @@ def generate_pretty_pdf(analysis_text):
             
         if line_str.startswith("## "):
             pdf.ln(4)
-            if pdf.dejavu_loaded:
-                pdf.set_font("DejaVu", "B", 11)
-            else:
-                pdf.set_font("Helvetica", "B", 11)
+            pdf.set_font("DejaVu", "B", 11) if os.path.exists(font_bold_path) else pdf.set_font("Helvetica", "B", 11)
             
             if "Kritiski" in line_str or "🔴" in line_str:
                 pdf.set_text_color(220, 38, 38)
@@ -188,17 +162,12 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_text_color(30, 41, 59)
                 
             clean_title = line_str.replace("##", "").strip()
-            clean_title_pdf = sanitize_for_pdf(clean_title.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]"))
-            pdf.cell(0, 7, clean_title_pdf, ln=True)
+            pdf.cell(0, 7, clean_title, ln=True)
             
-            if pdf.dejavu_loaded:
-                pdf.set_font("DejaVu", "", 9.5)
-            else:
-                pdf.set_font("Helvetica", "", 9.5)
+            pdf.set_font("DejaVu", "", 9.5) if os.path.exists(font_path) else pdf.set_font("Helvetica", "", 9.5)
             pdf.set_text_color(40, 40, 40)
         else:
-            clean_line = sanitize_for_pdf(line_str.replace("🔴", "[!]").replace("🟡", "[?]").replace("🟢", "[OK]").replace("📊", "[i]"))
-            pdf.multi_cell(0, 5.5, clean_line)
+            pdf.multi_cell(0, 5.5, line_str)
             
     pdf_buffer = io.BytesIO()
     pdf_bytes = pdf.output(dest='S')
@@ -289,3 +258,4 @@ if analyze_button:
                     
         except Exception as e:
             st.error(f"❌ Kļūda apstrādājot failu: {str(e)}")
+                    
