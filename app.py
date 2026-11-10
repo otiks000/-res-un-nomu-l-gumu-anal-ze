@@ -919,6 +919,7 @@ def render_dashboard(text):
 
 def render_sections(text):
     """Katra sadaļa ir sakļaujama. Pēc noklusējuma atvērtas: kopējais novērtējums, kritiskie, brīdinājumi."""
+    text = add_tooltips(text)
     for head, body in split_sections(text):
         if head is None:
             st.markdown(body)
@@ -927,6 +928,135 @@ def render_sections(text):
         label = head + (f" ({n})" if n else "")
         with st.expander(label, expanded=any(e in head for e in ("📊", "🔴", "🟡"))):
             st.markdown(body)
+# ---------------------------------------------------------------
+# Pantu skaidrojumi: tooltip uz atsaucēm + pieskaramas kartes (bez Gemini izsaukumiem)
+# Dati: (1) iebūvēta vārdnīca ar īsiem skaidrojumiem, (2) panta teksts no likumi.lv,
+# kas jau tiek lejupielādēts analīzei (kešatmiņā)
+# ---------------------------------------------------------------
+ARTICLE_NOTES = {
+    ("DTIL", 1): "Likuma mērķis ir mājokļa pieejamība, nodrošinot taisnīgu līdzsvaru starp izīrētāja un īrnieka interesēm.",
+    ("DTIL", 2): "Likums regulē izīrētāja un īrnieka attiecības. Ko tas neregulē, to regulē Civillikums. Likums neattiecas, piemēram, uz īslaicīgu (sezonālu) lietošanu atpūtai un tūrismam.",
+    ("DTIL", 3): "Dzīvojamās telpas īre ir telpas lietošanas tiesību nodošana citai personai par maksu.",
+    ("DTIL", 5): "Īrnieks var būt tikai fiziska persona. Izīrētājs parasti ir telpas īpašnieks vai valdītājs. Vienu līgumu var slēgt ar vairākiem īrniekiem.",
+    ("DTIL", 6): "Vienīgais telpas lietošanas pamats ir rakstveidā noslēgts īres līgums. Mutiska vienošanās nav pietiekama.",
+    ("DTIL", 7): "Īres līgums jāslēdz rakstveidā.",
+    ("DTIL", 8): "Līgumā obligāti jābūt: telpas adresei, platībai un raksturojumam; līguma termiņam; īres maksai, tās maksāšanas kārtībai un termiņiem, maksas grozīšanas nosacījumiem; saistītajiem pakalpojumiem un to apmaksai; ziņām par iemitinātajām personām. Ja kas no tā trūkst, līgums ir nepilnīgs un var radīt strīdus.",
+    ("DTIL", 9): "Īres līgumu slēdz uz noteiktu termiņu.",
+    ("DTIL", 10): "Īres maksu nosaka rakstveida vienošanās. Līguma laikā to drīkst mainīt tikai tad, ja līgumā ir paredzēti maksas grozīšanas nosacījumi un kārtība.",
+    ("DTIL", 11): "Komunālo un citu ar telpas lietošanu saistīto maksājumu veikšanas kārtību nosaka īres līgums, tāpēc tā jāraksta skaidri.",
+    ("DTIL", 12): "Drošības nauda nedrīkst pārsniegt divu mēnešu īres maksu. Īrnieka parādus var dzēst no tās (par to izīrētājam jāpaziņo nekavējoties). Neizmantoto daļu jāatdod ne vēlāk kā dienā, kad telpa tiek atbrīvota, ja līgumā nav noteikts citādi.",
+    ("DTIL", 13): "Īrniekam ir tiesības netraucēti lietot telpu atbilstoši līgumam. Tāpēc izīrētāja apmeklējumu kārtība līgumā jānosaka skaidri.",
+    ("DTIL", 14): "Īrnieks drīkst iemitināt laulāto un bērnus, iepriekš rakstveidā informējot izīrētāju. Citas personas tikai ar izīrētāja rakstveida piekrišanu. Ziņas par visām iemitinātajām personām jānorāda līgumā.",
+    ("DTIL", 15): "Izīrētājs nedrīkst liegt īrniekam deklarēt īrēto telpu kā dzīvesvietu (arī iemitinātajām personām).",
+    ("DTIL", 16): "Iemitinātajām personām nav patstāvīgu tiesību uz telpu. Īrnieka nāves gadījumā ģimenes loceklis 3 mēnešu laikā var prasīt īres līguma slēgšanu uz tiem pašiem nosacījumiem, bet jāsedz iepriekšējā īrnieka parādi.",
+    ("DTIL", 17): "Īrnieks ievēro līgumu, maksā īri un ar telpu saistītos maksājumus, saudzīgi lieto telpu, neveic neatļautu pārbūvi vai remontu, nekavējoties ziņo par bojājumiem un līgumam beidzoties atbrīvo telpu. Vairāki īrnieki atbild solidāri.",
+    ("DTIL", 18): "Izīrētājs nodod telpu un nodrošina netraucētu lietošanu visu līguma laiku, nekavējoties informē par savu adresi, kontaktiem un telpas atsavināšanu, un (ciktāl tas no viņa atkarīgs) uztur māju.",
+    ("DTIL", 19): "Īres līgums izbeidzas: termiņam beidzoties, telpai gājot bojā, ar īrnieka nāvi vai kad īrnieks telpu iegūst īpašumā.",
+    ("DTIL", 20): "Īrniekam ir tiesības vienpusēji atkāpties no īres līguma (brīdināšanas termiņš ir 27. pantā).",
+    ("DTIL", 21): "Izīrētājs var izbeigt līgumu vai atkāpties no tā tikai likumā noteiktajos gadījumos (22.–26. pants).",
+    ("DTIL", 22): "Izīrētājs var izbeigt līgumu, ja īrnieks vai iemitinātās personas bojā telpu vai māju, izmanto to līgumā neparedzētiem mērķiem vai pārkāpj lietošanas noteikumus.",
+    ("DTIL", 23): "Izīrētājs var izbeigt līgumu, ja bez viņa piekrišanas telpu lieto līgumā neparedzētas personas.",
+    ("DTIL", 24): "Izīrētājs var izbeigt līgumu, ja kavētā īre pārsniedz divu mēnešu īres maksu (vai līgumā noteikto lielāko apmēru) vai ar telpu saistīto maksājumu kavējums pārsniedz divus mēnešus.",
+    ("DTIL", 25): "Izbeigšana mājas nojaukšanas vai pārbūves dēļ: izīrētājam jāatlīdzina pārcelšanās izdevumi, ieguldījumi un zaudējumi.",
+    ("DTIL", 26): "Atkāpšanās no līguma, ja pieņemts lēmums aizliegt mājas ekspluatāciju: izīrētājam jāatlīdzina pārcelšanās izdevumi, ieguldījumi un zaudējumi.",
+    ("DTIL", 27): "Brīdinājums par izbeigšanu jāsniedz rakstveidā. Īrnieks brīdina vismaz 1 mēnesi iepriekš (līgumiem līdz 10 gadiem). Izīrētāja termiņi atkarīgi no izbeigšanas pamata un līguma ilguma. Brīdinājumā jānorāda neizpildītā saistība, kavējuma periods, summa un sekas.",
+    ("DTIL", 28): "Ja telpu pārdod, jaunajam īpašniekam līgums ir saistošs TIKAI tad, ja īres līgums ir ierakstīts zemesgrāmatā. Ja nav, jaunais īpašnieks var prasīt telpas atbrīvot 2 mēnešu laikā.",
+    ("DTIL", 29): "Līgumam izbeidzoties, īrniekam un iemitinātajiem telpa jāatbrīvo. Ja neatbrīvo, jāatlīdzina zaudējumi un jāmaksā kompensācija par lietošanu.",
+    ("DTIL", 35): "Īres tiesības var nostiprināt zemesgrāmatā. Tas aizsargā īrnieku, ja īpašnieks mainās (28. pants).",
+    ("DTIL", 36): "Īres tiesību nostiprināšanai piemēro Zemesgrāmatu likumu, ciktāl šis likums nenosaka citādi.",
+    ("DTIL", 37): "Īres tiesību nostiprināšana un grozīšana zemesgrāmatā ir atbrīvota no zemesgrāmatas kancelejas nodevas.",
+    ("DTIL", 39): "Nostiprināšanu var lūgt izīrētājs un īrnieks kopā, vai viens no viņiem, ja otrs to ir pilnvarojis.",
+    ("DTIL", 42): "Izīrētājam piemēro naudas sodu par traucējumiem, kas liedz īrniekam lietot telpu vai izmantot apkuri, elektrību, ūdeni, kanalizāciju vai atkritumu izvešanu.",
+}
+
+LINK_RE = re.compile(r"\[([^\]]+)\]\((https://likumi\.lv/ta/id/(322216|90220)#p(\d+))\)")
+
+
+@st.cache_data(ttl=datetime.timedelta(hours=1), show_spinner=False)
+def article_index(code):
+    """Atgriež {panta numurs: teksts} no likumi.lv teksta (bez Gemini). Kļūdas gadījumā atgriež {}."""
+    try:
+        name, url, ranges = LAW_SOURCES[0] if code == "DTIL" else LAW_SOURCES[1]
+        text = fetch_law(url)
+    except Exception:
+        return {}
+    index, cur, buf = {}, None, []
+
+    def flush():
+        if cur is not None and buf:
+            body = " ".join(buf).strip()
+            if len(body) > len(index.get(cur, "")):
+                index[cur] = body
+
+    for line in text.split("\n"):
+        if code == "DTIL":
+            m = re.match(r"^(\d{1,2})\. pants\b", line)
+            num = int(m.group(1)) if m else None
+        else:
+            m = ARTICLE_START.match(line)
+            num = int(m.group(1) or m.group(2)) if m else None
+            if num is not None and ranges and not any(lo <= num <= hi for lo, hi in ranges):
+                flush()
+                cur, buf = None, []
+                continue
+        if num is not None:
+            flush()
+            cur, buf = num, [line]
+        elif cur is not None:
+            buf.append(line)
+    flush()
+    return index
+
+
+def article_excerpt(code, num, limit=600):
+    """Oficiālā panta teksta sākums (no likumi.lv)."""
+    raw = article_index(code).get(num, "")
+    raw = re.sub(r"^\d+\.?\s*(?:pants\.?)?\s*", "", raw)
+    raw = re.sub(r"\s+", " ", raw).strip()
+    return raw if len(raw) <= limit else raw[:limit].rsplit(" ", 1)[0] + "…"
+
+
+def article_tooltip(code, num):
+    tip = ARTICLE_NOTES.get((code, num)) or article_excerpt(code, num, 220)
+    tip = tip.replace('"', "'").replace("\\", "").replace("\n", " ")
+    return tip if len(tip) <= 300 else tip[:300].rsplit(" ", 1)[0] + "…"
+
+
+def add_tooltips(text):
+    """Pievieno atsauču saitēm paskaidrojumu (parādās, uzvedot peli virs saites)."""
+    def _sub(m):
+        code = "DTIL" if m.group(3) == "322216" else "CL"
+        tip = article_tooltip(code, int(m.group(4)))
+        return f'[{m.group(1)}]({m.group(2)} "{tip}")' if tip else m.group(0)
+    return LINK_RE.sub(_sub, text)
+
+
+def render_law_help(text):
+    """Pieskaramas kartes ar skaidrojumu katram analīzē minētajam pantam (der arī telefonam)."""
+    seen = []
+    for m in LINK_RE.finditer(text):
+        key = ("DTIL" if m.group(3) == "322216" else "CL", int(m.group(4)))
+        if key not in seen:
+            seen.append(key)
+    if not seen:
+        return
+    st.markdown("### 📖 Pantu skaidrojumi (pieskarieties pantam)")
+    cols = st.columns(2)
+    for i, (code, num) in enumerate(seen):
+        label = T["cite_dtil" if code == "DTIL" else "cite_cl"].format(n=num)
+        with cols[i % 2]:
+            box = st.popover(label, use_container_width=True) if hasattr(st, "popover") else st.expander(label)
+            with box:
+                note = ARTICLE_NOTES.get((code, num))
+                excerpt = article_excerpt(code, num, 700)
+                if note:
+                    st.markdown("**Ko tas nozīmē īrniekam:** " + note)
+                if excerpt:
+                    st.caption("Oficiālais teksts (izvilkums): " + excerpt)
+                if not note and not excerpt:
+                    st.markdown("Skaidrojums nav pieejams. Atveriet pilno tekstu likumi.lv.")
+                st.markdown(f"[Atvērt likumi.lv]({LAW_LINKS[code]}#p{num})")
+                st.caption("Informatīvs skaidrojums pēc likuma teksta, nav juridiska konsultācija.")
 def render_downloads(result):
     st.success(T["success"])
     st.markdown("---")
@@ -1034,5 +1164,6 @@ elif "result" in st.session_state:
     st.caption(f"{T['law_source']}: {saved['laws_source']}")
     render_dashboard(saved["analysis"])
     render_sections(saved["analysis"])
+    render_law_help(saved["analysis"])
     st.markdown(sources_md())
     render_downloads(saved)
