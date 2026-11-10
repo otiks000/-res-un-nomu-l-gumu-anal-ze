@@ -33,7 +33,7 @@ TR = {
         "uploader": "Izvēlies vai ievelc līguma failu (.docx, .pdf, .png, .jpg):",
         "analyze_btn": "🔍 Analizēt līgumu",
         "err_no_key": "⚠️ Lūdzu, ievadi savu Gemini API atslēgu sānu joslā!",
-        "err_no_file": "⚠️ Lūdzu, augšupielādē līguma failu!",
+        "err_no_file": "⚠️ Lūdzu, augšupielādē līguma failu vai ielīmē līguma tekstu!",
         "spinner_analysis": "🔄 Notiek līguma analīze un risku izvērtēšana...",
         "law_source": "📚 Likumu avots",
         "result_live": "### 📋 Analīzes rezultāts reāllaikā:",
@@ -56,7 +56,7 @@ TR = {
         "uploader": "Choose or drag the contract file (.docx, .pdf, .png, .jpg):",
         "analyze_btn": "🔍 Analyze contract",
         "err_no_key": "⚠️ Please enter your Gemini API key in the sidebar!",
-        "err_no_file": "⚠️ Please upload a contract file!",
+        "err_no_file": "⚠️ Please upload a contract file or paste the contract text!",
         "spinner_analysis": "🔄 Analyzing the contract and assessing risks...",
         "law_source": "📚 Law source",
         "result_live": "### 📋 Analysis result (live):",
@@ -79,7 +79,7 @@ TR = {
         "uploader": "Выберите или перетащите файл договора (.docx, .pdf, .png, .jpg):",
         "analyze_btn": "🔍 Проанализировать договор",
         "err_no_key": "⚠️ Пожалуйста, введите API-ключ Gemini в боковой панели!",
-        "err_no_file": "⚠️ Пожалуйста, загрузите файл договора!",
+        "err_no_file": "⚠️ Пожалуйста, загрузите файл договора или вставьте текст договора!",
         "spinner_analysis": "🔄 Идёт анализ договора и оценка рисков...",
         "law_source": "📚 Источник законов",
         "result_live": "### 📋 Результат анализа (в реальном времени):",
@@ -99,8 +99,9 @@ TR = {
 TR_EXTRA = {
     "Latviešu": {
         "report_lang_name": "latviešu",
+        "paste_label": "Vai ielīmē līguma tekstu šeit (ja ielīmēts teksts, fails netiek izmantots):",
         "h_overall": "Kopējais novērtējums", "h_crit": "Kritiski riski", "h_warn": "Brīdinājumi",
-        "h_recs": "Ieteikumi un labojumi", "h_neutral": "Neitrālas piezīmes (korektūra)",
+        "h_recs": "Ieteikumi un labojumi", "h_border": "Apsveramie punkti (robežgadījumi)", "h_neutral": "Neitrālas piezīmes (korektūra)",
         "no_proof_errors": "Korektūras kļūdu netika atrasts.",
         "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
         "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
@@ -114,8 +115,9 @@ TR_EXTRA = {
     },
     "English": {
         "report_lang_name": "angļu",
+        "paste_label": "Or paste the contract text here (if text is pasted, the file is not used):",
         "h_overall": "Overall assessment", "h_crit": "Critical risks", "h_warn": "Warnings",
-        "h_recs": "Recommendations and corrections", "h_neutral": "Neutral notes (proofreading)",
+        "h_recs": "Recommendations and corrections", "h_border": "Points to consider (borderline cases)", "h_neutral": "Neutral notes (proofreading)",
         "no_proof_errors": "No proofreading errors were found.",
         "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
         "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
@@ -130,8 +132,9 @@ TR_EXTRA = {
     },
     "Русский": {
         "report_lang_name": "krievu",
+        "paste_label": "Или вставьте текст договора сюда (если текст вставлен, файл не используется):",
         "h_overall": "Общая оценка", "h_crit": "Критические риски", "h_warn": "Предупреждения",
-        "h_recs": "Рекомендации и исправления", "h_neutral": "Нейтральные замечания (корректура)",
+        "h_recs": "Рекомендации и исправления", "h_border": "Пункты для рассмотрения (пограничные случаи)", "h_neutral": "Нейтральные замечания (корректура)",
         "no_proof_errors": "Ошибок при корректуре не найдено.",
         "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
         "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
@@ -249,6 +252,8 @@ uploaded_file = st.file_uploader(
     type=["docx", "pdf", "png", "jpg", "jpeg"]
 )
 
+pasted_text = st.text_area(T["paste_label"], height=200, key="pasted_text")
+
 SYSTEM_PROMPT = """
 Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
 
@@ -280,6 +285,7 @@ DARBA METODE:
 - Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
 - Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
 - NEGRUPĒ: katru atsevišķu problēmu, katru atsevišķu tukšo finansiālo lauku (piemēram, īres summa, depozīta summa, maksājuma datums, termiņš) un katru atsevišķu līguma punktu atzīmē ATSEVIŠĶI ar savu kodu. Nekad nesavieno vairākus punktus vienā ierakstā.
+- Ja šaubies, vai punkts ir problēma, NEIZLAID to: liec to sadaļā "Apsveramie punkti".
 - Katrā sadaļā punktus kārto tajā secībā, kādā tie ir līgumā (no pirmā līdz pēdējam), nevis pēc svarīguma. Tas nodrošina vienādu rezultātu atkārtotā analīzē.
 - Katram punktam norādi līguma punkta numuru un vienkāršu paskaidrojumu, kāpēc tas ir problēma.
 
@@ -302,6 +308,14 @@ Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas
 - situācijas, ko līgums neapskata (piemēram, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
 - neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
 Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
+
+🔵 APSVERAMS PUNKTS (robežgadījums) - punkts, kas ir līgumā, ir likumīgs un nerada acīmredzamus zaudējumus, bet kuru īpašnieks varētu vēlēties izvērtēt vai mainīt, jo tas ir mazāk izdevīgs vienai pusei, nestandarta vai atkarīgs no pušu vēlmēm. Īpašnieks pats izlems, vai tas jālabo.
+Šeit liec VISU, par ko šaubies, vai tā ir problēma. Piemēri:
+- drošības depozīta atmaksas termiņš, kas ir garāks par 10 darba dienām (piemēram, "1 mēneša laikā"): OBLIGĀTI šeit;
+- garš vai vienpusējs uzteikuma termiņš, stingri vai nestandarta nosacījumi, kas ir likumīgi, bet nav līdzsvaroti;
+- noteikumi, kas ir skaidri, bet var būt neizdevīgi (piemēram, depozīta apmērs, maksājumu termiņi, ierobežojumi viesiem vai remontiem);
+- jebkas, kas nav ne skaidra kļūda, ne skaidri kārtībā.
+Noteikums: ja šaubies, vai punkts ir problēma, NEIZLAID to, bet liec šajā sadaļā. Ja punkts ir skaidri nelikumīgs vai rada zaudējumus, tas ir kritisks; ja trūkst vai ir neskaidrs, tas ir brīdinājums; pārējos robežgadījumus liec šeit.
 
 🟢 IETEIKUMS - konkrēts labojums vai papildinājums ar piedāvātu jaunu formulējumu.
 
@@ -328,6 +342,9 @@ Izmanto tieši šādu virsrakstu struktūru:
 
 ## 🟢 Ieteikumi un labojumi
 [OBLIGĀTI: katram kritiskajam riskam un katram brīdinājumam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
+
+## 🔵 Apsveramie punkti (robežgadījumi)
+[Katru punktu numurē ar kodu A1, A2, A3... Formāts: "A1. Līguma punkta numurs (īss nosaukums): kas tieši ir šaubīgs un kāpēc to varētu apsvērt. Ja vēlaties mainīt: piedāvātais formulējums: „...”". Atsauci uz likumu pievieno tikai, ja tā ir. Šeit ir arī punkti, ko īpašnieks var apzināti atstāt nemainītus.]
 
 PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
 """
@@ -470,6 +487,7 @@ def localize_prompt(text):
     text = text.replace("## 🔴 Kritiski riski", "## 🔴 " + T["h_crit"])
     text = text.replace("## 🟡 Brīdinājumi", "## 🟡 " + T["h_warn"])
     text = text.replace("## 🟢 Ieteikumi un labojumi", "## 🟢 " + T["h_recs"])
+    text = text.replace("## 🔵 Apsveramie punkti (robežgadījumi)", "## 🔵 " + T["h_border"])
     text = text.replace("Piedāvātais formulējums", T["label_proposed"])
     return text
 
@@ -599,6 +617,8 @@ def generate_pretty_docx(analysis_text):
                 color = RGBColor(22, 163, 74)
             elif "Neitrāl" in line_str or "⚪" in line_str:
                 color = RGBColor(100, 116, 139)
+            elif "Apsver" in line_str or "🔵" in line_str:
+                color = RGBColor(37, 99, 235)
             else:
                 color = RGBColor(30, 41, 59)
 
@@ -699,6 +719,8 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_text_color(22, 163, 74)
             elif "Neitrāl" in raw or "⚪" in raw:
                 pdf.set_text_color(100, 116, 139)
+            elif "Apsver" in raw or "🔵" in raw:
+                pdf.set_text_color(37, 99, 235)
             else:
                 pdf.set_text_color(30, 41, 59)
 
@@ -790,7 +812,7 @@ if analyze_button:
 
     if not api_key:
         st.error(T["err_no_key"])
-    elif uploaded_file is None:
+    elif uploaded_file is None and not pasted_text.strip():
         st.error(T["err_no_file"])
     else:
         try:
@@ -804,17 +826,24 @@ if analyze_button:
                 )
             )
 
-            file_extension = uploaded_file.name.split('.')[-1].lower()
+            # Ja ielīmēts teksts, izmanto to; citādi - augšupielādēto failu
+            if pasted_text.strip():
+                file_extension = "txt"
+            else:
+                file_extension = uploaded_file.name.split('.')[-1].lower()
 
             with st.spinner(T["spinner_analysis"]):
                 active_prompt, laws_source = build_prompt()
-                if file_extension == 'docx':
-                    bytes_data = uploaded_file.getvalue()
-                    target_stream = io.BytesIO(bytes_data)
-                    doc = docx.Document(target_stream)
-                    contract_text = "\n".join(
-                        [p.text for p in doc.paragraphs if p.text.strip()]
-                    )
+                if file_extension in ('docx', 'txt'):
+                    if file_extension == 'txt':
+                        contract_text = pasted_text.strip()
+                    else:
+                        bytes_data = uploaded_file.getvalue()
+                        target_stream = io.BytesIO(bytes_data)
+                        doc = docx.Document(target_stream)
+                        contract_text = "\n".join(
+                            [p.text for p in doc.paragraphs if p.text.strip()]
+                        )
 
                     full_prompt = f"{active_prompt}\n\nLĪGUMA TEKSTS ANALĪZEI:\n{contract_text}"
                     response = model.generate_content(full_prompt, stream=True)
@@ -852,7 +881,7 @@ if analyze_button:
                 try:
                     st.markdown("---")
                     with st.spinner(T["proof_spinner"]):
-                        if file_extension == 'docx':
+                        if file_extension in ('docx', 'txt'):
                             proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{contract_text}"
                         else:
                             proof_input = [build_proof_prompt(), file_part]
