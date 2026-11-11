@@ -3498,16 +3498,16 @@ if "result" in st.session_state:
     with results_slot:                                      # cilnes lapas augšā
         render_history_picker()
         st.markdown(
-            "<style>@media (max-width:820px){"
+            "<style>"
             "[data-testid='stTabs'] [role='tablist']{gap:0!important;overflow:hidden!important;width:100%!important}"
             "[data-testid='stTab'],[data-testid='stTabs'] [role='tab']{"
             "flex:1 1 0!important;min-width:0!important;width:25%!important;height:auto!important;"
             "padding:0.35rem 0.1rem 0.45rem!important;justify-content:center!important;"
             "white-space:normal!important}"
             "[data-testid='stTab'] *,[data-testid='stTabs'] [role='tab'] *{white-space:normal!important;"
-            "text-align:center!important;font-size:0.68rem!important;line-height:1.15!important;"
+            "text-align:center!important;font-size:clamp(0.62rem,2.2vw,1.15rem)!important;line-height:1.15!important;"
             "overflow-wrap:anywhere;word-break:break-word}"
-            "}</style>", unsafe_allow_html=True)
+            "</style>", unsafe_allow_html=True)
         tab_risks, tab_chat, tab_docs, tab_calc = st.tabs([
             T.get("tab_risks", "📊 Risk analysis"),
             T.get("tab_chat", "💬 Chat with the contract"),
