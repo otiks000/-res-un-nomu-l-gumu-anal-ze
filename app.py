@@ -477,24 +477,33 @@ for _l, _extra in TR_FIX.items():
 # PWA: pamācība, kā pievienot lietotni sākuma ekrānam (sānu joslas apakšā)
 TR_PWA = {
     "Latviešu": {
-        "pwa_title": "📲 Instalēt kā lietotni",
-        "pwa_intro": "Pievienojiet analizētāju sava viedtālruņa vai planšetdatora sākuma ekrānam, lai to atvērtu kā parastu lietotni.",
+        "pwa_btn": "📲 Instalēt lietotni",
+        "pwa_installed": "✅ Lietotne ir instalēta",
+        "pwa_pop_title": "Instalējiet lietotni",
+        "pwa_pop_text": "Atveriet līgumu analizētāju ar vienu pieskārienu no tālruņa vai planšetdatora sākuma ekrāna.",
+        "pwa_close": "Aizvērt",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
         "pwa_ios": "Nospiediet **„Kopīgošana“** (Share) un izvēlieties **„Pievienot sākuma ekrānam“** (Add to Home Screen).",
         "pwa_android_h": "🤖 Android (Chrome)",
         "pwa_android": "Nospiediet **trīs punktiņus** (⋮) augšējā stūrī un izvēlieties **„Instalēt lietotni“** (Install app).",
     },
     "English": {
-        "pwa_title": "📲 Install as an app",
-        "pwa_intro": "Add the analyzer to the home screen of your phone or tablet to open it like a regular app.",
+        "pwa_btn": "📲 Install app",
+        "pwa_installed": "✅ App is installed",
+        "pwa_pop_title": "Install the app",
+        "pwa_pop_text": "Open the contract analyzer with one tap from the home screen of your phone or tablet.",
+        "pwa_close": "Close",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
         "pwa_ios": "Tap **Share** and choose **Add to Home Screen**.",
         "pwa_android_h": "🤖 Android (Chrome)",
         "pwa_android": "Tap the **three dots** (⋮) in the top corner and choose **Install app**.",
     },
     "Русский": {
-        "pwa_title": "📲 Установить как приложение",
-        "pwa_intro": "Добавьте анализатор на главный экран смартфона или планшета, чтобы открывать его как обычное приложение.",
+        "pwa_btn": "📲 Установить приложение",
+        "pwa_installed": "✅ Приложение установлено",
+        "pwa_pop_title": "Установите приложение",
+        "pwa_pop_text": "Открывайте анализатор договоров одним касанием с главного экрана телефона или планшета.",
+        "pwa_close": "Закрыть",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
         "pwa_ios": "Нажмите **«Поделиться»** (Share) и выберите **«На экран „Домой“»** (Add to Home Screen).",
         "pwa_android_h": "🤖 Android (Chrome)",
@@ -795,17 +804,131 @@ components.html(
 # service worker reģistrāciju ievieto galvenajā lapā ar JavaScript. Faili ir mapē static/
 # (pieejami /app/static/..., jo config.toml ir server.enableStaticServing = true).
 # ---------------------------------------------------------------
+# Šis kods tiek ievietots galvenajā lapā kā <script> (nevis darbojas komponenta iframe),
+# tāpēc tas paliek dzīvs arī pēc Streamlit pārlādēm. Tas:
+#   1) notver pārlūka "beforeinstallprompt" notikumu (Android Chrome, Edge, datora Chrome),
+#      lai instalēšanas logu varētu atvērt ar mūsu pogu;
+#   2) lapas atvēršanas brīdī parāda uznirstošo logu ar pogu "Instalēt lietotni" uz 7 sekundēm
+#      vai līdz lietotājs kaut kur pieskaras (ja lietotne jau instalēta, logs netiek rādīts);
+#   3) iOS (Safari neļauj lapai pašai instalēties) un citos pārlūkos poga parāda īsu norādi.
+PWA_JS = r"""
+(function () {
+  var W = window, D = document;
+  function tx() { try { return JSON.parse(D.documentElement.getAttribute("data-pwa-texts") || "{}"); } catch (e) { return {}; } }
+  function md(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  }
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var installed = W.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  var deferred = null, box = null, timer = null;
+
+  W.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferred = e; });
+  W.addEventListener("appinstalled", function () { installed = true; deferred = null; close(); });
+
+  var css = D.createElement("style");
+  css.textContent =
+    "#pwa-pop{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1000002;" +
+    "transform:translate(-50%,20px);opacity:0;transition:opacity .25s,transform .25s;width:min(420px,calc(100vw - 32px));" +
+    "box-sizing:border-box;background:#132a5e;color:#e6edfb;border:1px solid #4f7df0;border-radius:14px;" +
+    "box-shadow:0 10px 30px rgba(0,0,0,.45);padding:14px 16px 16px;font-family:'Source Sans Pro',sans-serif;overflow:hidden}" +
+    "#pwa-pop.on{opacity:1;transform:translate(-50%,0)}" +
+    "#pwa-pop .row{display:flex;gap:12px;align-items:center}" +
+    "#pwa-pop img{width:48px;height:48px;border-radius:11px;flex:none}" +
+    "#pwa-pop h4{margin:0 0 2px;font-size:16px;color:#fff}" +
+    "#pwa-pop p{margin:0;font-size:13.5px;line-height:1.4;opacity:.9}" +
+    "#pwa-pop .help p{margin-top:8px}" +
+    "#pwa-pop .x{position:absolute;top:6px;right:8px;background:none;border:0;color:#e6edfb;font-size:20px;cursor:pointer;opacity:.7}" +
+    "#pwa-pop .go{margin-top:12px;width:100%;padding:11px 0;font-size:16px;font-weight:700;border:0;border-radius:10px;" +
+    "background:#4f7df0;color:#fff;cursor:pointer}" +
+    "#pwa-pop .bar{position:absolute;left:0;bottom:0;height:3px;background:#4f7df0;width:100%}";
+  D.head.appendChild(css);
+
+  function close() {
+    clearTimeout(timer);
+    D.removeEventListener("pointerdown", outside, true);
+    if (!box) return;
+    var b = box; box = null;
+    b.classList.remove("on");
+    setTimeout(function () { b.remove(); }, 300);
+  }
+  function outside(e) { if (box && !box.contains(e.target)) close(); }
+
+  function render(mode, seconds) {
+    var T = tx(), icon = D.querySelector('link[rel="apple-touch-icon"]');
+    var body;
+    if (mode === "help") {
+      body = isIOS
+        ? "<p><b>" + md(T.ios_h) + "</b><br>" + md(T.ios) + "</p>"
+        : "<p><b>" + md(T.android_h) + "</b><br>" + md(T.android) + "</p>";
+      body = '<div class="help">' + body + "</div>";
+    } else {
+      body = '<button class="go" type="button">' + md(T.btn) + "</button>";
+    }
+    if (!box) {
+      box = D.createElement("div");
+      box.id = "pwa-pop";
+      box.setAttribute("role", "dialog");
+      D.body.appendChild(box);
+      requestAnimationFrame(function () { requestAnimationFrame(function () { box && box.classList.add("on"); }); });
+    }
+    box.innerHTML =
+      '<button class="x" type="button" aria-label="' + md(T.close) + '">×</button>' +
+      '<div class="row">' + (icon ? '<img alt="" src="' + icon.href + '">' : "") +
+      "<div><h4>" + md(T.title) + "</h4><p>" + md(T.text) + "</p></div></div>" + body +
+      '<div class="bar"></div>';
+    box.querySelector(".x").onclick = close;
+    var go = box.querySelector(".go");
+    if (go) go.onclick = function () { W.__pwaInstall(); };
+    // laika josla + automātiska aizvēršana
+    clearTimeout(timer);
+    var bar = box.querySelector(".bar");
+    bar.style.transition = "none"; bar.style.width = "100%";
+    requestAnimationFrame(function () { requestAnimationFrame(function () {
+      bar.style.transition = "width " + seconds + "s linear"; bar.style.width = "0%";
+    }); });
+    timer = setTimeout(close, seconds * 1000);
+    // pieskāriens jebkur ārpus loga to aizver (klausītājs tiek pievienots pēc mirkļa,
+    // lai to neaizvērtu tas pats klikšķis, kas logu atvēra)
+    D.removeEventListener("pointerdown", outside, true);
+    setTimeout(function () { if (box) D.addEventListener("pointerdown", outside, true); }, 50);
+  }
+
+  W.__pwaState = function () { return installed ? "installed" : deferred ? "ready" : isIOS ? "ios" : "other"; };
+  W.__pwaInstall = function () {
+    if (installed) return;
+    if (deferred) {
+      var p = deferred; deferred = null;
+      close();
+      p.prompt();
+      p.userChoice.then(function (r) { if (r && r.outcome === "accepted") installed = true; }).catch(function () {});
+      return;
+    }
+    render("help", 15);       // nav sistēmas instalēšanas loga (iOS u.c.) → parāda norādi
+  };
+
+  if (!installed) {
+    // neliela pauze, lai pārlūks paspēj nolasīt manifestu un sagatavot instalēšanas logu
+    setTimeout(function () { if (!installed) render("offer", 7); }, 600);
+  }
+})();
+"""
+
 PWA_HTML = """
 <script>
 (function () {
   var P = window.parent, D = P.document;
-  if (D.getElementById("pwa-manifest")) return;
+  D.documentElement.setAttribute("data-pwa-texts", __TEXTS__);   // atjauno tekstus, ja mainīta valoda
+  if (D.getElementById("pwa-manifest")) return;                   // viss pārējais tikai vienreiz
   var base = new URL("app/static/", P.location.origin + P.location.pathname.replace(/[^/]*$/, "")).href;
   function add(tag, attrs) {
     var el = D.createElement(tag);
     for (var k in attrs) el.setAttribute(k, attrs[k]);
     D.head.appendChild(el);
+    return el;
   }
+  // instalēšanas loģika vispirms, lai "beforeinstallprompt" netiktu palaists garām
+  add("script", {}).textContent = __PWA_JS__;
   add("link", { id: "pwa-manifest", rel: "manifest", href: base + "manifest.json" });
   add("link", { rel: "apple-touch-icon", href: base + "apple-touch-icon.png" });
   add("meta", { name: "theme-color", content: "#0b1d44" });
@@ -819,7 +942,15 @@ PWA_HTML = """
 })();
 </script>
 """
-components.html(PWA_HTML, height=0)
+_pwa_texts = {k: T.get("pwa_" + k, TR["English"]["pwa_" + k]) for k in
+              ("btn", "installed", "close", "ios_h", "ios", "android_h", "android")}
+_pwa_texts["title"] = T.get("pwa_pop_title", TR["English"]["pwa_pop_title"])
+_pwa_texts["text"] = T.get("pwa_pop_text", TR["English"]["pwa_pop_text"])
+components.html(
+    PWA_HTML.replace("__TEXTS__", json.dumps(json.dumps(_pwa_texts, ensure_ascii=False), ensure_ascii=False).replace("</", "<\\/"))
+            .replace("__PWA_JS__", json.dumps(PWA_JS).replace("</", "<\\/")),
+    height=0,
+)
 
 # ---------------------------------------------------------------
 # Sesijas pārvaldība (st.session_state): analīžu vēsture un "Sākt no jauna"
@@ -880,12 +1011,39 @@ st.sidebar.header(T["sidebar_header"])
 api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
 st.sidebar.button(T["reset_btn"], on_click=reset_session, use_container_width=True)
 
-# PWA pamācība sānu joslas apakšā: kā pievienot lietotni sākuma ekrānam
+# PWA instalēšanas poga sānu joslas apakšā (loģika: window.__pwaInstall galvenajā lapā, sk. PWA_JS)
+PWA_BTN_HTML = """
+<style>
+  body { margin: 0; font-family: "Source Sans Pro", sans-serif; }
+  button { width: 100%; padding: 9px 0; font-size: 15px; font-weight: 600; border-radius: 8px; cursor: pointer;
+           border: 1px solid #4f7df0; background: #4f7df0; color: #fff; }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { background: transparent; color: #4f7df0; cursor: default; filter: none; }
+</style>
+<button id="b" type="button"></button>
+<script>
+(function () {
+  var P = window.parent, b = document.getElementById("b"), L = __LABELS__;
+  function sync() {
+    var done = P.__pwaState && P.__pwaState() === "installed";
+    b.textContent = done ? L.installed : L.btn;
+    b.disabled = done;
+  }
+  b.addEventListener("click", function () { if (P.__pwaInstall) P.__pwaInstall(); setTimeout(sync, 500); });
+  sync();
+  setInterval(sync, 2000);
+})();
+</script>
+"""
 st.sidebar.divider()
-with st.sidebar.expander(T.get("pwa_title", TR["English"]["pwa_title"])):
-    st.caption(T.get("pwa_intro", TR["English"]["pwa_intro"]))
-    st.markdown(f"**{T.get('pwa_ios_h', TR['English']['pwa_ios_h'])}**  \n{T.get('pwa_ios', TR['English']['pwa_ios'])}")
-    st.markdown(f"**{T.get('pwa_android_h', TR['English']['pwa_android_h'])}**  \n{T.get('pwa_android', TR['English']['pwa_android'])}")
+with st.sidebar:
+    components.html(
+        PWA_BTN_HTML.replace("__LABELS__", json.dumps({
+            "btn": T.get("pwa_btn", TR["English"]["pwa_btn"]),
+            "installed": T.get("pwa_installed", TR["English"]["pwa_installed"]),
+        }, ensure_ascii=False)),
+        height=44,
+    )
 uploaded_file = st.file_uploader(
     T["uploader"],
     type=["docx", "pdf", "png", "jpg", "jpeg"],
