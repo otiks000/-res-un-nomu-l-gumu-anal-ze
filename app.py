@@ -474,6 +474,37 @@ for _l, _extra in TR_FIX.items():
     if _l in TR:
         TR[_l].update(_extra)
 
+# PWA: pamācība, kā pievienot lietotni sākuma ekrānam (sānu joslas apakšā)
+TR_PWA = {
+    "Latviešu": {
+        "pwa_title": "📲 Instalēt kā lietotni",
+        "pwa_intro": "Pievienojiet analizētāju sava viedtālruņa vai planšetdatora sākuma ekrānam, lai to atvērtu kā parastu lietotni.",
+        "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
+        "pwa_ios": "Nospiediet **„Kopīgošana“** (Share) un izvēlieties **„Pievienot sākuma ekrānam“** (Add to Home Screen).",
+        "pwa_android_h": "🤖 Android (Chrome)",
+        "pwa_android": "Nospiediet **trīs punktiņus** (⋮) augšējā stūrī un izvēlieties **„Instalēt lietotni“** (Install app).",
+    },
+    "English": {
+        "pwa_title": "📲 Install as an app",
+        "pwa_intro": "Add the analyzer to the home screen of your phone or tablet to open it like a regular app.",
+        "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
+        "pwa_ios": "Tap **Share** and choose **Add to Home Screen**.",
+        "pwa_android_h": "🤖 Android (Chrome)",
+        "pwa_android": "Tap the **three dots** (⋮) in the top corner and choose **Install app**.",
+    },
+    "Русский": {
+        "pwa_title": "📲 Установить как приложение",
+        "pwa_intro": "Добавьте анализатор на главный экран смартфона или планшета, чтобы открывать его как обычное приложение.",
+        "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
+        "pwa_ios": "Нажмите **«Поделиться»** (Share) и выберите **«На экран „Домой“»** (Add to Home Screen).",
+        "pwa_android_h": "🤖 Android (Chrome)",
+        "pwa_android": "Нажмите **три точки** (⋮) в верхнем углу и выберите **«Установить приложение»** (Install app).",
+    },
+}
+for _l, _extra in TR_PWA.items():
+    if _l in TR:
+        TR[_l].update(_extra)
+
 # Papildu valodas: tulkojumu veic Gemini (kad ievadīta API atslēga)
 EXTRA_LANGS = {
     "Deutsch": "German", "Español": "Spanish", "Français": "French", "Italiano": "Italian",
@@ -759,6 +790,38 @@ components.html(
 )
 
 # ---------------------------------------------------------------
+# PWA (Progressive Web App): lietotni var instalēt viedtālrunī / planšetdatorā.
+# Streamlit neļauj mainīt lapas <head>, tāpēc saites uz manifestu, iOS meta tagus un
+# service worker reģistrāciju ievieto galvenajā lapā ar JavaScript. Faili ir mapē static/
+# (pieejami /app/static/..., jo config.toml ir server.enableStaticServing = true).
+# ---------------------------------------------------------------
+PWA_HTML = """
+<script>
+(function () {
+  var P = window.parent, D = P.document;
+  if (D.getElementById("pwa-manifest")) return;
+  var base = new URL("app/static/", P.location.origin + P.location.pathname.replace(/[^/]*$/, "")).href;
+  function add(tag, attrs) {
+    var el = D.createElement(tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    D.head.appendChild(el);
+  }
+  add("link", { id: "pwa-manifest", rel: "manifest", href: base + "manifest.json" });
+  add("link", { rel: "apple-touch-icon", href: base + "apple-touch-icon.png" });
+  add("meta", { name: "theme-color", content: "#0b1d44" });
+  add("meta", { name: "mobile-web-app-capable", content: "yes" });
+  add("meta", { name: "apple-mobile-web-app-capable", content: "yes" });
+  add("meta", { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" });
+  add("meta", { name: "apple-mobile-web-app-title", content: "Līgumu analīze" });
+  if ("serviceWorker" in P.navigator) {
+    P.navigator.serviceWorker.register(base + "sw.js").catch(function () {});
+  }
+})();
+</script>
+"""
+components.html(PWA_HTML, height=0)
+
+# ---------------------------------------------------------------
 # Sesijas pārvaldība (st.session_state): analīžu vēsture un "Sākt no jauna"
 # Struktūra:
 #   history      - saraksts ar analīzēm šajā sesijā (līdz 10): laiks, nosaukums, režīms, rezultāts, līguma dati
@@ -816,6 +879,13 @@ results_slot = st.container()
 st.sidebar.header(T["sidebar_header"])
 api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
 st.sidebar.button(T["reset_btn"], on_click=reset_session, use_container_width=True)
+
+# PWA pamācība sānu joslas apakšā: kā pievienot lietotni sākuma ekrānam
+st.sidebar.divider()
+with st.sidebar.expander(T.get("pwa_title", TR["English"]["pwa_title"])):
+    st.caption(T.get("pwa_intro", TR["English"]["pwa_intro"]))
+    st.markdown(f"**{T.get('pwa_ios_h', TR['English']['pwa_ios_h'])}**  \n{T.get('pwa_ios', TR['English']['pwa_ios'])}")
+    st.markdown(f"**{T.get('pwa_android_h', TR['English']['pwa_android_h'])}**  \n{T.get('pwa_android', TR['English']['pwa_android'])}")
 uploaded_file = st.file_uploader(
     T["uploader"],
     type=["docx", "pdf", "png", "jpg", "jpeg"],

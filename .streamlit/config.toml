@@ -5,3 +5,7 @@ primaryColor = "#4f7df0"
 backgroundColor = "#0b1d44"
 secondaryBackgroundColor = "#132a5e"
 textColor = "#e6edfb"
+
+[server]
+# PWA faili (manifest.json, sw.js, ikonas) no mapes static/ ir pieejami adresē /app/static/...
+enableStaticServing = true
