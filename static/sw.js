@@ -1,7 +1,7 @@
 // Vienkāršs service worker PWA instalēšanai.
 // Kešo tikai PWA statiskos failus (manifestu un ikonas); pārējie pieprasījumi
 // (Streamlit lapa, WebSocket, Gemini) vienmēr iet uz tīklu, lai dati būtu svaigi.
-const CACHE = "ligumu-pwa-v1";
+const CACHE = "ligumu-pwa-v2";
 const ASSETS = ["manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", (event) => {

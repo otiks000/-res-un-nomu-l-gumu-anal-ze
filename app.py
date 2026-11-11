@@ -483,7 +483,11 @@ TR_PWA = {
         "pwa_pop_text": "Atveriet līgumu analizētāju ar vienu pieskārienu no tālruņa vai planšetdatora sākuma ekrāna.",
         "pwa_close": "Aizvērt",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
-        "pwa_ios": "Nospiediet **„Kopīgošana“** (Share) un izvēlieties **„Pievienot sākuma ekrānam“** (Add to Home Screen).",
+        "pwa_ios": "1) Nospiediet **„Kopīgot“** (kvadrāts ar bultiņu ⬆️) ekrāna apakšā (iPad – augšā; jaunākajā iOS tas ir izvēlnē **⋯**).<br>2) Izvēlieties **„Pievienot sākuma ekrānam“** (Add to Home Screen).<br>3) Nospiediet **„Pievienot“**.",
+        "pwa_ios_chrome_h": "🍎 iPhone / iPad (Chrome)",
+        "pwa_ios_chrome": "1) Nospiediet **„Kopīgot“** (⬆️) adreses joslas labajā pusē.<br>2) Izvēlieties **„Pievienot sākuma ekrānam“**.<br>3) Nospiediet **„Pievienot“**.",
+        "pwa_mac_h": "🍎 Mac (Safari)",
+        "pwa_mac": "Augšējā izvēlnē **„Fails“** (File) izvēlieties **„Pievienot Dokam“** (Add to Dock) un nospiediet **„Pievienot“**.",
         "pwa_android_h": "🤖 Android (Chrome)",
         "pwa_android": "Nospiediet **trīs punktiņus** (⋮) augšējā stūrī un izvēlieties **„Instalēt lietotni“** (Install app).",
     },
@@ -494,7 +498,11 @@ TR_PWA = {
         "pwa_pop_text": "Open the contract analyzer with one tap from the home screen of your phone or tablet.",
         "pwa_close": "Close",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
-        "pwa_ios": "Tap **Share** and choose **Add to Home Screen**.",
+        "pwa_ios": "1) Tap **Share** (square with arrow ⬆️) at the bottom of the screen (iPad – at the top; on the newest iOS it is in the **⋯** menu).<br>2) Choose **Add to Home Screen**.<br>3) Tap **Add**.",
+        "pwa_ios_chrome_h": "🍎 iPhone / iPad (Chrome)",
+        "pwa_ios_chrome": "1) Tap **Share** (⬆️) on the right side of the address bar.<br>2) Choose **Add to Home Screen**.<br>3) Tap **Add**.",
+        "pwa_mac_h": "🍎 Mac (Safari)",
+        "pwa_mac": "In the top menu **File** choose **Add to Dock**, then click **Add**.",
         "pwa_android_h": "🤖 Android (Chrome)",
         "pwa_android": "Tap the **three dots** (⋮) in the top corner and choose **Install app**.",
     },
@@ -505,7 +513,11 @@ TR_PWA = {
         "pwa_pop_text": "Открывайте анализатор договоров одним касанием с главного экрана телефона или планшета.",
         "pwa_close": "Закрыть",
         "pwa_ios_h": "🍎 iPhone / iPad (Safari)",
-        "pwa_ios": "Нажмите **«Поделиться»** (Share) и выберите **«На экран „Домой“»** (Add to Home Screen).",
+        "pwa_ios": "1) Нажмите **«Поделиться»** (квадрат со стрелкой ⬆️) внизу экрана (iPad – вверху; в новейшей iOS – в меню **⋯**).<br>2) Выберите **«На экран „Домой“»** (Add to Home Screen).<br>3) Нажмите **«Добавить»**.",
+        "pwa_ios_chrome_h": "🍎 iPhone / iPad (Chrome)",
+        "pwa_ios_chrome": "1) Нажмите **«Поделиться»** (⬆️) справа в адресной строке.<br>2) Выберите **«На экран „Домой“»**.<br>3) Нажмите **«Добавить»**.",
+        "pwa_mac_h": "🍎 Mac (Safari)",
+        "pwa_mac": "В верхнем меню **«Файл»** (File) выберите **«Добавить в Dock»** (Add to Dock) и нажмите **«Добавить»**.",
         "pwa_android_h": "🤖 Android (Chrome)",
         "pwa_android": "Нажмите **три точки** (⋮) в верхнем углу и выберите **«Установить приложение»** (Install app).",
     },
@@ -817,9 +829,13 @@ PWA_JS = r"""
   function tx() { try { return JSON.parse(D.documentElement.getAttribute("data-pwa-texts") || "{}"); } catch (e) { return {}; } }
   function md(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+      .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/&lt;br&gt;/g, "<br>");
   }
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var UA = navigator.userAgent;
+  var isIOSChrome = isIOS && /CriOS/.test(UA);
+  // Safari uz Mac (Chrome/Edge uz Mac atbalsta automātisku instalēšanu, Safari – nē)
+  var isMacSafari = !isIOS && /Macintosh/.test(UA) && /Safari/.test(UA) && !/Chrome|Chromium|Edg|OPR|Firefox/.test(UA);
   var installed = W.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   var deferred = null, box = null, timer = null;
 
@@ -858,9 +874,8 @@ PWA_JS = r"""
     var T = tx(), icon = D.querySelector('link[rel="apple-touch-icon"]');
     var body;
     if (mode === "help") {
-      body = isIOS
-        ? "<p><b>" + md(T.ios_h) + "</b><br>" + md(T.ios) + "</p>"
-        : "<p><b>" + md(T.android_h) + "</b><br>" + md(T.android) + "</p>";
+      var k = isIOSChrome ? "ios_chrome" : isIOS ? "ios" : isMacSafari ? "mac" : "android";
+      body = "<p><b>" + md(T[k + "_h"]) + "</b><br>" + md(T[k]) + "</p>";
       body = '<div class="help">' + body + "</div>";
     } else {
       body = '<button class="go" type="button">' + md(T.btn) + "</button>";
@@ -895,16 +910,26 @@ PWA_JS = r"""
   }
 
   W.__pwaState = function () { return installed ? "installed" : deferred ? "ready" : isIOS ? "ios" : "other"; };
+  function fire() {
+    var p = deferred; deferred = null;
+    close();
+    p.prompt();               // atver Chrome sistēmas logu "Instalēt lietotni" (tas pats, kas ⋮ → Instalēt)
+    p.userChoice.then(function (r) { if (r && r.outcome === "accepted") installed = true; }).catch(function () {});
+  }
   W.__pwaInstall = function () {
     if (installed) return;
-    if (deferred) {
-      var p = deferred; deferred = null;
-      close();
-      p.prompt();
-      p.userChoice.then(function (r) { if (r && r.outcome === "accepted") installed = true; }).catch(function () {});
-      return;
-    }
-    render("help", 15);       // nav sistēmas instalēšanas loga (iOS u.c.) → parāda norādi
+    if (deferred) { fire(); return; }
+    // Apple (iOS Safari/Chrome, Mac Safari) neļauj lapai pašai instalēties → precīza pamācība
+    if (isIOS || isMacSafari) { render("help", 25); return; }
+    // Pārlūks vēl nav sagatavojis instalēšanu (piem., lapa tikko atvērta) → pagaida līdz 3 s
+    // (pieskāriena atļauja prompt() izsaukšanai ilgst ~5 s), tad parāda norādi.
+    var t0 = Date.now();
+    (function wait() {
+      if (deferred) { fire(); return; }
+      if (installed) return;
+      if (Date.now() - t0 > 3000) { render("help", 15); return; }
+      setTimeout(wait, 100);
+    })();
   };
 
   if (!installed) {
@@ -917,10 +942,19 @@ PWA_JS = r"""
 PWA_HTML = """
 <script>
 (function () {
-  var P = window.parent, D = P.document;
+  var P = window.parent;
+  // Streamlit Cloud rāda lietotni iekšējā rāmī (iframe). Chrome instalēšanu piedāvā tikai
+  // augšējai lapai, tāpēc manifestu un instalēšanas loģiku ievieto augšējā lapā (ja tā ir
+  // tajā pašā domēnā un pieejama), citādi – Streamlit lapā.
+  var W = P;
+  try { if (P.top !== P && P.top.document.head) W = P.top; } catch (e) { W = P; }
+  var D = W.document;
   D.documentElement.setAttribute("data-pwa-texts", __TEXTS__);   // atjauno tekstus, ja mainīta valoda
+  P.__pwaTarget = W;                                              // sānjoslas poga izsauc W.__pwaInstall
   if (D.getElementById("pwa-manifest")) return;                   // viss pārējais tikai vienreiz
   var base = new URL("app/static/", P.location.origin + P.location.pathname.replace(/[^/]*$/, "")).href;
+  // Noņem citus manifestus (piem., hostinga paša), lai Chrome izmanto mūsējo
+  Array.prototype.forEach.call(D.querySelectorAll('link[rel="manifest"]'), function (l) { l.remove(); });
   function add(tag, attrs) {
     var el = D.createElement(tag);
     for (var k in attrs) el.setAttribute(k, attrs[k]);
@@ -936,14 +970,15 @@ PWA_HTML = """
   add("meta", { name: "apple-mobile-web-app-capable", content: "yes" });
   add("meta", { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" });
   add("meta", { name: "apple-mobile-web-app-title", content: "Līgumu analīze" });
-  if ("serviceWorker" in P.navigator) {
-    P.navigator.serviceWorker.register(base + "sw.js").catch(function () {});
+  if ("serviceWorker" in W.navigator) {
+    W.navigator.serviceWorker.register(base + "sw.js").catch(function () {});
   }
 })();
 </script>
 """
 _pwa_texts = {k: T.get("pwa_" + k, TR["English"]["pwa_" + k]) for k in
-              ("btn", "installed", "close", "ios_h", "ios", "android_h", "android")}
+              ("btn", "installed", "close", "ios_h", "ios", "ios_chrome_h", "ios_chrome",
+               "mac_h", "mac", "android_h", "android")}
 _pwa_texts["title"] = T.get("pwa_pop_title", TR["English"]["pwa_pop_title"])
 _pwa_texts["text"] = T.get("pwa_pop_text", TR["English"]["pwa_pop_text"])
 components.html(
@@ -1023,13 +1058,15 @@ PWA_BTN_HTML = """
 <button id="b" type="button"></button>
 <script>
 (function () {
-  var P = window.parent, b = document.getElementById("b"), L = __LABELS__;
+  var b = document.getElementById("b"), L = __LABELS__;
+  function tgt() { var p = window.parent; return p.__pwaTarget || p; }   // augšējā lapa (sk. PWA_HTML)
   function sync() {
+    var P = tgt();
     var done = P.__pwaState && P.__pwaState() === "installed";
     b.textContent = done ? L.installed : L.btn;
     b.disabled = done;
   }
-  b.addEventListener("click", function () { if (P.__pwaInstall) P.__pwaInstall(); setTimeout(sync, 500); });
+  b.addEventListener("click", function () { var P = tgt(); if (P.__pwaInstall) P.__pwaInstall(); setTimeout(sync, 500); });
   sync();
   setInterval(sync, 2000);
 })();
