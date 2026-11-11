@@ -552,14 +552,47 @@ EXTRA_LANGS = {
 OTHER_LANG = "🌍 Cita valoda / Other / Другой…"
 
 
+# ---------------------------------------------------------------
+# Modeļi: pamatā gemini-3.8-flash, ja nav pieejams - gemini-2.0-flash, tad gemini-1.5-flash
+# ---------------------------------------------------------------
+MODEL_PRIMARY = "gemini-3.8-flash"
+MODEL_FALLBACKS = ("gemini-2.0-flash", "gemini-1.5-flash")
+_UNAVAILABLE_HINTS = ("not found", "404", "not supported", "unavailable", "503", "does not exist", "deprecated")
+
+
+def _model_unavailable(exc):
+    """Vai kļūda nozīmē, ka modelis nav pieejams (nevis, piem., nederīga API atslēga vai kvota)."""
+    name = type(exc).__name__
+    if name in ("NotFound", "ServiceUnavailable", "MethodNotImplemented"):
+        return True
+    return any(h in str(exc).lower() for h in _UNAVAILABLE_HINTS)
+
+
+class FallbackModel:
+    """Ap GenerativeModel: izmēģina gemini-3.8-flash, pēc nepieejamības kļūdas pārslēdzas uz rezerves modeļiem."""
+
+    def __init__(self, generation_config=None):
+        self.cfg = generation_config
+        self.names = (MODEL_PRIMARY,) + MODEL_FALLBACKS
+
+    def generate_content(self, contents, **kw):
+        last = None
+        for name in self.names:
+            try:
+                m = genai.GenerativeModel(name, generation_config=self.cfg)
+                return m.generate_content(contents, **kw)
+            except Exception as e:
+                last = e
+                if not _model_unavailable(e):
+                    raise
+        raise last
+
+
 @st.cache_data(show_spinner=False)
 def translate_ui(lang_name, _api_key):
     """Iztulko visus saskarnes tekstus izvēlētajā valodā (rezultāts tiek saglabāts kešatmiņā)."""
     genai.configure(api_key=_api_key)
-    model = genai.GenerativeModel(
-        'gemini-3.8-flash',
-        generation_config=genai.GenerationConfig(temperature=0, response_mime_type="application/json"),
-    )
+    model = FallbackModel(genai.GenerationConfig(temperature=0, response_mime_type="application/json"))
     base = {k: v for k, v in TR["English"].items() if k != "report_lang_name"}
     prompt = (
         f"Translate the values of this JSON object into {lang_name}. They are user-interface texts of a web "
@@ -1422,7 +1455,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
     Tas pats saturs = tūlītējs rezultāts bez API izsaukuma."""
     genai.configure(api_key=_api_key)
     cfg = genai.GenerationConfig(temperature=0, top_p=1, top_k=1)
-    model = genai.GenerativeModel('gemini-3.8-flash', generation_config=cfg)
+    model = FallbackModel(cfg)
     cached_model, laws_source = get_cached_model(_api_key, cfg)
     active_prompt, _ = build_prompt()
 
@@ -2523,10 +2556,7 @@ def mock_chat_answer(question):
 def chat_answer(question, entry, previous):
     """Reālais režīms: jautājums + līguma konteksts uz Gemini."""
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        "gemini-3.8-flash",
-        generation_config=genai.GenerationConfig(temperature=0.2, max_output_tokens=800),
-    )
+    model = FallbackModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
     plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
     parts = [CHAT_SYSTEM]
     if entry.get("contract_text"):
@@ -2923,10 +2953,7 @@ def mock_chat_answer(question):
 def chat_answer(question, entry, previous):
     """Reālais režīms: jautājums + līguma konteksts uz Gemini. Atbilde izvēlētajā saskarnes valodā."""
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(
-        "gemini-3.8-flash",
-        generation_config=genai.GenerationConfig(temperature=0.2, max_output_tokens=800),
-    )
+    model = FallbackModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
     plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
     system = CHAT_SYSTEM.replace(
         "latviešu valodā (ja lietotājs raksta citā valodā, atbildi tajā)", T["report_lang_name"] + " valodā"
@@ -3430,14 +3457,11 @@ if analyze_button:
     else:
         try:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel(
-                'gemini-3.8-flash',
-                generation_config=genai.GenerationConfig(
+            model = FallbackModel(genai.GenerationConfig(
                     temperature=0,
                     top_p=1,
                     top_k=1
-                )
-            )
+                ))
             # Ja ielīmēts teksts, izmanto to; citādi - augšupielādēto failu
             if pasted_text.strip():
                 file_extension = "txt"
