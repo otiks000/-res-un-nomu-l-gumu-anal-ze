@@ -7,6 +7,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from fpdf import FPDF
 import io
 import re
+import html as _html
 import json
 import datetime
 import os
@@ -423,6 +424,55 @@ TR_NEW = {
 }
 for _l, _extra in TR_NEW.items():
     TR[_l].update(_extra)
+
+# Labotā līguma lejupielāde
+TR_FIX = {
+    "Latviešu": {
+        "fx_header": "### ✍️ Labotais līgums",
+        "fx_intro": "Atzīmējiet labojumus, kurus ievietot līgumā. Labotajā līgumā jaunais teksts ir sarkanā krāsā, aizstātais teksts ir pārsvītrots.",
+        "fx_text_label": "Līguma teksts (var labot vai ielīmēt, ja līgums augšupielādēts kā PDF vai attēls):",
+        "fx_no_text": "Līguma teksts nav pieejams (PDF vai attēls). Ielīmējiet līguma tekstu laukā augstāk, lai izveidotu labotu līgumu.",
+        "fx_no_fixes": "Analīzē nav atrasts neviens ieteiktais labojums ar piedāvātu formulējumu.",
+        "fx_none_selected": "Nav atzīmēts neviens labojums.",
+        "fx_all": "Atzīmēt visus", "fx_clear": "Noņemt visus",
+        "fx_dl_word": "📝 Labotais līgums Word (.docx)", "fx_dl_pdf": "📝 Labotais līgums PDF (.pdf)",
+        "fx_title": "LABOTAIS ĪRES LĪGUMS",
+        "fx_legend": "Ievietotie labojumi ir sarkanā krāsā; aizstātais teksts ir pārsvītrots.",
+        "fx_extra": "PAPILDINĀJUMI (punkti, kurus neizdevās automātiski atrast līguma tekstā)",
+        "fx_count": "Atzīmēti labojumi: {n} no {m}",
+    },
+    "English": {
+        "fx_header": "### ✍️ Corrected contract",
+        "fx_intro": "Tick the corrections to insert into the contract. In the corrected contract new text is red and replaced text is struck through.",
+        "fx_text_label": "Contract text (you can edit it, or paste it if the contract was uploaded as a PDF or image):",
+        "fx_no_text": "The contract text is not available (PDF or image). Paste the contract text in the field above to create a corrected contract.",
+        "fx_no_fixes": "No recommended correction with a proposed wording was found in the analysis.",
+        "fx_none_selected": "No correction is selected.",
+        "fx_all": "Select all", "fx_clear": "Clear all",
+        "fx_dl_word": "📝 Corrected contract Word (.docx)", "fx_dl_pdf": "📝 Corrected contract PDF (.pdf)",
+        "fx_title": "CORRECTED LEASE CONTRACT",
+        "fx_legend": "Inserted corrections are in red; replaced text is struck through.",
+        "fx_extra": "ADDITIONS (points that could not be found automatically in the contract text)",
+        "fx_count": "Selected corrections: {n} of {m}",
+    },
+    "Русский": {
+        "fx_header": "### ✍️ Исправленный договор",
+        "fx_intro": "Отметьте исправления, которые нужно внести в договор. В исправленном договоре новый текст выделен красным, заменённый текст зачёркнут.",
+        "fx_text_label": "Текст договора (можно править или вставить, если договор загружен как PDF или изображение):",
+        "fx_no_text": "Текст договора недоступен (PDF или изображение). Вставьте текст договора в поле выше, чтобы создать исправленный договор.",
+        "fx_no_fixes": "В анализе не найдено рекомендованных исправлений с предлагаемой формулировкой.",
+        "fx_none_selected": "Не выбрано ни одного исправления.",
+        "fx_all": "Отметить все", "fx_clear": "Снять все",
+        "fx_dl_word": "📝 Исправленный договор Word (.docx)", "fx_dl_pdf": "📝 Исправленный договор PDF (.pdf)",
+        "fx_title": "ИСПРАВЛЕННЫЙ ДОГОВОР АРЕНДЫ",
+        "fx_legend": "Внесённые исправления выделены красным; заменённый текст зачёркнут.",
+        "fx_extra": "ДОПОЛНЕНИЯ (пункты, которые не удалось автоматически найти в тексте договора)",
+        "fx_count": "Отмечено исправлений: {n} из {m}",
+    },
+}
+for _l, _extra in TR_FIX.items():
+    if _l in TR:
+        TR[_l].update(_extra)
 
 # Papildu valodas: tulkojumu veic Gemini (kad ievadīta API atslēga)
 EXTRA_LANGS = {
@@ -1356,9 +1406,189 @@ UNSUPPORTED_PDF_SCRIPTS = re.compile(
 )
 
 
+def recs_last(text):
+    """Pārvieto sadaļu 🟢 (ieteiktie labojumi) aiz 🔵 apsveramajiem punktiem un ⚪ neitrālajām piezīmēm
+    (pirms avotu saraksta), lai Word un PDF atskaitē secība sakristu ar lapu."""
+    parts = re.split(r"(?m)^(?=## )", text)
+    recs = [p for p in parts if p.startswith("## ") and "🟢" in p.split("\n", 1)[0]]
+    if not recs:
+        return text
+    rest = [p for p in parts if p not in recs]
+    pos = len(rest)
+    for i, p in enumerate(rest):
+        if p.startswith("## ") and any(e in p.split("\n", 1)[0] for e in ("🔵", "⚪", "🔴", "🟡", "📊")):
+            pos = i + 1
+    recs = [r if r.endswith("\n\n") else r.rstrip("\n") + "\n\n" for r in recs]
+    rest = [r if (not r.startswith("## ") or r.endswith("\n\n")) else r.rstrip("\n") + "\n\n" for r in rest]
+    return "".join(rest[:pos] + recs + rest[pos:]).rstrip() + "\n"
+
+
+# ---------------------------------------------------------------
+# Labotais līgums: ieteiktie labojumi (🟢) tiek ievietoti līguma tekstā un izcelti sarkanā krāsā
+# ---------------------------------------------------------------
+FIX_RED = (220, 38, 38)
+FIX_GRAY = (120, 120, 120)
+ADD_WORDS = re.compile(r"pievieno|papildin|add|insert|добав|дополн|включ", re.I)
+SECTION_WORDS = re.compile(r"sadaļ|section|раздел|nodaļ|chapter|глав", re.I)
+QUOTE_RE = re.compile(r"[„“«\"]([^„“«”»\"]{3,})[”“»\"]")
+
+
+def parse_fixes(text):
+    """No sadaļas 🟢 izvelk labojumus: kods, punkta numurs, apraksts, piedāvātais formulējums."""
+    fixes = []
+    for head, body in split_sections(text):
+        if not head or "🟢" not in head:
+            continue
+        for raw in body.split("\n"):
+            line = re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", "", raw).replace("**", "").strip()
+            m = re.match(r"^(?:[-*•]\s*)?([KBA]\d+)\.?\s*(.*)$", line)
+            if not m:
+                continue
+            code, rest = m.group(1), m.group(2)
+            quotes = list(QUOTE_RE.finditer(rest))
+            if not quotes:
+                continue
+            q = quotes[-1]
+            ref, _, desc = rest[:q.start()].partition(":")
+            desc = re.sub(r"[^.:]*:\s*$", "", desc).strip(" .:")      # noņem "Piedāvātais formulējums:"
+            num = re.match(r"\s*(\d+(?:\.\d+)*)", ref)
+            fixes.append({
+                "code": code, "ref": ref.strip(), "num": num.group(1) if num else None,
+                "desc": desc, "text": q.group(1).strip(),
+                "add": bool(ADD_WORDS.search(desc)) or bool(SECTION_WORDS.search(ref)),
+            })
+    return fixes
+
+
+def _num_re(num):
+    return re.compile(rf"^\s*{re.escape(num)}(?!\d)(?!\.\d)")
+
+
+def build_fixed_blocks(contract_text, fixes):
+    """Saraksts ar blokiem (veids, teksts, kods): 'orig' - nemainīts, 'del' - aizstāts (pārsvītrots),
+    'new' - ievietots labojums (sarkans), 'head' - papildinājumu virsraksts."""
+    lines = [l.rstrip() for l in contract_text.split("\n")]
+    num_any = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s")
+    deleted, after, extra = set(), {}, []
+    for f in fixes:
+        idx = None
+        if f["num"]:
+            rx = _num_re(f["num"])
+            idx = next((i for i, l in enumerate(lines) if rx.match(l)), None)
+        if idx is None:
+            extra.append(f)
+            continue
+        if f["add"]:
+            sub, j = re.compile(rf"^\s*{re.escape(f['num'])}\.\d"), idx
+            for k in range(idx + 1, len(lines)):
+                if not lines[k].strip():
+                    continue
+                if sub.match(lines[k]) or not num_any.match(lines[k]):
+                    j = k
+                else:
+                    break
+            after.setdefault(j, []).append((f["text"], f["code"]))
+        else:
+            deleted.add(idx)
+            new = f["text"]
+            if not re.match(r"^\s*\d", new):
+                new = f"{f['num']}. {new}"
+            after.setdefault(idx, []).append((new, f["code"]))
+    blocks = []
+    for i, l in enumerate(lines):
+        if l.strip():
+            blocks.append(("del" if i in deleted else "orig", l.strip(), None))
+        for new, code in after.get(i, []):
+            blocks.append(("new", new, code))
+    if extra:
+        blocks.append(("head", T["fx_extra"], None))
+        for f in extra:
+            blocks.append(("new", (f["ref"] + ": " if f["ref"] else "") + f["text"], f["code"]))
+    return blocks
+
+
+def _is_heading(text):
+    letters = [c for c in text if c.isalpha()]
+    return len(text) < 90 and letters and sum(c.isupper() for c in letters) / len(letters) > 0.7
+
+
+def fixed_contract_docx(blocks):
+    doc = docx.Document()
+    h = doc.add_heading(T["fx_title"], level=0)
+    h.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = p.add_run(f"{T['fx_legend']} · {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    r.font.size = Pt(9)
+    r.font.color.rgb = RGBColor(*FIX_GRAY)
+    for kind, text, code in blocks:
+        if kind == "head":
+            hh = doc.add_heading(text, level=2)
+            if hh.runs:
+                hh.runs[0].font.color.rgb = RGBColor(*FIX_RED)
+            continue
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(4)
+        run = p.add_run(text)
+        if kind == "del":
+            run.font.strike = True
+            run.font.color.rgb = RGBColor(*FIX_GRAY)
+        elif kind == "new":
+            run.font.color.rgb = RGBColor(*FIX_RED)
+            tag = p.add_run(f"  [{code}]")
+            tag.font.size = Pt(8)
+            tag.bold = True
+            tag.font.color.rgb = RGBColor(*FIX_RED)
+        elif _is_heading(text):
+            run.bold = True
+    out = io.BytesIO()
+    doc.save(out)
+    return out.getvalue()
+
+
+def fixed_contract_pdf(blocks):
+    font_path, font_bold_path = find_fonts()
+    if not font_path:
+        raise FileNotFoundError("DejaVu fonts not found (packages.txt: fonts-dejavu-core).")
+    pdf = FPDF()
+    pdf.add_font("DejaVu", "", font_path)
+    pdf.add_font("DejaVu", "B", font_bold_path)
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.add_page()
+    pdf.set_font("DejaVu", "B", 14)
+    pdf.set_text_color(30, 41, 59)
+    pdf.multi_cell(0, 9, T["fx_title"], align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_font("DejaVu", "", 8.5)
+    pdf.set_text_color(*FIX_GRAY)
+    pdf.multi_cell(0, 5, f"{T['fx_legend']} · {datetime.datetime.now().strftime('%d.%m.%Y %H:%M')}",
+                   align="C", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(4)
+    for kind, text, code in blocks:
+        if kind == "head":
+            pdf.ln(4)
+            pdf.set_font("DejaVu", "B", 11)
+            pdf.set_text_color(*FIX_RED)
+            pdf.multi_cell(0, 6.5, text, new_x="LMARGIN", new_y="NEXT")
+            continue
+        if kind == "del":
+            pdf.set_font("DejaVu", "S", 10)
+            pdf.set_text_color(*FIX_GRAY)
+        elif kind == "new":
+            pdf.set_font("DejaVu", "", 10)
+            pdf.set_text_color(*FIX_RED)
+            text = f"{text}  [{code}]"
+        else:
+            pdf.set_font("DejaVu", "B" if _is_heading(text) else "", 10)
+            pdf.set_text_color(30, 30, 30)
+        pdf.multi_cell(0, 5.5, text, new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(1.2)
+    return bytes(pdf.output())
+
+
 def build_downloads(report_text):
     """Izveido Word un PDF failus (baitos), lai tos varētu lejupielādēt vairākkārt."""
     result = {"docx": None, "pdf": None, "docx_err": None, "pdf_err": None}
+    report_text = recs_last(report_text)
     try:
         result["docx"] = generate_pretty_docx(report_text).getvalue()
     except Exception as e:
@@ -2732,12 +2962,119 @@ def render_downloads(result):
             st.warning(f"{T['pdf_fail']}: {result['pdf_err']}")
 
 
+def render_fixed_contract(analysis_text):
+    """Izvēle, kurus ieteiktos labojumus ievietot, un labotā līguma lejupielāde (.docx un .pdf)."""
+    entry = current_entry() or {}
+    eid = entry.get("id", "x")
+    st.markdown("---")
+    st.markdown(T["fx_header"])
+    fixes = parse_fixes(analysis_text)
+    if not fixes:
+        st.info(T["fx_no_fixes"])
+        return
+    st.caption(T["fx_intro"])
+
+    keys = [f"fx_{eid}_{f['code']}" for f in fixes]
+    c1, c2, _ = st.columns([1, 1, 2])
+    if c1.button(T["fx_all"], key=f"fx_all_{eid}", use_container_width=True):
+        for k in keys:
+            st.session_state[k] = True
+    if c2.button(T["fx_clear"], key=f"fx_clear_{eid}", use_container_width=True):
+        for k in keys:
+            st.session_state[k] = False
+
+    chosen = []
+    for f, k in zip(fixes, keys):
+        st.session_state.setdefault(k, True)
+        label = f"**{f['code']}** · {f['ref'] or '—'}" + (f" — {f['desc']}" if f["desc"] else "")
+        if st.checkbox(label, key=k):
+            chosen.append(f)
+        st.markdown(
+            f'<div style="margin:-0.6rem 0 0.5rem 1.8rem;color:#dc2626;font-size:0.9rem">„{_html.escape(f["text"])}”</div>',
+            unsafe_allow_html=True,
+        )
+    st.caption(tfmt("fx_count", n=len(chosen), m=len(fixes)))
+
+    contract = st.text_area(
+        T["fx_text_label"], value=entry.get("contract_text", ""), height=180, key=f"fx_text_{eid}",
+    )
+    if not contract.strip():
+        st.warning(T["fx_no_text"])
+        return
+    if not chosen:
+        st.info(T["fx_none_selected"])
+        return
+
+    blocks = build_fixed_blocks(contract, chosen)
+    today = datetime.date.today()
+    col1, col2 = st.columns(2)
+    with col1:
+        try:
+            st.download_button(
+                T["fx_dl_word"], data=fixed_contract_docx(blocks),
+                file_name=f"Labotais_ligums_{today}.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True, key=f"fx_docx_{eid}",
+            )
+        except Exception as e:
+            st.warning(f"{T['word_fail']}: {e}")
+    with col2:
+        if UNSUPPORTED_PDF_SCRIPTS.search(contract + " ".join(f["text"] for f in chosen)):
+            st.warning(f"{T['pdf_fail']}: font limitation, use the Word file.")
+        else:
+            try:
+                st.download_button(
+                    T["fx_dl_pdf"], data=fixed_contract_pdf(blocks),
+                    file_name=f"Labotais_ligums_{today}.pdf", mime="application/pdf",
+                    use_container_width=True, key=f"fx_pdf_{eid}",
+                )
+            except Exception as e:
+                st.warning(f"{T['pdf_fail']}: {e}")
+
+
 # ---------------------------------------------------------------
 # Analīzes izpilde
 # ---------------------------------------------------------------
 # ---------------------------------------------------------------
 # Testa režīms: iebūvēts parauga rezultāts, Gemini netiek izsaukts (0 €)
 # ---------------------------------------------------------------
+SAMPLE_CONTRACT = """DZĪVOJAMĀS TELPAS ĪRES LĪGUMS
+Rīgā, 2026. gada 1. novembrī
+
+1. PUSES
+1.1. Izīrētājs: Jānis Bērziņš, personas kods 010180-12345.
+1.2. Īrnieks: Anna Kalniņa, personas kods 020290-54321.
+
+2. LĪGUMA PRIEKŠMETS
+2.1. Izīrētājs nodod un Īrnieks pieņem lietošanā divistabu  dzīvokli Brīvības ielā 1-10, Rīgā.
+2.2. Līgums noslēgts uz 2 gadiem.
+
+3. ĪRES MAKSA UN MAKSĀJUMI
+3.1. Īres maksa ir EUR _____ mēnesī.
+3.2. Īres maksu Īrnieks samaksā līdz katra mēneša 5. datumam.
+3.4. Īrnieks apmaksā komunālos maksājumus atbilstoši Izīrētāja norādījumiem.
+
+4. DROŠĪBAS NAUDA
+4.1. Īrnieks iemaksā drošības naudu viena mēneša īres maksas apmērā.
+4.3. Izīrētājs ir tiesīgs ieturēt drošības naudu pēc saviem ieskatiem.
+4.5. Drošības naudu atgriež 1 mēneša laikā pēc līguma beigām.
+
+5. LĪGUMA IZBEIGŠANA
+5.1. Līgumu var izbeigt 5.7. punktā noteiktajā kārtībā.
+
+6. PUŠU PIENĀKUMI
+6.1. Īrnieka pienākumi:
+6.1.2. veikt sīkos remontdarbus par saviem līdzekļiem;
+6.1.5. ļaut Izīrētājam veikt dzīvokļa apskates.
+
+7. ATBILDĪBA
+7.1. Par maksājuma kavējumu Īrnieks maksā 0,5% dienā VAI līgumsodu.
+
+8. NOBEIGUMA NOTEIKUMI
+8.1. Līgums sagatavots 2 eksemplāros, pa vienam katrai pusei.
+"""
+
+
 def make_test_analysis():
     """Parauga analīze testēšanai. Atsauces [[DTIL 12]] ar linkify() kļūst par saitēm uz likumi.lv."""
     return f"""## 📊 {T['h_overall']}
@@ -2804,7 +3141,8 @@ if analyze_button and test_mode:
         "laws_source": "🧪 TESTA REŽĪMS: iebūvēts paraugs, Gemini netika izsaukts (0.00$)",
         "cache_note": "🧪 Testa režīms: iebūvēts paraugs, Gemini netika izsaukts (0.00$).",
     })
-    session_add(result, {"rent": 450.0, "rate_day": 0.5}, "Testa paraugs", "test")
+    session_add(result, {"rent": 450.0, "rate_day": 0.5}, "Testa paraugs", "test",
+                contract_text=SAMPLE_CONTRACT)
     st.rerun()
 if analyze_button:
     # Iepriekšējais rezultāts paliek, līdz tiek saglabāts jauns (nepazūd arī kļūdas gadījumā)
@@ -2903,8 +3241,9 @@ if "result" in st.session_state:
             st.markdown(sources_md())
         with tab_calc:
             render_calculator(boxed=False)
-        with tab_docs:                                      # Word/PDF
+        with tab_docs:                                      # Word/PDF: analīze + labotais līgums
             render_downloads(saved)
+            render_fixed_contract(saved["analysis"])
         with tab_chat:
             render_chat_tab()
         st.divider()
