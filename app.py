@@ -13,6 +13,7 @@ import datetime
 import os
 import requests
 from bs4 import BeautifulSoup
+import analysis_engine as ae
 
 # ---------------------------------------------------------------
 # Lapas konfigurācija
@@ -1132,102 +1133,6 @@ uploaded_file = st.file_uploader(
 
 pasted_text = st.text_area(T["paste_label"], height=200, key="pasted_text")
 
-SYSTEM_PROMPT = """
-Tu esi pieredzējis Latvijas nekustamā īpašuma un īres tiesību eksperts. Tavs uzdevums ir izanalizēt augšupielādēto īres vai nomas līgumu saskaņā ar Latvijas Dzīvojamo telpu īres likumu un Civillikumu.
-
-Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.
-
-OBLIGĀTĀ PĀRBAUDES SARAKSTS (pārbaudi KATRU no šīm tēmām vienā un tajā pašā secībā; ja līgumā tā trūkst vai ir problemātiska, atzīmē atbilstošā sadaļā):
-1. Pušu dati un rekvizīti (vai ir paredzēta vieta vārdiem, personas kodiem, adresēm, bankas kontam, tālrunim un e-pastam), īpašuma tiesības un telpu apraksts
-2. Līguma termiņš, pagarināšana un izbeigšanas kārtība (abu pušu tiesības)
-3. Īres maksas apmērs, maksāšanas termiņš un maksas maiņas nosacījumi
-4. Komunālie un apsaimniekošanas maksājumi (arī uzkrājumu fonds, rēķinu uzrādīšana)
-5. Drošības depozīts (apmērs, ieturēšana, atmaksas termiņš)
-6. Nokavējuma procenti un līgumsodi (vai nav "VAI" formulējumu, vai sodi ir samērīgi)
-7. Remonts un uzturēšana (kas ir "sīkie remontdarbi", kas maksā par lielajiem)
-8. Dzīvokļa apskates un izīrētāja piekļuve (brīdinājuma laiks, biežums)
-9. Pieņemšanas-nodošanas akts un telpu stāvoklis
-10. Apakšīre, personu skaits, dzīvnieki un citi lietošanas ierobežojumi
-11. Īres tiesību nostiprināšana Zemesgrāmatā un aizsardzība īpašnieka maiņas gadījumā
-12. Strīdu risināšana un piemērojamais likums
-13. Tukši lauki finansiāli un juridiski būtiskos punktos (summas, termiņi, procenti), nenoteikti termini
-
-TUKŠIE LAUKI (svarīgs noteikums):
-- Tukšie lauki, kas jāaizpilda līguma parakstīšanas brīdī un kas ir personas vai identifikācijas dati, NAV kļūda, un tos NEDRĪKST atzīmēt nevienā sadaļā. Tie ir: vārdi, uzvārdi, personas kodi, deklarētās adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, dokumentu numuri, paraksti, līguma noslēgšanas vieta un datums.
-- Tukši vai neskaidri lauki, kas ir FINANSIĀLI vai JURIDISKI BŪTISKI, OBLIGĀTI jāatzīmē: īres maksas summa, drošības depozīta summa, komunālo maksājumu summas vai kārtība, maksājuma termiņš vai datums, nokavējuma procentu vai līgumsoda apmērs, līguma sākuma un beigu termiņš, uzteikuma termiņi, depozīta atmaksas termiņš. Tos atzīmē kā brīdinājumu (vai kā kritisku risku, ja tukšums rada nepamatotu finansiālu risku).
-
-- TRŪKSTOŠA VIETA REKVIZĪTIEM: ja līgumā VISPĀR NAV paredzēta vieta vai punkts, kur norādīt svarīgus datus, tā ir kļūda, kas jāatzīmē kā brīdinājums. Tas attiecas uz: izīrētāja bankas konta (IBAN) un maksājuma saņēmēja datiem, kam jāveic īres maksa; pušu kontaktinformāciju (tālrunis, e-pasts) paziņojumu nosūtīšanai; pušu adresēm vai juridiskajām adresēm; personas kodiem vai reģistrācijas numuriem; kadastra apzīmējumu vai precīzu dzīvokļa adresi; parakstu vietu. Ja šāda vieta līgumā ir, bet tā ir tikai neaizpildīta, tā NAV kļūda.
-- Atšķirība: tukšs lauks "Konta Nr. ________" ir kārtībā, bet līgums, kurā nav nevienas vietas konta numuram vai nav norādīts, kā un kur maksāt īres maksu, ir jāatzīmē.
-
-DARBA METODE:
-- Pārskati līgumu punktu pa punktam, no sākuma līdz beigām, un neizlaid nevienu būtisku punktu.
-- Esi rūpīgs un kritisks. Labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
-- NEGRUPĒ: katru atsevišķu problēmu, katru atsevišķu tukšo finansiālo lauku (piemēram, īres summa, depozīta summa, maksājuma datums, termiņš) un katru atsevišķu līguma punktu atzīmē ATSEVIŠĶI ar savu kodu. Nekad nesavieno vairākus punktus vienā ierakstā.
-- Ja šaubies, vai punkts ir problēma, NEIZLAID to: liec to sadaļā "Apsveramie punkti".
-- Katrā sadaļā punktus kārto tajā secībā, kādā tie ir līgumā (no pirmā līdz pēdējam), nevis pēc svarīguma. Tas nodrošina vienādu rezultātu atkārtotā analīzē.
-- Katram punktam norādi līguma punkta numuru un vienkāršu paskaidrojumu, kāpēc tas ir problēma.
-
-KLASIFIKĀCIJA (katrs punkts drīkst būt tikai VIENĀ sadaļā):
-
-🔴 KRITISKS RISKS - punkts ir kritisks, ja tas atbilst vismaz vienam no šiem nosacījumiem:
-A) Tas PĀRKĀPJ LIKUMU vai ir pretrunā ar likuma imperatīvajām normām (Dzīvojamo telpu īres likumu, Civillikumu), tāpēc var būt spēkā neesošs. Vienmēr norādi, kuru likuma pantu tas pārkāpj.
-B) Tas rada NEPAMATOTUS FINANSIĀLUS ZAUDĒJUMUS vienai pusei, piemēram:
-   - depozīta patvaļīga ieturēšana vai neatmaksāšana;
-   - nesamērīgs līgumsods vai nokavējuma procenti, kas pārsniedz likumā pieļauto;
-   - maksājumi, kas pēc likuma vai labas prakses nav jāsedz šai pusei (piemēram, kapitālā remonta vai uzkrājumu fonda maksājumi, ko sedz īrnieks);
-   - atbildība par zaudējumiem bez vainas vai bez pierādījumiem;
-   - vienpusēja īres maksas palielināšana bez likumā noteiktā pamata un kārtības;
-   - aizsardzības trūkums īpašnieka maiņas gadījumā: ja līgumā NAV paredzēta īres tiesību nostiprināšana Zemesgrāmatā, jaunais īpašnieks var prasīt atbrīvot telpas, un īrnieks zaudē mājokli un ar to saistītos izdevumus (pārcelšanās, depozīts, iepriekš samaksātā īre). Tas vienmēr jāatzīmē kā KRITISKS risks.
-Ja punkts nepārkāpj likumu un nerada nepamatotus finansiālus zaudējumus, tas NAV kritisks.
-
-🟡 BRĪDINĀJUMS - punkts, kas nav līdz galam skaidrs vai kura līgumā trūkst, un kuru vajadzētu pievienot vai precizēt, lai nebūtu šaubu dažādās situācijās:
-- neskaidri vai vispārīgi formulējumi (piemēram, "sīkie remontdarbi", "citi maksājumi", "iepriekš saskaņojot");
-- trūkstoši termiņi, summas, procenti vai kārtība (piemēram, nav noteikts brīdinājuma laiks apskatei, depozīta atmaksas termiņš, rēķinu uzrādīšanas kārtība);
-- situācijas, ko līgums neapskata (piemēram, līguma pagarināšana, strīdu risināšana, apakšīre, dzīvnieki, bojājumi nelaimes gadījumā);
-- neskaidrs vai pretrunīgs formulējums, kas var radīt dažādas interpretācijas (piemēram, "VAI" starp diviem sodiem).
-Brīdinājums NAV pārkāpums un nerada tiešus zaudējumus, bet atstāj vietu strīdam.
-
-🔵 APSVERAMS PUNKTS (robežgadījums) - punkts, kas ir līgumā, ir likumīgs un nerada acīmredzamus zaudējumus, bet kuru īpašnieks varētu vēlēties izvērtēt vai mainīt, jo tas ir mazāk izdevīgs vienai pusei, nestandarta vai atkarīgs no pušu vēlmēm. Īpašnieks pats izlems, vai tas jālabo.
-Šeit liec VISU, par ko šaubies, vai tā ir problēma. Piemēri:
-- drošības depozīta atmaksas termiņš, kas ir garāks par 10 darba dienām (piemēram, "1 mēneša laikā"): OBLIGĀTI šeit;
-- garš vai vienpusējs uzteikuma termiņš, stingri vai nestandarta nosacījumi, kas ir likumīgi, bet nav līdzsvaroti;
-- noteikumi, kas ir skaidri, bet var būt neizdevīgi (piemēram, depozīta apmērs, maksājumu termiņi, ierobežojumi viesiem vai remontiem);
-- jebkas, kas nav ne skaidra kļūda, ne skaidri kārtībā.
-Noteikums: ja šaubies, vai punkts ir problēma, NEIZLAID to, bet liec šajā sadaļā. Ja punkts ir skaidri nelikumīgs vai rada zaudējumus, tas ir kritisks; ja trūkst vai ir neskaidrs, tas ir brīdinājums; pārējos robežgadījumus liec šeit.
-
-🟢 IETEIKUMS - konkrēts labojums vai papildinājums ar piedāvātu jaunu formulējumu.
-
-Pirms atbildes pārbaudi, lai neviens punkts neatkārtotos vairākās sadaļās.
-Ja kādā sadaļā tiešām nav problēmu, to godīgi pasaki, bet vispirms vēlreiz pārbaudi visu līgumu.
-
-ATSAUCES UZ LIKUMIEM:
-- Katram punktam sadaļās "Kritiski riski" un "Brīdinājumi" beigās pievieno juridisko pamatojumu, ja tāds ir sniegtajā likumu tekstā.
-- Atsauci raksti TIKAI šādā formātā: [[DTIL 28]] (Dzīvojamo telpu īres likuma 28. pants) vai [[CL 2174]] (Civillikuma 2174. pants). Cipars ir tikai panta numurs.
-- Ja punktam ir vairāki pamati, raksti vairākas atsauces pēc kārtas, piemēram: [[DTIL 28]] [[CL 2174]].
-- Atsauci drīkst izmantot tikai tad, ja šis pants tiešām ir sniegtajā likumu tekstā. Neizdomā pantu numurus. Ja neesi pārliecināts, atsauci nerakstīt.
-- Nerakstī interneta adreses, tās tiks pievienotas automātiski.
-
-Izmanto tieši šādu virsrakstu struktūru:
-
-## 📊 Kopējais novērtējums
-[1-2 teikumos pasaki, vai šo līgumu drīkst parakstīt un kāds ir galvenais risks]
-
-## 🔴 Kritiski riski
-[Katru punktu numurē ar kodu K1, K2, K3... Formāts: "K1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
-
-## 🟡 Brīdinājumi
-[Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
-
-## 🔵 Apsveramie punkti (robežgadījumi)
-[Katru punktu numurē ar kodu A1, A2, A3... Formāts: "A1. Līguma punkta numurs (īss nosaukums): kas tieši ir šaubīgs un kāpēc to vajadzētu izrunāt ar otru pusi. [[atsauce uz likumu, ja tāda ir]]". Labojumu šeit neraksti: to raksti sadaļā "Ieteikumi un labojumi" ar to pašu kodu.]
-
-## 🟢 Ieteikumi un labojumi
-[OBLIGĀTI: katram kritiskajam riskam, katram brīdinājumam UN katram apsveramajam punktam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2... A1, A2...), šādā secībā: vispirms visi K, tad visi B, tad visi A. Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Apsveramajiem punktiem (A) dod formulējumu, ko piedāvāt otrai pusei, ja punktu nolemj mainīt. Neviens kods nedrīkst palikt bez ieteikuma.]
-
-PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski", "Brīdinājumi" un "Apsveramie punkti" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem (K, B un A). Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
-"""
-
-
 # ---------------------------------------------------------------
 # Likumu teksts: automātiski no likumi.lv (atjaunojas reizi 24 stundās)
 # Ja neizdodas - izmanto rezerves failu likumi.txt (ja tāds ir repozitorijā)
@@ -1343,33 +1248,6 @@ FORMĀTS:
 """
 
 
-def lang_directive():
-    rl = T["report_lang_name"]
-    return (
-        "Raksti vienkāršā, cilvēcīgā un viegli saprotamā valodā.\n\n"
-        "VALODAS NOTEIKUMI (svarīgi):\n"
-        f"- Visu analīzi (virsrakstus, paskaidrojumus, riskus, brīdinājumus un ieteikumu skaidrojumus) raksti {rl} valodā.\n"
-        "- Nosaki, kādā valodā ir uzrakstīts līgums (latviešu, krievu vai angļu).\n"
-        "- Citātus no līguma raksti oriģinālvalodā.\n"
-        "- Konkrētus formulējumus, ko jāieraksta līgumā (piedāvātie formulējumi un jaunie punkti), VIENMĒR raksti LĪGUMA valodā pēdiņās. "
-        f"Ja līguma valoda NAV {rl}, tad katram šādam formulējumam uzreiz zem tā pievieno tulkojumu {rl} valodā ar atzīmi \"{T['label_translation']}:\". "
-        f"Ja līguma valoda ir {rl}, tulkojumu nepievieno.\n"
-        "- Atsauces uz likumiem raksti tikai formātā [[DTIL 28]] vai [[CL 2174]], neatkarīgi no valodas.\n"
-        "- Sadaļu virsrakstus raksti tieši tā, kā norādīts struktūrā zemāk."
-    )
-
-
-def localize_prompt(text):
-    text = text.replace("Raksti vienkāršā, cilvēcīgā un viegli saprotamā latviešu valodā.", lang_directive())
-    text = text.replace("## 📊 Kopējais novērtējums", "## 📊 " + T["h_overall"])
-    text = text.replace("## 🔴 Kritiski riski", "## 🔴 " + T["h_crit"])
-    text = text.replace("## 🟡 Brīdinājumi", "## 🟡 " + T["h_warn"])
-    text = text.replace("## 🟢 Ieteikumi un labojumi", "## 🟢 " + T["h_recs"])
-    text = text.replace("## 🔵 Apsveramie punkti (robežgadījumi)", "## 🔵 " + T["h_border"])
-    text = text.replace("Piedāvātais formulējums", T["label_proposed"])
-    return text
-
-
 def build_proof_prompt():
     t = PROOFREAD_PROMPT
     rl = T["report_lang_name"]
@@ -1384,23 +1262,35 @@ def build_proof_prompt():
     return t
 
 
-def build_prompt(base=None):
-    laws_text, source = load_laws()
-    prompt = localize_prompt(base or SYSTEM_PROMPT)
-    if laws_text:
-        prompt += (
-            "\n\nSPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
-            "Analīzē balsties uz šiem likumu tekstiem. Atsaucies uz pantiem tikai tad, ja tie ir "
-            "šajā tekstā. Ja neesi pārliecināts par panta numuru, nenorādi to un neizdomā.\n\n"
-            + laws_text
-        )
-    return prompt, source
-    # ---------------------------------------------------------------
-# Gemini Context Caching: SYSTEM_PROMPT + likumu teksts (TTL 24 stundas)
+# ---------------------------------------------------------------
+# Determinisms: temperature 0.0, top_p 1.0, top_k 1 un seed (ja SDK to atbalsta)
+# ---------------------------------------------------------------
+TEMPERATURE, TOP_P, SEED = 0.0, 1.0, 20240601
+try:
+    from google.ai import generativelanguage as _gl
+    SEED_SUPPORTED = "seed" in _gl.GenerationConfig.pb(_gl.GenerationConfig()).DESCRIPTOR.fields_by_name
+except Exception:
+    SEED_SUPPORTED = False   # vecāks SDK: seed netiek sūtīts; stabilitāti nodrošina temperature 0, top_k 1 un SQLite kešs
+CACHE_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "analysis_cache.db")
+
+
+def det_config(**extra):
+    cfg = {"temperature": TEMPERATURE, "top_p": TOP_P, "top_k": 1}
+    if SEED_SUPPORTED:
+        cfg["seed"] = SEED
+    cfg.update(extra)
+    return cfg
+
+
+# ---------------------------------------------------------------
+# Gemini Context Caching (tikai 2. slānim: verifikācijas instrukcija + likumu teksts, TTL 24 stundas)
+# Ieslēdz ar USE_CONTEXT_CACHE = True, kad izmaksu žurnāls (🪙 atskaites rindā) rāda, ka likumu teksts ir liela daļa no rēķina.
+# Ja kešs nav pieejams (par maz žetonu, modelis neatbalsta), automātiski tiek izmantots parasts izsaukums.
 # ---------------------------------------------------------------
 CACHE_MODEL = "models/gemini-3.8-flash"  # modelim jāatbalsta Context Caching
 CACHE_TTL = datetime.timedelta(hours=24)
 USE_CONTEXT_CACHE = False
+
 
 @st.cache_resource(ttl=datetime.timedelta(hours=23, minutes=30), show_spinner=False)
 def create_prompt_cache(api_key, system_text, laws_block):
@@ -1416,69 +1306,98 @@ def create_prompt_cache(api_key, system_text, laws_block):
 
 
 def get_cached_model(api_key, generation_config):
-    """Atgriež (modelis ar kešatmiņu, likumu avots) vai (None, avots), ja kešatmiņu nevar izmantot."""
-    laws_text, source = load_laws()
+    """Atgriež modeli ar kešatmiņu vai None, ja kešatmiņu nevar izmantot."""
+    laws_text, _ = load_laws()
     if not laws_text:
-        return None, source
-    laws_block = (
-        "SPĒKĀ ESOŠIE LIKUMI (OFICIĀLAIS TEKSTS):\n"
-        "Analīzē balsties uz šiem likumu tekstiem. Atsaucies uz pantiem tikai tad, ja tie ir "
-        "šajā tekstā. Ja neesi pārliecināts par panta numuru, nenorādi to un neizdomā.\n\n"
-        + laws_text
-    )
+        return None
     try:
-        cache = create_prompt_cache(api_key, localize_prompt(SYSTEM_PROMPT), laws_block)
-        model = genai.GenerativeModel.from_cached_content(
-            cached_content=cache, generation_config=generation_config
-        )
-        return model, source
+        cache = create_prompt_cache(api_key, ae.LAYER2_SYSTEM, ae.LAYER2_LAW_HEADER + laws_text)
+        return genai.GenerativeModel.from_cached_content(cached_content=cache, generation_config=generation_config)
     except Exception:
-        # Nav atbalsta, par maz tokenu vai cita kļūda: darbs turpinās bez kešatmiņas
-        return None, source
+        return None
 
 
-def generate_analysis(cached_model, model, active_prompt, parts):
-    """Ģenerē analīzi ar kešatmiņu; ja tā nav pieejama, izmanto parasto pieprasījumu."""
-    if cached_model is not None:
-        try:
-            return cached_model.generate_content(parts, stream=True)
-        except Exception:
-            pass
-    return model.generate_content([active_prompt] + parts, stream=True)
-PROMPT_VER = "v3-recs-KBA"   # mainot uzvedni, palieliniet, lai kešatmiņā neatgrieztu vecos rezultātus
+def _resp_text(resp):
+    try:
+        return resp.text or ""
+    except ValueError:          # bloķēta vai tukša atbilde
+        return ""
+
+
+def _resp_usage(resp):
+    um = getattr(resp, "usage_metadata", None)
+    return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
+
+
+PROMPT_VER = "v4-checklist-2layer"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+
+
+def legal_notes_text():
+    return "\n".join(f"- {c} {n}. pants: {t}" for (c, n), t in ARTICLE_NOTES.items())
 
 
 @st.cache_data(ttl=datetime.timedelta(days=7), max_entries=100, show_spinner=False)
 def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER):
-    """Veic pilnu analīzi (galvenā analīze + korektūra) un saglabā rezultātu atmiņā.
-    Kešatmiņas atslēga = valoda + līguma saturs (teksts vai faila baiti) + nonce.
-    Tas pats saturs = tūlītējs rezultāts bez API izsaukuma."""
+    """Pilna analīze: SQLite kešs -> 1. slānis (checklist JSON) -> 2. slānis (likumu pārbaude) -> korektūra.
+    Atslēga SQLite kešā = līguma SHA-256 + prompta versija + modelis + atskaites valoda.
+    nonce != 0 (poga "Jauna analīze") apiet kešu un pārraksta ierakstu."""
     genai.configure(api_key=_api_key)
-    cfg = genai.GenerationConfig(temperature=0, top_p=1, top_k=1)
-    model = FallbackModel(cfg)
-    cached_model, laws_source = get_cached_model(_api_key, cfg)
-    active_prompt, _ = build_prompt()
+    chash = ae.content_hash(content)
+    pver = f"{prompt_ver}-{ae.PROMPT_FINGERPRINT}"
+    db = ae.AnalysisCache(CACHE_DB)
+    if not nonce:
+        hit = db.get(chash, pver, MODEL_PRIMARY, lang_name)
+        if hit:
+            return hit["analysis"], hit["laws_source"] + " | 💾 SQLite (0 API)"
 
-    if kind == 'txt':
-        parts = [f"LĪGUMA TEKSTS ANALĪZEI:\n{content}"]
-        proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{content}"
-    else:
-        mime = {
-            'pdf': 'application/pdf', 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg'
-        }.get(kind, 'application/octet-stream')
-        file_part = {'mime_type': mime, 'data': content}
-        parts = [file_part]
-        proof_input = [build_proof_prompt(), file_part]
+    laws_text, laws_source = load_laws()
 
-    def _collect(resp):
-        return "".join(c.text for c in resp if hasattr(c, 'text') and c.text)
+    def llm(parts, max_tokens):
+        resp = FallbackModel(det_config(response_mime_type="application/json", max_output_tokens=max_tokens)).generate_content(parts)
+        return _resp_text(resp), _resp_usage(resp)
 
-    main_text = linkify(_collect(generate_analysis(cached_model, model, active_prompt, parts)))
-    if not main_text.strip():
+    def llm_verify(system_text, parts, max_tokens):
+        cfg = det_config(response_mime_type="application/json", max_output_tokens=max_tokens)
+        if USE_CONTEXT_CACHE:
+            cached = get_cached_model(_api_key, cfg)
+            if cached is not None:
+                try:
+                    resp = cached.generate_content(parts)
+                    return _resp_text(resp), _resp_usage(resp)
+                except Exception:
+                    pass
+        prompt = system_text + "\n\n" + ae.LAYER2_LAW_HEADER + laws_text + "\n\n" + "\n".join(parts)
+        resp = FallbackModel(cfg).generate_content(prompt)
+        return _resp_text(resp), _resp_usage(resp)
+
+    ctx = ae.AnalysisContext(
+        kind=kind, content=content, lang_name=lang_name, labels=T,
+        llm=llm, llm_verify=llm_verify if laws_text else None,
+        valid_articles=lambda code: set(article_index(code).keys()),
+        legal_notes=legal_notes_text(),
+    )
+    report, info = ae.run_analysis(ctx)
+    if not report.strip() or "## " not in report:
         raise ValueError("Gemini atgrieza tukšu atbildi")  # kļūda netiek saglabāta kešatmiņā
-    proof_text = _collect(model.generate_content(proof_input, stream=True))
+    main_text = linkify(report)
+
+    # Neitrālā korektūra (atsevišķs izsaukums, tāpat deterministisks)
+    proof_text, proof_ok = "", True
+    try:
+        if kind == 'txt':
+            proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{content}"
+        else:
+            mime = {'pdf': 'application/pdf', 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg'}.get(kind, 'application/octet-stream')
+            proof_input = [build_proof_prompt(), {'mime_type': mime, 'data': content}]
+        resp = FallbackModel(det_config()).generate_content(proof_input)
+        proof_text = _resp_text(resp)
+    except Exception:
+        proof_ok = False
     analysis_all = main_text + ("\n\n" + proof_text if proof_text.strip() else "")
-    return analysis_all, laws_source + (" | ⚡ cache" if cached_model else "")
+    source = laws_source + " | " + info + (" | ⚡ cache" if USE_CONTEXT_CACHE else "")
+    if ctx.complete and proof_ok:
+        db.put(chash, pver, MODEL_PRIMARY, lang_name, {"analysis": analysis_all, "laws_source": source})
+    return analysis_all, source
 
 # ---------------------------------------------------------------
 # Atsauces uz likumi.lv: [[DTIL 28]] -> klikšķināma saite uz attiecīgo pantu
@@ -3486,7 +3405,7 @@ if analyze_button:
                     api_key, T["report_lang_name"], kind, content,
                     datetime.datetime.now().timestamp() if force_new else 0,
                 )
-            if (datetime.datetime.now() - _t0).total_seconds() < 2:
+            if "💾" not in laws_source and (datetime.datetime.now() - _t0).total_seconds() < 2:
                 laws_source += " | 💾 0 cost (cache)"
             st.caption(f"{T['law_source']}: {laws_source}")
             st.markdown(analysis_all)
