@@ -3488,12 +3488,20 @@ if "result" in st.session_state:
     with results_slot:                                      # cilnes lapas augšā
         render_history_picker()
         st.markdown(
-            "<style>@media (max-width:640px){"
-            "div[data-baseweb='tab-list']{gap:0!important;overflow:hidden!important}"
-            "button[data-baseweb='tab']{flex:1 1 0!important;min-width:0!important;"
-            "padding:0.4rem 0.1rem!important;justify-content:center}"
-            "button[data-baseweb='tab'] p{font-size:0.62rem!important;white-space:normal!important;"
-            "text-align:center;line-height:1.1;word-break:break-word}"
+            "<style>@media (max-width:820px){"
+            "[data-testid='stTabs'] [role='tablist'],[data-baseweb='tab-list']{"
+            "gap:0!important;overflow:visible!important;width:100%!important;display:flex!important}"
+            "[data-testid='stTabs'] [role='tablist'] > div{overflow:visible!important}"
+            "[data-testid='stTabs'] button[role='tab'],button[data-baseweb='tab']{"
+            "flex:1 1 0!important;min-width:0!important;width:25%!important;height:auto!important;"
+            "padding:0.35rem 0.1rem!important;justify-content:center!important;white-space:normal!important}"
+            "[data-testid='stTabs'] button[role='tab'] *{white-space:normal!important;"
+            "text-align:center!important;font-size:0.68rem!important;line-height:1.15!important;"
+            "overflow-wrap:anywhere}"
+            "[data-baseweb='tab-border'],[data-baseweb='tab-highlight']{display:none}"
+            "[data-testid='stTabs'] button[role='tab'][aria-selected='true']{"
+            "border-bottom:3px solid #ff4b4b!important}"
+            "[data-testid='stTabScrollButton'],[data-baseweb='tab-list'] ~ button{display:none!important}"
             "}</style>", unsafe_allow_html=True)
         tab_risks, tab_chat, tab_docs, tab_calc = st.tabs([
             T.get("tab_risks", "📊 Risk analysis"),
