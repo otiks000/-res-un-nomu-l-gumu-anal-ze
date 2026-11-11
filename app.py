@@ -1407,8 +1407,8 @@ UNSUPPORTED_PDF_SCRIPTS = re.compile(
 
 
 def recs_last(text):
-    """Pārvieto sadaļu 🟢 (ieteiktie labojumi) aiz 🔵 apsveramajiem punktiem un ⚪ neitrālajām piezīmēm
-    (pirms avotu saraksta), lai Word un PDF atskaitē secība sakristu ar lapu."""
+    """Pārvieto sadaļu 🟢 (ieteiktie labojumi) aiz 🔵 apsveramajiem punktiem, bet pirms ⚪ neitrālajām
+    piezīmēm, lai Word un PDF atskaitē secība sakristu ar lapu."""
     parts = re.split(r"(?m)^(?=## )", text)
     recs = [p for p in parts if p.startswith("## ") and "🟢" in p.split("\n", 1)[0]]
     if not recs:
@@ -1416,7 +1416,7 @@ def recs_last(text):
     rest = [p for p in parts if p not in recs]
     pos = len(rest)
     for i, p in enumerate(rest):
-        if p.startswith("## ") and any(e in p.split("\n", 1)[0] for e in ("🔵", "⚪", "🔴", "🟡", "📊")):
+        if p.startswith("## ") and any(e in p.split("\n", 1)[0] for e in ("🔵", "🔴", "🟡", "📊")):
             pos = i + 1
     recs = [r if r.endswith("\n\n") else r.rstrip("\n") + "\n\n" for r in recs]
     rest = [r if (not r.startswith("## ") or r.endswith("\n\n")) else r.rstrip("\n") + "\n\n" for r in rest]
@@ -3234,8 +3234,9 @@ if "result" in st.session_state:
             if note:
                 st.info(T["test_note"] if note.startswith("🧪") else note)
             render_dashboard(loc)
-            render_sections(loc, skip=("🟢",))             # 📊 🔴 🟡 🔵 ⚪
-            render_sections(loc, only=("🟢",))             # 🟢 ieteiktie labojumi visiem K, B, A - beigās
+            render_sections(loc, skip=("🟢", "⚪"))        # 📊 🔴 🟡 🔵
+            render_sections(loc, only=("🟢",))             # 🟢 ieteiktie labojumi visiem K, B, A
+            render_sections(loc, only=("⚪",))             # ⚪ neitrālās piezīmes - beigās
             render_law_help(loc)
             inject_law_tips(loc)
             st.markdown(sources_md())
