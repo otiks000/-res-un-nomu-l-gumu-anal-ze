@@ -26,6 +26,9 @@ class Fake:
         self.l1, self.l1_repair, self.l2, self.calls = l1, l1_repair, l2, []
 
     def llm(self, parts, max_tokens):
+        if "PAPILDU PĀRBAUDE" in str(parts):
+            self.calls.append("sweep")
+            return json.dumps(getattr(self, "sweep", {"papildus": []})), (100, 10)
         self.calls.append("l1")
         data = self.l1 if self.calls.count("l1") == 1 else (self.l1_repair or self.l1)
         return json.dumps(data), (100, 50)
@@ -61,7 +64,7 @@ class Engine(unittest.TestCase):
         f = Fake(self.good(), l2=l2)
         ctx = make_ctx(f)
         report, info = ae.run_analysis(ctx)
-        self.assertEqual(f.calls, ["l1", "l2"])
+        self.assertEqual(f.calls, ["l1", "sweep", "l2"])
         self.assertIn("K1. 2.2. (Zemesgrāmata)", report)
         self.assertIn("[[DTIL 28]]", report)
         self.assertNotIn("999", report)                       # neesošs pants atmests
@@ -110,6 +113,32 @@ class Engine(unittest.TestCase):
         report, _ = ae.run_analysis(make_ctx(f))
         self.assertIn("## 🔴 Kritiski\nK", report)
 
+    def test_multiple_findings_per_criterion_and_sweep(self):
+        data = self.good()
+        data["items"].append(item("ENTRY", "bridinajums", punkts="6.2", nosaukums="Apskate 2",
+                                  originalais_teksts="Izīrētājs drīkst ienākt dzīvoklī", problema="Otrs ieejas pārkāpums."))
+        f = Fake(data, l2={"items": []})
+        f.sweep = {"papildus": [item("CITS", "apsverams", punkts="1", nosaukums="Adrese",
+                                     originalais_teksts="dzīvokli Rīgā, Brīvības iela 1-5", problema="Nav stāva.")]}
+        report, info = ae.run_analysis(make_ctx(f))
+        self.assertIn("Otrs ieejas pārkāpums", report)
+        self.assertIn("Nav stāva", report)
+        self.assertIn("(+1)", info)
+
+    def test_proofread_two_passes_numbered(self):
+        calls = []
+        def llm(parts, mt):
+            calls.append(1)
+            if len(calls) == 1:
+                return json.dumps({"kludas": [{"punkts": "6.1", "kluda": "Kļūda B", "citats": "jebkurā laikā", "labojums": "jebkurā brīdī"}]}), (1, 1)
+            return json.dumps({"kludas": [{"punkts": "1", "kluda": "Kļūda A", "citats": "izīrē dzīvokli", "labojums": "izīrē dzīvokli."}]}), (1, 1)
+        ctx = ae.AnalysisContext(kind="txt", content=CONTRACT, lang_name="latviešu", labels=LABELS, llm=llm)
+        text, ok = ae.run_proofread(ctx, {"h_neutral": "Neitrālās", "label_fix": "Labojums"})
+        self.assertTrue(ok)
+        self.assertEqual(len(calls), 2)
+        self.assertIn("N1. 1. Kļūda A", text)
+        self.assertIn("N2. 6.1. Kļūda B", text)
+
     def test_layer2_failure_keeps_result_but_not_cached(self):
         f = Fake(self.good(), l2=RuntimeError("boom"))
         ctx = make_ctx(f)
@@ -126,7 +155,7 @@ class Engine(unittest.TestCase):
     def test_no_findings_skips_layer2(self):
         f = Fake({"kopsavilkums": "OK", "items": full_items({}), "papildus": []})
         report, _ = ae.run_analysis(make_ctx(f))
-        self.assertEqual(f.calls, ["l1"])
+        self.assertEqual(f.calls, ["l1", "sweep"])
         self.assertIn("## 🔴 Kritiski\n–", report)
 
 

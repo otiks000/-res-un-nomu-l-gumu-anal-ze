@@ -558,6 +558,12 @@ OTHER_LANG = "🌍 Cita valoda / Other / Другой…"
 # ---------------------------------------------------------------
 MODEL_PRIMARY = "gemini-3.8-flash"
 MODEL_FALLBACKS = ("gemini-2.0-flash", "gemini-1.5-flash")
+# Cena USD par 1 miljonu žetonu (ievade, izvade; izvade ietver thinking). Kešotā ievade: 0.075.
+PRICE_PER_M = (0.75, 3.75)
+
+
+def cost_usd(tokens_in, tokens_out):
+    return (tokens_in * PRICE_PER_M[0] + tokens_out * PRICE_PER_M[1]) / 1_000_000
 _UNAVAILABLE_HINTS = ("not found", "404", "not supported", "unavailable", "503", "does not exist", "deprecated")
 
 
@@ -1329,7 +1335,7 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v4-checklist-2layer"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v5-exhaustive"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
 def legal_notes_text():
@@ -1381,20 +1387,14 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
         raise ValueError("Gemini atgrieza tukšu atbildi")  # kļūda netiek saglabāta kešatmiņā
     main_text = linkify(report)
 
-    # Neitrālā korektūra (atsevišķs izsaukums, tāpat deterministisks)
-    proof_text, proof_ok = "", True
+    # Neitrālā korektūra (2 caurlaides, JSON; Python numurē)
     try:
-        if kind == 'txt':
-            proof_input = f"{build_proof_prompt()}\n\nLĪGUMA TEKSTS:\n{content}"
-        else:
-            mime = {'pdf': 'application/pdf', 'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg'}.get(kind, 'application/octet-stream')
-            proof_input = [build_proof_prompt(), {'mime_type': mime, 'data': content}]
-        resp = FallbackModel(det_config()).generate_content(proof_input)
-        proof_text = _resp_text(resp)
+        proof_text, proof_ok = ae.run_proofread(ctx, T)
     except Exception:
-        proof_ok = False
+        proof_text, proof_ok = "", False
     analysis_all = main_text + ("\n\n" + proof_text if proof_text.strip() else "")
-    source = laws_source + " | " + info + (" | ⚡ cache" if USE_CONTEXT_CACHE else "")
+    cost = cost_usd(ctx.tokens_in, ctx.tokens_out)
+    source = (laws_source + " | " + info + f" | 💲≈${cost:.3f}" + (" | ⚡ cache" if USE_CONTEXT_CACHE else ""))
     if ctx.complete and proof_ok:
         db.put(chash, pver, MODEL_PRIMARY, lang_name, {"analysis": analysis_all, "laws_source": source})
     return analysis_all, source

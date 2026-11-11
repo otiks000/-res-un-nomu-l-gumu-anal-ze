@@ -89,22 +89,27 @@ CHECK_BY_ID = {c[0]: c for c in CHECKLIST}
 
 LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbaudi dotos līgumu pret FIKSĒTU kritēriju sarakstu un atgriezi TIKAI derīgu JSON, bez cita teksta.
 
+MĒRĶIS: atrast VISUS problemātiskos punktus, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus kritērijus.
+
 KLASIFIKĀCIJA (riska_limenis):
-- "kritisks": punkts pārkāpj likuma imperatīvās normas (Dzīvojamo telpu īres likums, Civillikums) vai rada nepamatotus finansiālus zaudējumus (patvaļīga depozīta ieturēšana, nesamērīgs līgumsods, vienpusēja īres maksas palielināšana bez likumā noteiktā pamata, atbildība bez vainas, kapitālā remonta maksājumi uz īrnieka rēķina, īres tiesību nenostiprināšana zemesgrāmatā).
-- "bridinajums": punkts nav skaidrs vai trūkst (neskaidrs formulējums, trūkstošs termiņš, summa vai kārtība, 'VAI' starp sodiem), bet tas nav tiešs pārkāpums.
-- "apsverams": likumīgs, bet vienai pusei neizdevīgs vai nestandarta punkts (piemēram, depozīta atmaksa ilgāk par 10 darba dienām). Ja šaubies, vai tā ir problēma, NEIZLAID, bet liec šeit.
+- "kritisks": VISS, kas pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, Fizisko personu datu apstrādes noteikumi u.c.): imperatīvo normu pārkāpumi, īrnieka tiesību sašaurināšana pretēji likumam, prettiesiski uzteikuma pamati vai termiņi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, nelikumīga ieeja mājoklī, tiesību uz īres nostiprināšanu liegšana u.tml. Ja šaubies, vai tas pārkāpj likumu, bet pārkāpums ir iespējams, liec šeit.
+- "bridinajums": VISS, kas var nest finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības), arī ja nav tiešs likuma pārkāpums: neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, samaksas kārtības trūkums, nesamērīgas sankcijas.
+- "apsverams": VISS, kas nav līdz galam izrunāts vai var radīt pārpratumus: nenoteikti termini, nepilnīgi definīti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi.
 - "nav": kritērijs izpildīts un problēmu nav.
+Valodas, gramatikas un pareizrakstības kļūdas šeit NEVĒRTĒ (tās izvērtē cits modulis).
 
 TUKŠIE LAUKI: tukši lauki, kas jāaizpilda parakstot un kas ir personas vai identifikācijas dati (vārdi, personas kodi, adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, paraksti, noslēgšanas vieta un datums), NAV kļūda, un tos neatzīmē. Finansiāli vai juridiski būtiski tukši lauki (īres summa, depozīta summa, termiņi, procenti, uzteikuma termiņš) JĀATZĪMĒ. Ja līgumā VISPĀR nav vietas svarīgiem datiem (piem., kur maksāt īri), tas jāatzīmē.
 
 NOTEIKUMI:
-- Atgriez PRECĪZI vienu ierakstu katram kritērija id, tādā secībā kā sarakstā. Neizlaid nevienu id.
+- Atgriez vismaz vienu ierakstu katram kritērija id, tādā secībā kā sarakstā. Neizlaid nevienu id.
+- VAIRĀKAS PROBLĒMAS: ja kritērijam ir vairākas atsevišķas problēmas (dažādos punktos vai dažādi pārkāpumi vienā punktā), atgriez katru kā ATSEVIŠĶU ierakstu ar to pašu id (ne "papildus"). Nekad nesavieno vairākus punktus vienā ierakstā un nekad neierobežo atradumu skaitu.
+- Vienā līguma punktā var būt vairākas dažāda līmeņa problēmas: katrai atsevišķs ieraksts.
 - "atrasts": true, ja līgumā ir punkts par šo tēmu; false, ja tēmas līgumā nav. Ja tēmas nav, bet likums to prasa, riska_limenis nedrīkst būt zemāks par kritērijā norādīto "ja trūkst" līmeni.
 - "originalais_teksts": precīzs, burtisks citāts no līguma (kopē rakstzīmi pa rakstzīmei, līdz 300 rakstzīmēm; ar "..." vari izlaist vidu). Ja atrasts=false, atstāj "".
 - "punkts": tikai līguma punkta numurs (piemēram "4.3"), ja zināms, citādi "".
+- "problema": konkrēti: kāpēc tas ir risks (kurš likums vai kāds zaudējums vai kas nav izrunāts), 1–2 teikumi.
 - Ierakstiem ar riska_limenis "nav" visas teksta vērtības atstāj "" (tas ietaupa izmaksas).
-- Katra atsevišķa problēma ir ATSEVIŠĶS ieraksts; nekad nesavieno vairākus punktus. Ja kritērijā ir vairākas atsevišķas problēmas, ieraksti tās masīvā "papildus".
-- "papildus" ir paredzēts ARĪ riskiem, kas neietilpst nevienā kritērijā (id ievieto "CITS"). Ja tādu nav, "papildus": [].
+- "papildus" ir paredzēts riskiem, kas neietilpst nevienā kritērijā (id "CITS"). Ja tādu nav, "papildus": [].
 - "ko_mainit": īss darbības apraksts. Ja punkts līgumā trūkst, sāc ar "Pievienot" (vai tā tulkojumu atskaites valodā).
 - "labojums": gatavs piedāvātais līguma teksts līguma valodā, BEZ pēdiņu zīmēm („ " “ ” « »). Tukšs, ja nav nepieciešams.
 - "labojums_tulkojums": labojuma tulkojums atskaites valodā; tukšs, ja līguma valoda sakrīt ar atskaites valodu.
@@ -370,8 +375,12 @@ def run_layer1(ctx):
     def absorb(payload):
         for raw in payload.get("items", []) or []:
             it = _normalize_item(raw)
-            if it and it["id"] in CHECK_BY_ID and it["id"] not in by_id:
+            if not it or it["id"] not in CHECK_BY_ID:
+                continue
+            if it["id"] not in by_id:
                 by_id[it["id"]] = it
+            elif it["level"] != "nav" and it["problema"]:
+                extras.append(it)          # vēl viena atsevišķa problēma tam pašam kritērijam
         for raw in payload.get("papildus", []) or []:
             it = _normalize_item(raw, forced_id="CITS")
             if it and it["level"] != "nav" and it["problema"]:
@@ -415,10 +424,48 @@ def run_layer1(ctx):
         elif "problēma" in why:
             it["level"] = "nav"
     items = [by_id[c] for c in CHECK_IDS if c in by_id]
-    for e in extras:                           # papildu atradumus pārbauda tāpat (citāts)
+    extras = _clean_extras(extras, contract_norm)
+    return items, extras, summary, unchecked, contract_norm
+
+
+def _clean_extras(extras, contract_norm):
+    """Papildu atradumiem pārbauda citātu un izmet dublikātus (tas pats punkts + tas pats citāts/problēma)."""
+    seen, out = set(), []
+    for e in extras:
         if contract_norm is not None and e["quote"] and not quote_in_contract(e["quote"], contract_norm):
             e["quote"] = ""
-    return items, extras, summary, unchecked
+        key = (e["punkts"], _norm_text(e["quote"])[:60] or _norm_text(e["problema"])[:60])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(e)
+    return out
+
+
+SWEEP_SYSTEM = """PAPILDU PĀRBAUDE. Tu esi Latvijas īres tiesību eksperts. Tev ir dots līgums un saraksts ar problēmām, kas jau atrastas. Tavs uzdevums ir atrast visu, kas VĒL IR IZLAISTS. Izej cauri līgumam punkts pa punktam.
+Meklē: (1) likumu pārkāpumus (kritisks); (2) kas var nest finansiālus vai citus zaudējumus (bridinajums); (3) kas nav līdz galam izrunāts vai var radīt pārpratumus, pretrunas starp punktiem (apsverams).
+Neatkārto jau atrastās problēmas un neatzīmē valodas kļūdas. Tukši personas dati (vārdi, personas kodi, adreses, konti, paraksti, vieta un datums) nav kļūda.
+Atgriez TIKAI derīgu JSON: {"papildus": [ieraksti]}. Katrs ieraksts: {"id": "CITS" vai tuvākais kritērija id, "atrasts": true, "riska_limenis": "apsverams|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "burtisks citāts līdz 300 rakstzīmēm", "problema": "", "ko_mainit": "", "labojums": "gatavs teksts līguma valodā bez pēdiņām", "labojums_tulkojums": ""}.
+Ja nekā jauna nav, atgriez {"papildus": []}."""
+
+
+def run_sweep(ctx, items, extras, contract_norm):
+    """Viens papildu izsaukums: atrod to, ko 1. slānis izlaida. Kļūme nav kritiska."""
+    known = [{"punkts": f["punkts"], "tēma": f["nosaukums"] or f["id"], "problēma": f["problema"][:140]}
+             for f in items + extras if f["level"] != "nav"]
+    intro = (SWEEP_SYSTEM + f"\nATSKAITES VALODA: {ctx.lang_name}. Tekstus raksti šajā valodā; citātus un labojumu līguma valodā.\n"
+             "\nJAU ATRASTĀS PROBLĒMAS (JSON):\n" + json.dumps(known, ensure_ascii=False))
+    try:
+        data = _ask(ctx, _content_parts(ctx, intro))
+    except ValueError:
+        ctx.notes.append("papildu pārbaude neizdevās")
+        return []
+    new = []
+    for raw in data.get("papildus", []) or []:
+        it = _normalize_item(raw, forced_id="CITS")
+        if it and it["level"] != "nav" and it["problema"]:
+            new.append(it)
+    return _clean_extras(extras + new, contract_norm)[len(extras):] if new else []
 
 
 # ---------------------------------------------------------------
@@ -528,8 +575,9 @@ def _ref(f, with_title=True):
 # ---------------------------------------------------------------
 def run_analysis(ctx):
     """Atgriež (markdown atskaite, info rinda). ctx.complete=False, ja kāds slānis neizdevās (nekešot)."""
-    items, extras, summary, unchecked = run_layer1(ctx)
-    findings = [f for f in items + extras if f["level"] != "nav"]
+    items, extras, summary, unchecked, contract_norm = run_layer1(ctx)
+    swept = run_sweep(ctx, items, extras, contract_norm)
+    findings = [f for f in items + extras + swept if f["level"] != "nav"]
     for i, f in enumerate(findings):
         f["_uid"] = f"F{i}"
     sent = sum(1 for f in findings if f["level"] in ("kritisks", "bridinajums"))
@@ -548,10 +596,78 @@ def run_analysis(ctx):
             ctx.complete = False
             ctx.notes.append(f"2. slānis neizdevās: {str(e)[:60]}")
     report = render_report(findings, summary, ctx.labels)
-    info = f"✅ {len(CHECK_IDS) - len(unchecked)}/{len(CHECK_IDS)} | 🔎 {verified}/{sent} | 🪙 {ctx.tokens_in}↑ {ctx.tokens_out}↓"
+    info = f"✅ {len(CHECK_IDS) - len(unchecked)}/{len(CHECK_IDS)} (+{len(swept)}) | 🔎 {verified}/{sent} | 🪙 {ctx.tokens_in}↑ {ctx.tokens_out}↓"
     if unchecked:
         ctx.complete = False
         info += " | ⚠️ " + ",".join(unchecked)
     if ctx.notes:
         info += " | " + "; ".join(ctx.notes)
     return report, info
+
+
+# ---------------------------------------------------------------
+# Neitrālā korektūra: stingrs JSON, 2 caurlaides (otrā atrod izlaisto), Python numurē un kārto
+# ---------------------------------------------------------------
+PROOF_SYSTEM = """Tu esi ļoti rūpīgs korektors un līgumu redaktors, kas pārzina līguma valodu (latviešu, krievu vai angļu). Atrodi VISAS valodas, rediģēšanas un neuzmanības kļūdas līgumā, pat vismazākās. Izej cauri līgumam punkts pa punktam, teikums pa teikumam. Tu nevērtē juridisko saturu un neanalizē riskus.
+
+MEKLĒ:
+- gramatikas, pareizrakstības un drukas kļūdas (garumzīmes, mīkstinājuma zīmes, locījumi, saskaņojums, dzimtes un skaitļa kļūdas);
+- lieki vai trūkstoši vārdi, dubultas atstarpes, nepareizas vai trūkstošas pieturzīmes, lielo burtu lietojums;
+- nekonsekventi termini vai pušu apzīmējumi (piem., "Izīrētājs" un "Iznomātājs");
+- nepareizi punktu numuri, izlaisti numuri, atsauces uz neesošiem punktiem;
+- pretrunas starp cipariem un vārdiem, datumiem, summām un termiņiem;
+- neveikli, grūti saprotami vai divējādi lasāmi teikumi (izteikuma kļūdas).
+
+NEATZĪMĒ: tukšus laukus, kas jāaizpilda parakstot (vārdi, personas kodi, adreses, tālruņi, e-pasti, konti, paraksti, vieta, datums); juridiskus un finansiālus riskus.
+
+Atgriez TIKAI derīgu JSON: {"kludas": [{"punkts": "līguma punkta numurs vai ''", "kluda": "kas nepareizi (atskaites valodā)", "citats": "burtisks fragments no līguma", "labojums": "pareizais variants līguma valodā"}]}
+Katra kļūda ir atsevišķs ieraksts. Ja kļūdu nav: {"kludas": []}."""
+
+
+def _proof_items(data, contract_norm):
+    out = []
+    for raw in (data or {}).get("kludas", []) or []:
+        if not isinstance(raw, dict):
+            continue
+        it = {"punkts": _clean(raw.get("punkts")), "kluda": _clean(raw.get("kluda")),
+              "citats": _no_quotes(raw.get("citats")), "labojums": _no_quotes(raw.get("labojums"))}
+        if not it["kluda"]:
+            continue
+        if contract_norm is not None and it["citats"] and not quote_in_contract(it["citats"], contract_norm):
+            it["citats"] = ""
+        out.append(it)
+    return out
+
+
+def run_proofread(ctx, labels):
+    """Atgriež (markdown sadaļa ⚪, vai_izdevās). Divas caurlaides; otrā saņem jau atrastās kļūdas."""
+    contract_norm = _norm_text(ctx.content) if ctx.kind == "txt" else None
+    head = f"## ⚪ {labels['h_neutral']}"
+    base = PROOF_SYSTEM + f"\nATSKAITES VALODA (skaidrojumiem): {ctx.lang_name}."
+    try:
+        found = _proof_items(_ask(ctx, _content_parts(ctx, base)), contract_norm)
+        known = [{"punkts": f["punkts"], "kluda": f["kluda"][:80], "citats": f["citats"][:60]} for f in found]
+        more = _proof_items(_ask(ctx, _content_parts(
+            ctx, base + "\n\nJAU ATRASTĀS KĻŪDAS (neatkārto tās; atgriez TIKAI to, kas vēl izlaists):\n"
+            + json.dumps(known, ensure_ascii=False))), contract_norm)
+    except ValueError:
+        return "", False
+    seen, allf = set(), []
+    for f in found + more:
+        key = (f["punkts"], _norm_text(f["citats"])[:40] or _norm_text(f["kluda"])[:40])
+        if key not in seen:
+            seen.add(key)
+            allf.append(f)
+    if not allf:
+        return f"{head}\n{labels.get('no_proof_errors', '–')}\n", True
+    allf.sort(key=lambda f: clause_key(f["punkts"]))     # stabila kārtošana: punkta numurs, tad atrašanas secība
+    out = [head]
+    for i, f in enumerate(allf, 1):
+        num = (re.search(r"\d+(?:\.\d+)*", f["punkts"]) or [None])[0]
+        line = f"N{i}. {num + '. ' if num else ''}{f['kluda'].rstrip()}"
+        if f["citats"]:
+            line += f" („{f['citats']}”)"
+        if f["labojums"]:
+            line += f" {labels.get('label_fix', 'Fix')}: „{f['labojums']}”."
+        out.append(line)
+    return "\n".join(out) + "\n", True
