@@ -3487,11 +3487,19 @@ if "result" in st.session_state:
         saved["lang"] = report_key
     with results_slot:                                      # cilnes lapas augšā
         render_history_picker()
-        tab_risks, tab_calc, tab_docs, tab_chat = st.tabs([
+        st.markdown(
+            "<style>@media (max-width:640px){"
+            "div[data-baseweb='tab-list']{gap:0!important;overflow:hidden!important}"
+            "button[data-baseweb='tab']{flex:1 1 0!important;min-width:0!important;"
+            "padding:0.4rem 0.1rem!important;justify-content:center}"
+            "button[data-baseweb='tab'] p{font-size:0.62rem!important;white-space:normal!important;"
+            "text-align:center;line-height:1.1;word-break:break-word}"
+            "}</style>", unsafe_allow_html=True)
+        tab_risks, tab_chat, tab_docs, tab_calc = st.tabs([
             T.get("tab_risks", "📊 Risk analysis"),
-            T.get("tab_calc", "🧮 Penalty calculator"),
-            T.get("tab_docs", "📄 Document download"),
             T.get("tab_chat", "💬 Chat with the contract"),
+            T.get("tab_docs", "📄 Document download"),
+            T.get("tab_calc", "🧮 Penalty calculator"),
         ])
         with tab_risks:                                     # kopsavilkums + detaļas
             st.caption(f"{T['law_source']}: {localize_source(saved['laws_source'])}")
