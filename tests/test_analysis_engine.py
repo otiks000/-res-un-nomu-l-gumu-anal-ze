@@ -51,7 +51,9 @@ class Engine(unittest.TestCase):
             "LAND_REGISTRY": item("LAND_REGISTRY", "kritisks", punkts="2.2", nosaukums="Zemesgrāmata",
                                   originalais_teksts="Līgums netiek nostiprināts zemesgrāmatā", problema="Nav nostiprināts.",
                                   ko_mainit="Pievienot nostiprināšanu", labojums="Puses nostiprina īri zemesgrāmatā."),
-            "DEPOSIT_USE": item("DEPOSIT_USE", "bridinajums", punkts="4.3", nosaukums="Depozīts",
+            "DISPUTES": item("DISPUTES", "bridinajums", punkts="9.1", nosaukums="Strīdi",
+                             originalais_teksts="jebkurā laikā", problema="Jurisdikcija nav noteikta."),
+            "DEPOSIT_USE": item("DEPOSIT_USE", "kritisks", punkts="4.3", nosaukums="Depozīts",
                                 originalais_teksts="drošības naudu pēc saviem ieskatiem", problema="Patvaļīga ieturēšana.", ko_mainit="Precizēt"),
             "ENTRY": item("ENTRY", "apsverams", punkts="6.1", nosaukums="Apskate",
                           originalais_teksts="jebkurā laikā", problema="Nav brīdinājuma.", ko_mainit="Pievienot 24h"),
@@ -60,7 +62,7 @@ class Engine(unittest.TestCase):
     def test_full_run_and_layer2(self):
         l2 = {"kopsavilkums": "Pēc pārbaudes.", "items": [
             {"id": "F2", "verdikts": "pazeminat_apsverams", "panti": [{"likums": "DTIL", "nr": 28}, {"likums": "DTIL", "nr": 999}]},
-            {"id": "F0", "verdikts": "pazeminat_apsverams", "panti": [{"likums": "DTIL", "nr": 12}]}]}
+            {"id": "F3", "verdikts": "pazeminat_apsverams", "panti": [{"likums": "DTIL", "nr": 12}]}]}
         f = Fake(self.good(), l2=l2)
         ctx = make_ctx(f)
         report, info = ae.run_analysis(ctx)
@@ -68,11 +70,12 @@ class Engine(unittest.TestCase):
         self.assertIn("K1. 2.2. (Zemesgrāmata)", report)
         self.assertIn("[[DTIL 28]]", report)
         self.assertNotIn("999", report)                       # neesošs pants atmests
-        self.assertIn("A1. 4.3. (Depozīts)", report)          # likuma pārkāpums pazemināts, bet nav izdzēsts
-        self.assertIn("A2. 6.1. (Apskate)", report)
+        self.assertIn("K2. 4.3. (Depozīts)", report)
+        self.assertIn("A1. 6.1. (Apskate)", report)
+        self.assertIn("A2. 9.1. (Strīdi)", report)           # likuma pārkāpums pazemināts, bet nav izdzēsts
         self.assertIn("Pēc pārbaudes.", report)
         self.assertIn("K1. 2.2.: Pievienot nostiprināšanu. Piedāvātais formulējums: „Puses nostiprina īri zemesgrāmatā.”", report)
-        for code in ("K1", "A1", "A2"):
+        for code in ("K1", "K2", "A1", "A2"):
             self.assertEqual(report.count(f"\n{code}. ") + report.startswith(code), 2, code)  # sadaļā + ieteikumos
         self.assertTrue(ctx.complete)
 
@@ -103,6 +106,14 @@ class Engine(unittest.TestCase):
         report, _ = ae.run_analysis(make_ctx(f))
         self.assertIn("A1. 6.1. (Apskate)", report)
         self.assertNotIn("šāda teksta", report)
+
+    def test_money_criterion_law_violation_becomes_risk_factor(self):
+        data = self.good()
+        data["items"].append(item("RENT_CHANGE", "bridinajums", punkts="3.5", nosaukums="Maksas celšana",
+                                  originalais_teksts="jebkurā laikā", problema="Vienpusēja maksas celšana."))
+        f = Fake(data, l2={"items": []})
+        report, _ = ae.run_analysis(make_ctx(f))
+        self.assertIn("(Maksas celšana)", report.split("## 🟡")[0])
 
     def test_floor_for_missing_mandatory_clause(self):
         data = self.good()

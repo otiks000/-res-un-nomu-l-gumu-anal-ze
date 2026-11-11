@@ -84,6 +84,10 @@ CHECKLIST = [
     ("BLANKS", "Tukši vai neskaidri būtiski lauki",
      "Finansiāli vai juridiski būtiski tukši lauki (summas, termiņi, procenti) un nenoteikti termini ('citi maksājumi', 'pēc vajadzības').", "nav"),
 ]
+# Kritēriji, kas pēc būtības skar naudu: atradums tajos ar likuma-pārkāpuma līmeni (🟡) tiek paaugstināts uz 🔴,
+# jo prioritāte ir zaudējumi > likuma pārkāpums (tā nav atkarīga no modeļa noskaņojuma).
+MONEY_IDS = {"RENT_AMOUNT", "RENT_PAYMENT", "RENT_CHANGE", "UTILITIES", "FUND", "DEPOSIT_AMOUNT", "DEPOSIT_USE",
+             "DEPOSIT_REFUND", "LATE_INTEREST", "PENALTY_CAP", "LIABILITY", "REPAIRS_MINOR", "REPAIRS_MAJOR"}
 CHECK_IDS = [c[0] for c in CHECKLIST]
 CHECK_BY_ID = {c[0]: c for c in CHECKLIST}
 
@@ -92,7 +96,7 @@ LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbau
 MĒRĶIS: atrast VISUS problemātiskos punktus, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus kritērijus.
 
 KLASIFIKĀCIJA (riska_limenis). Katram atradumam piemēro PRIORITĀTI no augšas uz leju, un izvēlies tikai VIENU līmeni:
-1) "kritisks" = RISKA FAKTORS: VISS, kas var radīt finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības): neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, tiesību uz īres nostiprināšanu zaudēšana, vienpusēja izlikšana u.tml. Ja punkts vienlaikus pārkāpj likumu UN rada zaudējumus, tas ir "kritisks".
+1) "kritisks" = RISKA FAKTORS: VISS, kas var radīt finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības): neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, tiesību uz īres nostiprināšanu zaudēšana, vienpusēja īres maksas vai citu maksājumu celšana, izīrētāja tiesības mainīt noteikumus vienpusēji, vienpusēja izlikšana u.tml. VISS, kas saistīts ar naudu (īre, depozīts, soda naudas, procenti, remonti, komunālie maksājumi), ir "kritisks", nevis "bridinajums", ja tas ir neizdevīgs īrniekam vai neskaidrs. Ja punkts vienlaikus pārkāpj likumu UN rada zaudējumus, tas ir "kritisks".
 2) "bridinajums" = LIKUMA PĀRKĀPUMS BEZ TIEŠA ZAUDĒJUMA: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), bet nerada tiešu finansiālu vai citu zaudējumu (piem., formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana bez naudas sekām). Ja šaubies, vai tas ir likuma pārkāpums, un zaudējumu nav, liec šeit.
 3) "apsverams" = PIEVIENOJAMS VAI PRECIZĒJAMS PUNKTS: punkts, kura līgumā NAV un kuru ieteicams pievienot (atrasts=false), vai kas nav līdz galam izrunāts: nenoteikti termini, nepilnīgi definēti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi, un nav ne zaudējumu, ne likuma pārkāpuma.
 4) "nav": kritērijs izpildīts un problēmu nav.
@@ -576,6 +580,9 @@ def run_analysis(ctx):
     items, extras, summary, unchecked, contract_norm = run_layer1(ctx)
     swept = run_sweep(ctx, items, extras, contract_norm)
     findings = [f for f in items + extras + swept if f["level"] != "nav"]
+    for f in findings:
+        if f["id"] in MONEY_IDS and f["level"] == "bridinajums":
+            f["level"] = "kritisks"
     for i, f in enumerate(findings):
         f["_uid"] = f"F{i}"
     sent = sum(1 for f in findings if f["level"] in ("kritisks", "bridinajums"))
