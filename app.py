@@ -2325,6 +2325,51 @@ def render_chat_widget():
     components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
     inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(shown(m) for m in mine))
 # ---------------------------------------------------------------
+# Čats kā atbīdāms sānu panelis no labās puses (aizstāj peldošo pogu apakšējā labajā stūrī)
+# Pārraksta iepriekšējo CHAT_CSS; render_chat_widget() to nolasa izpildes brīdī
+# ---------------------------------------------------------------
+CHAT_CSS = """
+<style>
+@keyframes drawerIn { from {transform: translateX(100%);} to {transform: translateX(0);} }
+@keyframes tabIn { from {transform: translateX(100%);} to {transform: translateX(0);} }
+@keyframes bubbleIn { from {opacity: 0; transform: translateX(12px);} to {opacity: 1; transform: none;} }
+@keyframes chatFade { to {opacity: 0; visibility: hidden;} }
+@keyframes chatPulse { 0% {box-shadow: 0 0 0 0 rgba(239,68,68,.55);} 70% {box-shadow: 0 0 0 12px rgba(239,68,68,0);} 100% {box-shadow: 0 0 0 0 rgba(239,68,68,0);} }
+
+/* Atvērtais sānu panelis: pilns augstums, izbīdās no labās puses */
+.st-key-chat_widget { position: fixed !important; top: 0; right: 0; bottom: 0; height: 100vh; height: 100dvh;
+  width: min(420px, 100vw); z-index: 1000002; margin: 0 !important; overflow: hidden;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-left: 1px solid rgba(128,128,128,.35); border-radius: 16px 0 0 16px;
+  box-shadow: -12px 0 40px rgba(0,0,0,.30), 0 0 0 100vmax rgba(0,0,0,.12);
+  background: #ffffff; animation: drawerIn .3s ease-out; }
+
+/* Ziņu lauks aizpilda paneļa augstumu (ievades lauks paliek apakšā) */
+.st-key-chat_msgs { height: calc(100vh - 210px) !important; height: calc(100dvh - 210px) !important; }
+
+/* Aizvērtā stāvoklī: šaura mēlīte labās malas vidū */
+.st-key-chat_launcher, .st-key-chat_launcher_unread { position: fixed !important; right: 0; top: calc(50% - 36px);
+  z-index: 1000; width: 46px; height: 72px; animation: tabIn .3s ease-out; }
+.st-key-chat_launcher button, .st-key-chat_launcher_unread button { width: 46px; height: 72px; min-height: 72px; padding: 0;
+  border-radius: 14px 0 0 14px; background: #2563eb; border: none; box-shadow: -4px 4px 16px rgba(37,99,235,.45); }
+.st-key-chat_launcher button:hover, .st-key-chat_launcher_unread button:hover { background: #1d4ed8; }
+.st-key-chat_launcher button p, .st-key-chat_launcher_unread button p { color: #ffffff !important; font-size: 22px; line-height: 1; }
+.st-key-chat_launcher_unread::after { content: "1"; position: absolute; top: -6px; left: -6px; min-width: 22px; height: 22px; border-radius: 11px;
+  background: #ef4444; color: #ffffff; font: 700 12px/22px sans-serif; text-align: center; border: 2px solid #ffffff; pointer-events: none;
+  animation: chatPulse 1.8s infinite; }
+
+/* Sveiciena burbulis blakus mēlītei */
+.st-key-chat_greeting { position: fixed !important; right: 56px; top: calc(50% - 30px); z-index: 1001;
+  width: min(280px, calc(100vw - 72px)); animation: bubbleIn .4s ease-out, chatFade .6s ease-in 6s forwards; }
+.st-key-chat_greeting button { width: 100%; background: #ffffff; border: 1px solid #d1d5db; border-radius: 16px 4px 16px 16px;
+  padding: 10px 14px; text-align: left; box-shadow: 0 8px 28px rgba(0,0,0,.3); }
+.st-key-chat_greeting button p { color: #111827 !important; font-size: 14px; line-height: 1.4; }
+
+/* Telefonā panelis aizņem visu ekrāna platumu */
+@media (max-width: 480px) { .st-key-chat_widget { width: 100vw; border-radius: 0; border-left: none; } }
+</style>
+"""
+# ---------------------------------------------------------------
 # Valodas maiņa pēc analīzes: virsraksti, pantu nosaukumi, avoti un atskaites tiek pārslēgti bez jaunas analīzes (bez Gemini)
 # Pārraksta iepriekšējās render_history_picker, render_law_help un law_tip_map definīcijas
 # ---------------------------------------------------------------
