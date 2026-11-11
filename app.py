@@ -24,6 +24,28 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------
+# Tīrs, komerciāls izskats: paslēpj Streamlit kājeni ("Made with Streamlit"),
+# trīs svītru izvēlni (hamburger), "Deploy" pogu un krāsaino joslu augšā.
+# Pati galvene paliek (caurspīdīga), jo tajā ir sānu paneļa poga.
+# ---------------------------------------------------------------
+st.markdown(
+    """
+<style>
+#MainMenu, [data-testid="stMainMenu"], [data-testid="stToolbarActions"],
+[data-testid="stAppDeployButton"], .stDeployButton,
+[data-testid="stDecoration"], [data-testid="stStatusWidget"],
+footer, [data-testid="stFooter"], .viewerBadge_container__1QSob,
+[class^="viewerBadge_"], [class*=" viewerBadge_"] {
+    display: none !important;
+    visibility: hidden !important;
+}
+[data-testid="stHeader"] { background: transparent !important; box-shadow: none !important; }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+# ---------------------------------------------------------------
 # Interfeisa valoda (tikai lietotāja saskarne; analīze vienmēr ir latviski)
 # ---------------------------------------------------------------
 TR = {
@@ -567,7 +589,7 @@ with st.sidebar:
     components.html(THEME_HTML, height=50)
 
 # ---------------------------------------------------------------
-# Bīdāms sānu panelis (drawer): pastāvīga poga pie kreisās malas atver/aizver
+# Bīdāms sānu panelis (drawer): pastāvīga poga kreisajā augšējā stūrī atver/aizver
 # st.sidebar. Izmanto Streamlit iebūvētās pogas, tāpēc stāvoklis paliek sinhronizēts.
 # Kad panelis aizvērts, galvenais saturs kļūst platāks. Izvēle tiek atcerēta pārlūkā.
 # Īsinājumtaustiņš: Alt+S. Mobilajā ierīcē panelis aizveras ar Esc vai pieskārienu ārpus tā.
@@ -595,22 +617,25 @@ DRAWER_HTML = """
   function toggle() { setOpen(!isOpen(), true); }
 
   // Stils: poga, platāks saturs, kad panelis aizvērts
-  if (!D.getElementById("app-drawer-style")) {
-    var st = D.createElement("style"); st.id = "app-drawer-style";
-    st.textContent =
-      "#app-drawer-btn { position: fixed; top: 50%; left: 0; z-index: 1000100; transform: translateY(-50%);" +
-      " width: 28px; height: 64px; border: 1px solid rgba(128,128,128,0.45); border-left: none;" +
-      " border-radius: 0 10px 10px 0; background: rgba(255,75,75,0.88); color: #fff; font-size: 16px;" +
-      " cursor: pointer; padding: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.25);" +
-      " transition: left 0.3s ease, background 0.2s; }" +
-      "#app-drawer-btn:hover { background: #ff4b4b; }" +
-      "#app-drawer-btn:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }" +
-      ".stApp:has([data-testid='stSidebar'][aria-expanded='false']) [data-testid='stMainBlockContainer']" +
-      " { max-width: min(1200px, 100%) !important; transition: max-width 0.3s ease; }" +
-      "[data-testid='stElementContainer']:has(iframe[height='0']) { display: none !important; }" +
-      "@media print { #app-drawer-btn { display: none !important; } }";
-    D.head.appendChild(st);
-  }
+  var st = D.getElementById("app-drawer-style");
+  if (!st) { st = D.createElement("style"); st.id = "app-drawer-style"; D.head.appendChild(st); }
+  st.textContent =
+    // Neliela, bet izteikta poga kreisajā augšējā stūrī; seko paneļa malai
+    "#app-drawer-btn { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 1000100;" +
+    " width: 34px; height: 34px; border: 2px solid #ffffff; border-radius: 10px;" +
+    " background: #ff4b4b; color: #fff; font-size: 17px; font-weight: 900; line-height: 1;" +
+    " display: flex; align-items: center; justify-content: center;" +
+    " cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.35);" +
+    " transition: left 0.3s ease, background 0.2s, transform 0.15s; }" +
+    "#app-drawer-btn:hover { background: #e03131; transform: scale(1.08); }" +
+    "#app-drawer-btn:focus-visible { outline: 3px solid #ffbaba; outline-offset: 2px; }" +
+    // Streamlit iebūvētās pogas paslēptas (tās joprojām tiek izmantotas no JavaScript)
+    "[data-testid='stExpandSidebarButton'], [data-testid='stSidebarCollapsedControl']," +
+    " [data-testid='stSidebarCollapseButton'] { opacity: 0 !important; pointer-events: none !important; }" +
+    ".stApp:has([data-testid='stSidebar'][aria-expanded='false']) [data-testid='stMainBlockContainer']" +
+    " { max-width: min(1200px, 100%) !important; transition: max-width 0.3s ease; }" +
+    "[data-testid='stElementContainer']:has(iframe[height='0']) { display: none !important; }" +
+    "@media print { #app-drawer-btn { display: none !important; } }";
 
   var btn = D.getElementById("app-drawer-btn");
   if (!btn) {
@@ -625,7 +650,7 @@ DRAWER_HTML = """
     var open = isOpen(), sb = sidebar();
     btn.textContent = open ? "\u276E" : "\u276F";      // ❮ / ❯
     btn.setAttribute("aria-expanded", open ? "true" : "false");
-    btn.style.left = (open && sb) ? Math.max(0, sb.getBoundingClientRect().right) + "px" : "0px";
+    btn.style.left = (open && sb) ? Math.max(10, sb.getBoundingClientRect().right + 10) + "px" : "10px";
   }
 
   if (!P.__appDrawerInit) {
