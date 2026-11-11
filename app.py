@@ -513,7 +513,8 @@ if T["up_browse"] != TR["English"]["up_browse"]:
         unsafe_allow_html=True,
     )
 
-# Tēmas pārslēgšana: 🖥️ automātiski, ☀️ gaišā, 🌙 tumšā, ⚫ OLED (maksimāli melna).
+# Tēmas pārslēgšana: ☀️ baltais režīms un ⚫ melnais režīms (pilnīgi melns #000, OLED ekrāni taupa enerģiju).
+# Pamatkrāsa: tumši zila (sk. arī .streamlit/config.toml -> primaryColor).
 # Pārslēdz pārlūkā (JavaScript), tāpēc Streamlit netiek pārlādēts un analīze netiek pārtraukta.
 # Izvēle tiek atcerēta pārlūkā.
 import streamlit.components.v1 as components
@@ -522,60 +523,77 @@ THEME_HTML = """
 <style>
   body { margin: 0; font-family: sans-serif; }
   .row { display: flex; gap: 6px; }
-  button { flex: 1; padding: 8px 0; font-size: 18px; border-radius: 8px; border: 1px solid #888;
-           background: transparent; color: #999; cursor: pointer; }
-  button.on { border-color: #ff4b4b; background: rgba(255,75,75,0.25); color: #fff; }
+  button { flex: 1; padding: 7px 0; font-size: 15px; font-weight: 600; border-radius: 8px;
+           border: 1px solid #94a3b8; background: transparent; color: #64748b; cursor: pointer; }
+  button.on { border-color: #1e3a8a; background: #1e3a8a; color: #ffffff; }
 </style>
 <div class="row">
-  <button data-t="auto" title="Auto">🖥️</button>
-  <button data-t="light" title="Light">☀️</button>
-  <button data-t="dark" title="Dark">🌙</button>
-  <button data-t="oled" title="OLED">⚫</button>
+  <button data-t="light" title="Light">☀️ <span>A</span></button>
+  <button data-t="oled" title="OLED">⚫ <span>A</span></button>
 </div>
 <script>
 (function () {
   var P = window.parent, D = P.document;
-  // [fons, sānu josla/lauki, teksts, apmales, saites]
+  var BLUE = "#1e3a8a", BLUE_HOVER = "#172f70";
+  // [fons, sānu josla/lauki, teksts, apmales, saites/akcents]
   var THEMES = {
-    dark:  ["#0e1117", "#1a1c24", "#fafafa", "#3a3d4a", "#6cb4ff"],
-    light: ["#ffffff", "#f0f2f6", "#1f2430", "#d0d4dc", "#0b5cd5"],
-    oled:  ["#000000", "#000000", "#e8e8e8", "#2a2a2a", "#6cb4ff"]
+    light: ["#ffffff", "#eef2fa", "#0f172a", "#cbd5e1", "#1e3a8a"],
+    oled:  ["#000000", "#000000", "#e5e7eb", "#262b36", "#7da2ff"]
   };
   function css(name) {
     var c = THEMES[name], bg = c[0], bg2 = c[1], fg = c[2], bd = c[3], ln = c[4];
     var s =
+      // Pamatkrāsa: tumši zilas galvenās pogas abos režīmos
+      "[data-testid='stBaseButton-primary'], .stButton button[kind='primary'] { background: " + BLUE + " !important; border-color: " + BLUE + " !important; color: #fff !important; }" +
+      "[data-testid='stBaseButton-primary']:hover { background: " + BLUE_HOVER + " !important; border-color: " + BLUE_HOVER + " !important; }" +
+      "[data-testid='stBaseButton-primary'] p { color: #fff !important; }" +
       ".stApp, [data-testid='stHeader'] { background: " + bg + " !important; }" +
       "[data-testid='stSidebar'], [data-testid='stSidebar'] > div { background: " + bg2 + " !important; }" +
-      ".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small { color: " + fg + " !important; }" +
+      ".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small, .stApp td, .stApp th { color: " + fg + " !important; }" +
       ".stApp button p { color: inherit !important; }" +
       ".stApp a { color: " + ln + " !important; }" +
-      "[data-testid='stAlert'] { background: rgba(128,128,128,0.18) !important; }" +
-      "[data-testid='stAlert'] * { color: " + fg + " !important; }" +
-      ".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'] { background: " + bg2 + " !important; color: " + fg + " !important; }" +
-      "[data-testid='stFileUploaderDropzoneInstructions'] * { color: " + fg + " !important; }" +
-      "[data-testid='stExpander'] { border-color: " + bd + " !important; }" +
-      "[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * { color: " + fg + " !important; }" +
-      "[data-baseweb='popover'] > div, [data-baseweb='popover'] [data-testid='stVerticalBlock'] { background: " + bg2 + " !important; }" +
-      "[data-baseweb='popover'] p, [data-baseweb='popover'] li, [data-baseweb='popover'] small { color: " + fg + " !important; }";
+      // Cilnes: aktīvā cilne akcenta krāsā
+      "button[role='tab'][aria-selected='true'] p { color: " + ln + " !important; font-weight: 700; }" +
+      "[data-baseweb='tab-highlight'] { background-color: " + ln + " !important; }" +
+      "[data-baseweb='tab-border'] { background-color: " + bd + " !important; }";
     if (name === "oled") {
-      s += ".stTextInput input, .stTextArea textarea, [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'], [data-baseweb='popover'] > div { border: 1px solid " + bd + " !important; }";
+      // Pilnīgi melns: visi lauki, kartītes un pogas uz #000 ar plānām apmalēm
+      s +=
+        "[data-testid='stAlert'] { background: #0a0d14 !important; border: 1px solid " + bd + " !important; }" +
+        "[data-testid='stAlert'] * { color: " + fg + " !important; }" +
+        ".stTextInput input, .stTextArea textarea, .stNumberInput input, [data-baseweb='input'], [data-baseweb='base-input'], [data-baseweb='textarea']," +
+        " [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'], [data-testid='stChatInput'], [data-testid='stChatInput'] > div," +
+        " [data-testid='stChatInput'] textarea { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
+        ".stNumberInput button { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
+        "[data-testid='stFileUploaderDropzoneInstructions'] * { color: " + fg + " !important; }" +
+        "[data-testid='stBaseButton-secondary'], [data-testid='stBaseButton-secondaryFormSubmit'], .stDownloadButton button, [data-testid='stPopover'] button" +
+        " { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
+        "[data-testid='stBaseButton-secondary']:hover, .stDownloadButton button:hover { border-color: " + ln + " !important; color: " + ln + " !important; }" +
+        "[data-testid='stExpander'] details, [data-testid='stExpander'] summary { background: #000 !important; border-color: " + bd + " !important; }" +
+        "[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * { color: " + fg + " !important; }" +
+        "[data-testid='stChatMessage'] { background: #000 !important; }" +
+        "[data-testid='stVerticalBlockBorderWrapper'], [data-testid='stVerticalBlock'] > div[height] { border-color: " + bd + " !important; }" +
+        "[data-testid='stMetricValue'] *, [data-testid='stMetricLabel'] * { color: " + fg + " !important; }" +
+        "[data-baseweb='popover'] > div, [data-baseweb='popover'] [data-testid='stVerticalBlock'], [data-baseweb='popover'] ul { background: #000 !important; border: 1px solid " + bd + " !important; }" +
+        "[data-baseweb='popover'] p, [data-baseweb='popover'] li, [data-baseweb='popover'] small { color: " + fg + " !important; }" +
+        "hr { border-color: " + bd + " !important; }" +
+        "code, pre { background: #0a0d14 !important; color: " + fg + " !important; }" +
+        "[data-testid='stCheckbox'] label span, [data-baseweb='checkbox'] span { border-color: #64748b !important; }";
     }
     return s;
   }
   function apply(t) {
+    if (!THEMES[t]) t = (t === "dark") ? "oled" : "light";   // vecās izvēles (auto/tumšā) pārvērš
     var s = D.getElementById("app-theme-style");
-    if (!THEMES[t]) {
-      if (s) s.remove();
-    } else {
-      if (!s) { s = D.createElement("style"); s.id = "app-theme-style"; D.head.appendChild(s); }
-      s.textContent = css(t);
-    }
+    if (!s) { s = D.createElement("style"); s.id = "app-theme-style"; D.head.appendChild(s); }
+    s.textContent = css(t);
+    D.documentElement.setAttribute("data-app-theme", t);
     try { P.localStorage.setItem("appTheme", t); } catch (e) {}
     var bs = document.querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-t") === t); }
   }
-  var saved = "auto";
-  try { saved = P.localStorage.getItem("appTheme") || "auto"; } catch (e) {}
+  var saved = "light";
+  try { saved = P.localStorage.getItem("appTheme") || "light"; } catch (e) {}
   apply(saved);
   var btns = document.querySelectorAll("button");
   for (var i = 0; i < btns.length; i++) {
@@ -600,7 +618,13 @@ DRAWER_HTML = """
   var P = window.parent, D = P.document;
   var TITLE = __TITLE__;
   function sidebar() { return D.querySelector('[data-testid="stSidebar"]'); }
-  function isOpen() { var sb = sidebar(); return !!sb && sb.getAttribute("aria-expanded") !== "false"; }
+  function isOpen() {
+    // Streamlit 1.4x+: data-collapsed="true|false"; vecākās versijās: aria-expanded
+    var sb = sidebar(); if (!sb) return false;
+    var dc = sb.getAttribute("data-collapsed");
+    if (dc !== null) return dc !== "true";
+    return sb.getAttribute("aria-expanded") !== "false";
+  }
   function clickNative(open) {
     var b = open
       ? D.querySelector('[data-testid="stExpandSidebarButton"]') ||
@@ -622,17 +646,18 @@ DRAWER_HTML = """
   st.textContent =
     // Neliela, bet izteikta poga kreisajā augšējā stūrī; seko paneļa malai
     "#app-drawer-btn { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 1000100;" +
-    " width: 34px; height: 34px; border: 2px solid #ffffff; border-radius: 10px;" +
-    " background: #ff4b4b; color: #fff; font-size: 17px; font-weight: 900; line-height: 1;" +
+    " width: 34px; height: 34px; border: 2px solid rgba(255,255,255,0.85); border-radius: 10px;" +
+    " background: #1e3a8a; color: #fff; font-size: 17px; font-weight: 900; line-height: 1;" +
     " display: flex; align-items: center; justify-content: center;" +
     " cursor: pointer; padding: 0; box-shadow: 0 2px 10px rgba(0,0,0,0.35);" +
     " transition: left 0.3s ease, background 0.2s, transform 0.15s; }" +
-    "#app-drawer-btn:hover { background: #e03131; transform: scale(1.08); }" +
-    "#app-drawer-btn:focus-visible { outline: 3px solid #ffbaba; outline-offset: 2px; }" +
+    "#app-drawer-btn:hover { background: #172f70; transform: scale(1.08); }" +
+    "#app-drawer-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }" +
     // Streamlit iebūvētās pogas paslēptas (tās joprojām tiek izmantotas no JavaScript)
     "[data-testid='stExpandSidebarButton'], [data-testid='stSidebarCollapsedControl']," +
     " [data-testid='stSidebarCollapseButton'] { opacity: 0 !important; pointer-events: none !important; }" +
-    ".stApp:has([data-testid='stSidebar'][aria-expanded='false']) [data-testid='stMainBlockContainer']" +
+    ".stApp:has([data-testid='stSidebar'][data-collapsed='true']) [data-testid='stMainBlockContainer']," +
+    " .stApp:has([data-testid='stSidebar'][aria-expanded='false']) [data-testid='stMainBlockContainer']" +
     " { max-width: min(1200px, 100%) !important; transition: max-width 0.3s ease; }" +
     "[data-testid='stElementContainer']:has(iframe[height='0']) { display: none !important; }" +
     "@media print { #app-drawer-btn { display: none !important; } }";
@@ -672,7 +697,7 @@ DRAWER_HTML = """
     P.addEventListener("resize", function () { P.requestAnimationFrame(sync); });
     // Sekot panelim (arī tad, ja to aizver/atver ar iebūvētajām pogām vai velkot platumu)
     new P.MutationObserver(function () { P.requestAnimationFrame(sync); })
-      .observe(D.body, { attributes: true, subtree: true, attributeFilter: ["aria-expanded", "style"] });
+      .observe(D.body, { attributes: true, subtree: true, attributeFilter: ["data-collapsed", "aria-expanded", "style"] });
     P.setInterval(sync, 500);
   }
   sync();
