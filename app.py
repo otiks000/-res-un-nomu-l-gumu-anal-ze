@@ -124,8 +124,8 @@ TR_EXTRA = {
     "Latviešu": {
         "report_lang_name": "latviešu",
         "paste_label": "Vai ielīmē līguma tekstu šeit (ja ielīmēts teksts, fails netiek izmantots):",
-        "h_overall": "Kopējais novērtējums", "h_crit": "Kritiski riski", "h_warn": "Brīdinājumi",
-        "h_recs": "Ieteikumi un labojumi", "h_border": "Apsveramie punkti (robežgadījumi)", "h_neutral": "Neitrālas piezīmes (korektūra)",
+        "h_overall": "Kopējais novērtējums", "h_crit": "Kritiski riski (Latvijas likuma pārkāpumi)", "h_warn": "Brīdinājumi (neprecīzi noformulēti punkti)",
+        "h_recs": "Ieteiktie labojumi (kā labot katru atrasto punktu)", "h_border": "Apsveramie punkti (lietas, kas jāizrunā)", "h_neutral": "Neitrālās piezīmes (gramatikas un citas kļūdas)",
         "no_proof_errors": "Korektūras kļūdu netika atrasts.",
         "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
         "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
@@ -140,8 +140,8 @@ TR_EXTRA = {
     "English": {
         "report_lang_name": "angļu",
         "paste_label": "Or paste the contract text here (if text is pasted, the file is not used):",
-        "h_overall": "Overall assessment", "h_crit": "Critical risks", "h_warn": "Warnings",
-        "h_recs": "Recommendations and corrections", "h_border": "Points to consider (borderline cases)", "h_neutral": "Neutral notes (proofreading)",
+        "h_overall": "Overall assessment", "h_crit": "Critical risks (violations of Latvian law)", "h_warn": "Warnings (imprecisely worded clauses)",
+        "h_recs": "Suggested corrections (how to fix each point found)", "h_border": "Points to consider (things to discuss)", "h_neutral": "Neutral notes (grammar and other errors)",
         "no_proof_errors": "No proofreading errors were found.",
         "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
         "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
@@ -157,8 +157,8 @@ TR_EXTRA = {
     "Русский": {
         "report_lang_name": "krievu",
         "paste_label": "Или вставьте текст договора сюда (если текст вставлен, файл не используется):",
-        "h_overall": "Общая оценка", "h_crit": "Критические риски", "h_warn": "Предупреждения",
-        "h_recs": "Рекомендации и исправления", "h_border": "Пункты для рассмотрения (пограничные случаи)", "h_neutral": "Нейтральные замечания (корректура)",
+        "h_overall": "Общая оценка", "h_crit": "Критические риски (нарушения законов Латвии)", "h_warn": "Предупреждения (неточно сформулированные пункты)",
+        "h_recs": "Рекомендуемые исправления (как исправить каждый найденный пункт)", "h_border": "Пункты для рассмотрения (что нужно обсудить)", "h_neutral": "Нейтральные замечания (грамматика и другие ошибки)",
         "no_proof_errors": "Ошибок при корректуре не найдено.",
         "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
         "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
@@ -513,8 +513,8 @@ if T["up_browse"] != TR["English"]["up_browse"]:
         unsafe_allow_html=True,
     )
 
-# Tēmas pārslēgšana: ☀️ baltais režīms un ⚫ melnais režīms (pilnīgi melns #000, OLED ekrāni taupa enerģiju).
-# Pamatkrāsa: tumši zila (sk. arī .streamlit/config.toml -> primaryColor).
+# Tēmas pārslēgšana: 🔵 tumši zilais (pamata režīms), ☀️ baltais, ⚫ melnais (pilnīgi melns #000, OLED taupa enerģiju).
+# Tumši zilais nāk no .streamlit/config.toml (bez pārklājuma), pārējie divi tiek uzlikti ar CSS.
 # Pārslēdz pārlūkā (JavaScript), tāpēc Streamlit netiek pārlādēts un analīze netiek pārtraukta.
 # Izvēle tiek atcerēta pārlūkā.
 import streamlit.components.v1 as components
@@ -523,77 +523,75 @@ THEME_HTML = """
 <style>
   body { margin: 0; font-family: sans-serif; }
   .row { display: flex; gap: 6px; }
-  button { flex: 1; padding: 7px 0; font-size: 15px; font-weight: 600; border-radius: 8px;
-           border: 1px solid #94a3b8; background: transparent; color: #64748b; cursor: pointer; }
-  button.on { border-color: #1e3a8a; background: #1e3a8a; color: #ffffff; }
+  button { flex: 1; padding: 7px 0; font-size: 17px; border-radius: 8px;
+           border: 1px solid #64748b; background: transparent; cursor: pointer; opacity: 0.75; }
+  button.on { border: 2px solid #4f7df0; background: rgba(79,125,240,0.25); opacity: 1; }
 </style>
 <div class="row">
-  <button data-t="light" title="Light">☀️ <span>A</span></button>
-  <button data-t="oled" title="OLED">⚫ <span>A</span></button>
+  <button data-t="navy" title="Dark blue">🔵</button>
+  <button data-t="light" title="Light">☀️</button>
+  <button data-t="oled" title="Black (OLED)">⚫</button>
 </div>
 <script>
 (function () {
   var P = window.parent, D = P.document;
-  var BLUE = "#1e3a8a", BLUE_HOVER = "#172f70";
-  // [fons, sānu josla/lauki, teksts, apmales, saites/akcents]
+  // fons, sānu josla, lauki, teksts, apmales, akcents, galvenā poga
   var THEMES = {
-    light: ["#ffffff", "#eef2fa", "#0f172a", "#cbd5e1", "#1e3a8a"],
-    oled:  ["#000000", "#000000", "#e5e7eb", "#262b36", "#7da2ff"]
+    navy:  null,   // config.toml krāsas, nekas netiek pārklāts
+    light: { bg: "#ffffff", bg2: "#eef2fa", fld: "#ffffff", fg: "#0f172a", bd: "#cbd5e1", ln: "#1e3a8a", btn: "#1e3a8a", alert: "#f1f5fb" },
+    oled:  { bg: "#000000", bg2: "#000000", fld: "#000000", fg: "#e5e7eb", bd: "#262b36", ln: "#7da2ff", btn: "#1e3a8a", alert: "#0a0d14" }
   };
-  function css(name) {
-    var c = THEMES[name], bg = c[0], bg2 = c[1], fg = c[2], bd = c[3], ln = c[4];
-    var s =
-      // Pamatkrāsa: tumši zilas galvenās pogas abos režīmos
-      "[data-testid='stBaseButton-primary'], .stButton button[kind='primary'] { background: " + BLUE + " !important; border-color: " + BLUE + " !important; color: #fff !important; }" +
-      "[data-testid='stBaseButton-primary']:hover { background: " + BLUE_HOVER + " !important; border-color: " + BLUE_HOVER + " !important; }" +
-      "[data-testid='stBaseButton-primary'] p { color: #fff !important; }" +
-      ".stApp, [data-testid='stHeader'] { background: " + bg + " !important; }" +
-      "[data-testid='stSidebar'], [data-testid='stSidebar'] > div { background: " + bg2 + " !important; }" +
-      ".stApp, .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small, .stApp td, .stApp th { color: " + fg + " !important; }" +
-      ".stApp button p { color: inherit !important; }" +
-      ".stApp a { color: " + ln + " !important; }" +
-      // Cilnes: aktīvā cilne akcenta krāsā
-      "button[role='tab'][aria-selected='true'] p { color: " + ln + " !important; font-weight: 700; }" +
-      "[data-baseweb='tab-highlight'] { background-color: " + ln + " !important; }" +
-      "[data-baseweb='tab-border'] { background-color: " + bd + " !important; }";
-    if (name === "oled") {
-      // Pilnīgi melns: visi lauki, kartītes un pogas uz #000 ar plānām apmalēm
-      s +=
-        "[data-testid='stAlert'] { background: #0a0d14 !important; border: 1px solid " + bd + " !important; }" +
-        "[data-testid='stAlert'] * { color: " + fg + " !important; }" +
-        ".stTextInput input, .stTextArea textarea, .stNumberInput input, [data-baseweb='input'], [data-baseweb='base-input'], [data-baseweb='textarea']," +
-        " [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'], [data-testid='stChatInput'], [data-testid='stChatInput'] > div," +
-        " [data-testid='stChatInput'] textarea { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
-        ".stNumberInput button { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
-        "[data-testid='stFileUploaderDropzoneInstructions'] * { color: " + fg + " !important; }" +
-        "[data-testid='stBaseButton-secondary'], [data-testid='stBaseButton-secondaryFormSubmit'], .stDownloadButton button, [data-testid='stPopover'] button" +
-        " { background: #000 !important; color: " + fg + " !important; border-color: " + bd + " !important; }" +
-        "[data-testid='stBaseButton-secondary']:hover, .stDownloadButton button:hover { border-color: " + ln + " !important; color: " + ln + " !important; }" +
-        "[data-testid='stExpander'] details, [data-testid='stExpander'] summary { background: #000 !important; border-color: " + bd + " !important; }" +
-        "[data-testid='stExpander'] summary, [data-testid='stExpander'] summary * { color: " + fg + " !important; }" +
-        "[data-testid='stChatMessage'] { background: #000 !important; }" +
-        "[data-testid='stVerticalBlockBorderWrapper'], [data-testid='stVerticalBlock'] > div[height] { border-color: " + bd + " !important; }" +
-        "[data-testid='stMetricValue'] *, [data-testid='stMetricLabel'] * { color: " + fg + " !important; }" +
-        "[data-baseweb='popover'] > div, [data-baseweb='popover'] [data-testid='stVerticalBlock'], [data-baseweb='popover'] ul { background: #000 !important; border: 1px solid " + bd + " !important; }" +
-        "[data-baseweb='popover'] p, [data-baseweb='popover'] li, [data-baseweb='popover'] small { color: " + fg + " !important; }" +
-        "hr { border-color: " + bd + " !important; }" +
-        "code, pre { background: #0a0d14 !important; color: " + fg + " !important; }" +
-        "[data-testid='stCheckbox'] label span, [data-baseweb='checkbox'] span { border-color: #64748b !important; }";
-    }
-    return s;
+  function css(c) {
+    return "" +
+      ".stApp, [data-testid='stHeader'], [data-testid='stBottom'] > div, [data-testid='stBottomBlockContainer'] { background: " + c.bg + " !important; }" +
+      "[data-testid='stSidebar'], [data-testid='stSidebar'] > div { background: " + c.bg2 + " !important; }" +
+      ".stApp, .stApp p, .stApp li, .stApp label, .stApp span, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp small, .stApp td, .stApp th, .stApp summary { color: " + c.fg + " !important; }" +
+      ".stApp button p, .stApp button span { color: inherit !important; }" +
+      ".stApp a, .stApp a span { color: " + c.ln + " !important; }" +
+      // galvenā poga (tumši zila abos režīmos)
+      "[data-testid='stBaseButton-primary'] { background: " + c.btn + " !important; border-color: " + c.btn + " !important; color: #fff !important; }" +
+      "[data-testid='stBaseButton-primary']:hover { filter: brightness(1.15); }" +
+      // pārējās pogas
+      "[data-testid='stBaseButton-secondary'], [data-testid='stBaseButton-secondaryFormSubmit'], .stDownloadButton button, [data-testid='stPopover'] button" +
+      " { background: " + c.fld + " !important; color: " + c.fg + " !important; border-color: " + c.bd + " !important; }" +
+      "[data-testid='stBaseButton-secondary']:hover, .stDownloadButton button:hover { border-color: " + c.ln + " !important; color: " + c.ln + " !important; }" +
+      // ievades lauki
+      ".stTextInput input, .stTextArea textarea, .stNumberInput input, [data-baseweb='input'], [data-baseweb='base-input'], [data-baseweb='textarea']," +
+      " [data-baseweb='select'] > div, [data-testid='stFileUploaderDropzone'], [data-testid='stChatInput'], [data-testid='stChatInput'] > div," +
+      " [data-testid='stChatInput'] textarea { background: " + c.fld + " !important; color: " + c.fg + " !important; border-color: " + c.bd + " !important; }" +
+      ".stNumberInput button { background: " + c.fld + " !important; color: " + c.fg + " !important; border-color: " + c.bd + " !important; }" +
+      "[data-testid='stFileUploaderDropzone'] button { background: " + c.bg2 + " !important; color: " + c.fg + " !important; }" +
+      // cilnes
+      "button[role='tab'] p { color: " + c.fg + " !important; }" +
+      "button[role='tab'][aria-selected='true'] p { color: " + c.ln + " !important; font-weight: 700; }" +
+      "[data-baseweb='tab-highlight'] { background-color: " + c.ln + " !important; }" +
+      "[data-baseweb='tab-border'] { background-color: " + c.bd + " !important; }" +
+      // sadaļas, ziņojumi, čats, metrikas
+      "[data-testid='stExpander'] details, [data-testid='stExpander'] summary { background: " + c.bg + " !important; border-color: " + c.bd + " !important; }" +
+      "[data-testid='stAlert'] > div { background: " + c.alert + " !important; border: 1px solid " + c.bd + " !important; }" +
+      "[data-testid='stAlert'] * { color: " + c.fg + " !important; }" +
+      "[data-testid='stChatMessage'] { background: transparent !important; }" +
+      "[data-testid='stVerticalBlockBorderWrapper'] { border-color: " + c.bd + " !important; }" +
+      "[data-testid='stMetricValue'] *, [data-testid='stMetricLabel'] * { color: " + c.fg + " !important; }" +
+      "[data-baseweb='popover'] > div, [data-baseweb='popover'] [data-testid='stVerticalBlock'], [data-baseweb='popover'] ul, [data-baseweb='menu']" +
+      " { background: " + c.bg2 + " !important; border-color: " + c.bd + " !important; }" +
+      "[data-baseweb='popover'] p, [data-baseweb='popover'] li, [data-baseweb='popover'] small { color: " + c.fg + " !important; }" +
+      "[data-baseweb='checkbox'] span, [data-baseweb='radio'] div:first-child { border-color: #64748b !important; }" +
+      "hr { border-color: " + c.bd + " !important; }" +
+      "code, pre { background: " + c.alert + " !important; color: " + c.fg + " !important; }";
   }
   function apply(t) {
-    if (!THEMES[t]) t = (t === "dark") ? "oled" : "light";   // vecās izvēles (auto/tumšā) pārvērš
+    if (!(t in THEMES)) t = "navy";
     var s = D.getElementById("app-theme-style");
     if (!s) { s = D.createElement("style"); s.id = "app-theme-style"; D.head.appendChild(s); }
-    s.textContent = css(t);
+    s.textContent = THEMES[t] ? css(THEMES[t]) : "";
     D.documentElement.setAttribute("data-app-theme", t);
-    try { P.localStorage.setItem("appTheme", t); } catch (e) {}
+    try { P.localStorage.setItem("appTheme3", t); } catch (e) {}
     var bs = document.querySelectorAll("button");
     for (var i = 0; i < bs.length; i++) { bs[i].classList.toggle("on", bs[i].getAttribute("data-t") === t); }
   }
-  var saved = "light";
-  try { saved = P.localStorage.getItem("appTheme") || "light"; } catch (e) {}
+  var saved = "navy";
+  try { saved = P.localStorage.getItem("appTheme3") || "navy"; } catch (e) {}
   apply(saved);
   var btns = document.querySelectorAll("button");
   for (var i = 0; i < btns.length; i++) {
@@ -862,13 +860,13 @@ Izmanto tieši šādu virsrakstu struktūru:
 ## 🟡 Brīdinājumi
 [Katru punktu numurē ar kodu B1, B2, B3... Formāts: "B1. Līguma punkta numurs (īss nosaukums): paskaidrojums. [[atsauce uz likumu]]"]
 
-## 🟢 Ieteikumi un labojumi
-[OBLIGĀTI: katram kritiskajam riskam un katram brīdinājumam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2...). Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Neviens kods nedrīkst palikt bez ieteikuma.]
-
 ## 🔵 Apsveramie punkti (robežgadījumi)
-[Katru punktu numurē ar kodu A1, A2, A3... Formāts: "A1. Līguma punkta numurs (īss nosaukums): kas tieši ir šaubīgs un kāpēc to varētu apsvērt. Ja vēlaties mainīt: piedāvātais formulējums: „...”". Atsauci uz likumu pievieno tikai, ja tā ir. Šeit ir arī punkti, ko īpašnieks var apzināti atstāt nemainītus.]
+[Katru punktu numurē ar kodu A1, A2, A3... Formāts: "A1. Līguma punkta numurs (īss nosaukums): kas tieši ir šaubīgs un kāpēc to vajadzētu izrunāt ar otru pusi. [[atsauce uz likumu, ja tāda ir]]". Labojumu šeit neraksti: to raksti sadaļā "Ieteikumi un labojumi" ar to pašu kodu.]
 
-PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski" un "Brīdinājumi" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem. Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
+## 🟢 Ieteikumi un labojumi
+[OBLIGĀTI: katram kritiskajam riskam, katram brīdinājumam UN katram apsveramajam punktam jābūt savam ieteikumam ar to pašu kodu (K1, K2... B1, B2... A1, A2...), šādā secībā: vispirms visi K, tad visi B, tad visi A. Formāts: "K1. Līguma punkta numurs: ko mainīt vai pievienot. Piedāvātais formulējums: „...”". Ja punkts līgumā trūkst, ieteikumā dod gatavu punkta tekstu, ko pievienot. Apsveramajiem punktiem (A) dod formulējumu, ko piedāvāt otrai pusei, ja punktu nolemj mainīt. Neviens kods nedrīkst palikt bez ieteikuma.]
+
+PĒDĒJĀ PĀRBAUDE PIRMS ATBILDES: saskaiti kodus sadaļās "Kritiski riski", "Brīdinājumi" un "Apsveramie punkti" un pārliecinies, ka sadaļā "Ieteikumi un labojumi" ir ieteikums katram no tiem (K, B un A). Ja kāds kods trūkst, pievieno ieteikumu pirms atbildes beigām.
 """
 
 
@@ -1089,8 +1087,11 @@ def generate_analysis(cached_model, model, active_prompt, parts):
         except Exception:
             pass
     return model.generate_content([active_prompt] + parts, stream=True)
+PROMPT_VER = "v3-recs-KBA"   # mainot uzvedni, palieliniet, lai kešatmiņā neatgrieztu vecos rezultātus
+
+
 @st.cache_data(ttl=datetime.timedelta(days=7), max_entries=100, show_spinner=False)
-def analyze_contract(_api_key, lang_name, kind, content, nonce=0):
+def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER):
     """Veic pilnu analīzi (galvenā analīze + korektūra) un saglabā rezultātu atmiņā.
     Kešatmiņas atslēga = valoda + līguma saturs (teksts vai faila baiti) + nonce.
     Tas pats saturs = tūlītējs rezultāts bez API izsaukuma."""
@@ -1407,10 +1408,12 @@ def render_dashboard(text):
                 totals[emoji] += count_items(head, body)
     cards = [("🔴", "#dc2626", T["h_crit"]), ("🟡", "#d97706", T["h_warn"]), ("🔵", "#2563eb", T["h_border"])]
     for col, (emoji, color, label) in zip(st.columns(3), cards):
+        name, _, sub = label.partition(" (")                # "Kritiski riski (Latvijas likuma pārkāpumi)"
+        sub = f'<div style="font-size:0.75rem;opacity:0.75">{sub.rstrip(")")}</div>' if sub else ""
         col.markdown(
             f'<div style="border-left:6px solid {color};background:{color}22;border-radius:10px;padding:12px 14px;">'
             f'<div style="font-size:2rem;font-weight:700;color:{color};line-height:1.1">{totals[emoji]}</div>'
-            f'<div style="font-size:0.85rem;opacity:0.9">{label}</div></div>',
+            f'<div style="font-size:0.85rem;font-weight:600;opacity:0.95">{name}</div>{sub}</div>',
             unsafe_allow_html=True,
         )
 
@@ -1427,8 +1430,9 @@ def render_sections(text, only=None, skip=()):
             st.markdown(body)
             continue
         n = count_items(head, body)
-        label = head + (f" ({n})" if n else "")
-        with st.expander(label, expanded=any(e in head for e in ("📊", "🔴", "🟡"))):
+        name, sep, sub = head.partition(" (")              # skaits pirms paskaidrojuma: "Kritiski riski · 3 (…)"
+        label = name + (f" · {n}" if n else "") + sep + sub
+        with st.expander(label, expanded=any(e in head for e in ("📊", "🔴", "🟡", "🟢"))):
             st.markdown(body)
 # ---------------------------------------------------------------
 # Pantu skaidrojumi: tooltip uz atsaucēm + pieskaramas kartes (bez Gemini izsaukumiem)
@@ -2757,21 +2761,31 @@ B4. 6.1.5. punkts (Apskates): Nav noteikts minimālais brīdinājuma laiks apska
 
 B5. 7.1. punkts (VAI): Vārds VAI starp procentiem un līgumsodu rada neskaidrību. [[CL 1722]]
 
+## 🔵 {T['h_border']}
+A1. 4.5. punkts (Depozīta atmaksa): Termiņš 1 mēnesis ir pieļaujams, bet garāks par ierasto praksi; to vērts izrunāt ar otru pusi. [[DTIL 12]]
+
+A2. 1. sadaļa (Bankas konts): Īrniekam nav vietas bankas rekvizītiem, uz kuriem atmaksāt drošības naudu.
+
 ## 🟢 {T['h_recs']}
 K1. 2.2. punkts: Pievienot punktu par īres tiesību nostiprināšanu zemesgrāmatā. {T['label_proposed']}: „Puses vienojas nostiprināt īres tiesības zemesgrāmatā. Izīrētājs 10 darba dienu laikā paraksta nostiprinājuma lūgumu.”
 
-K2. 4.3. punkts: Atļaut ieturēt tikai ar abpusēji parakstītu defektu aktu un izdevumu apliecinošiem dokumentiem.
+K2. 4.3. punkts: Atļaut ieturēt tikai ar abpusēji parakstītu defektu aktu un izdevumu apliecinošiem dokumentiem. {T['label_proposed']}: „Izīrētājs drīkst ieturēt drošības naudu tikai par zaudējumiem, kas fiksēti abpusēji parakstītā aktā un apliecināti ar rēķiniem.”
 
-K3. 7.1. punkts: Noteikt kopējo līgumsoda griestu 10% no parāda.
+K3. 7.1. punkts: Noteikt kopējos līgumsoda griestus. {T['label_proposed']}: „Līgumsoda kopsumma nedrīkst pārsniegt 10% no nesamaksātās summas.”
 
-B1. 3.1. punkts: Ierakstīt īres maksas summu cipariem un vārdiem.
+B1. 3.1. punkts: Ierakstīt īres maksas summu cipariem un vārdiem. {T['label_proposed']}: „Īres maksa ir EUR 450,00 (četri simti piecdesmit eiro) mēnesī.”
 
-B5. 7.1. punkts: Atstāt vienu mehānismu: vai nu procentus, vai līgumsodu.
+B2. 3.4. punkts: Noteikt rēķinu kārtību. {T['label_proposed']}: „Izīrētājs līdz katra mēneša 10. datumam nosūta īrniekam rēķinu par komunālajiem maksājumiem ar pievienotām pakalpojumu sniedzēju rēķinu kopijām.”
 
-## 🔵 {T['h_border']}
-A1. 4.5. punkts (Depozīta atmaksa): Termiņš 1 mēnesis ir pieļaujams, bet garāks par likuma noklusējumu. [[DTIL 12]] {T['label_proposed']}: „Izīrētājs atgriež drošības naudu 10 darba dienu laikā pēc nodošanas-pieņemšanas akta parakstīšanas.”
+B3. 6.1.2. punkts: Definēt sīkos remontdarbus. {T['label_proposed']}: „Sīkie remontdarbi ir darbi, kuru izmaksas nepārsniedz EUR 50 vienā reizē (spuldzes, blīves, krānu uzgaļi).”
 
-A2. 1. sadaļa (Bankas konts): Īrniekam nav vietas bankas rekvizītiem.
+B4. 6.1.5. punkts: Noteikt brīdinājuma laiku. {T['label_proposed']}: „Izīrētājs par apskati brīdina vismaz 48 stundas iepriekš, izņemot avārijas gadījumus.”
+
+B5. 7.1. punkts: Atstāt vienu mehānismu: vai nu procentus, vai līgumsodu. {T['label_proposed']}: „Par maksājuma kavējumu īrnieks maksā līgumsodu 0,1% dienā, kopā ne vairāk kā 10% no parāda.”
+
+A1. 4.5. punkts: Saīsināt atmaksas termiņu. {T['label_proposed']}: „Izīrētājs atgriež drošības naudu 10 darba dienu laikā pēc nodošanas-pieņemšanas akta parakstīšanas.”
+
+A2. 1. sadaļa: Pievienot īrnieka bankas rekvizītus. {T['label_proposed']}: „Īrnieka konts drošības naudas atmaksai: IBAN ____________________.”
 
 ## ⚪ {T['h_neutral']}
 N1. 2.1. punkts: Vārds „istabu” rakstīts ar divām atstarpēm.
@@ -2864,10 +2878,10 @@ if "result" in st.session_state:
     # Parāda saglabāto analīzi (arī pēc lejupielādes, citu elementu izmantošanas vai kļūdas)
     saved = st.session_state["result"]
     loc = localize_analysis(saved["analysis"])              # virsraksti un pantu nosaukumi pašreizējā valodā
-    saved.setdefault("lang", T["report_lang_name"])
-    if saved["lang"] != T["report_lang_name"]:              # valoda mainīta: Word un PDF tiek izveidoti no jauna
+    report_key = T["report_lang_name"] + "|h2"              # h2: virsraksti ar paskaidrojumiem iekavās
+    if saved.get("lang") != report_key:                     # valoda vai virsraksti mainīti: Word un PDF no jauna
         saved.update(build_downloads(loc + "\n\n## " + T["sources_head"] + "\n" + sources_md()))
-        saved["lang"] = T["report_lang_name"]
+        saved["lang"] = report_key
     with results_slot:                                      # cilnes lapas augšā
         render_history_picker()
         tab_risks, tab_calc, tab_docs, tab_chat = st.tabs([
@@ -2882,20 +2896,15 @@ if "result" in st.session_state:
             if note:
                 st.info(T["test_note"] if note.startswith("🧪") else note)
             render_dashboard(loc)
-            render_sections(loc, skip=("🟢",))
+            render_sections(loc, skip=("🟢",))             # 📊 🔴 🟡 🔵 ⚪
+            render_sections(loc, only=("🟢",))             # 🟢 ieteiktie labojumi visiem K, B, A - beigās
             render_law_help(loc)
             inject_law_tips(loc)
             st.markdown(sources_md())
         with tab_calc:
             render_calculator(boxed=False)
-        with tab_docs:                                      # Word/PDF + ieteikumi un labojumi
+        with tab_docs:                                      # Word/PDF
             render_downloads(saved)
-            fixes = [(h, b) for h, b in split_sections(loc) if h and "🟢" in h]
-            if fixes:
-                st.markdown("---")
-                st.markdown(T.get("tab_fixes", "### 🟢 " + fixes[0][0]))
-                for _, body in fixes:
-                    st.markdown(body)
         with tab_chat:
             render_chat_tab()
         st.divider()

@@ -1,3 +1,7 @@
+# Pamata režīms: tumši zils. Baltais un melnais (OLED) režīms tiek pārslēgts lietotnē (sānu panelī).
 [theme]
-base = "light"
-primaryColor = "#1e3a8a"
+base = "dark"
+primaryColor = "#4f7df0"
+backgroundColor = "#0b1d44"
+secondaryBackgroundColor = "#132a5e"
+textColor = "#e6edfb"
