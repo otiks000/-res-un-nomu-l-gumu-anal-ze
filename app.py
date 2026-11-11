@@ -19,7 +19,8 @@ from bs4 import BeautifulSoup
 st.set_page_config(
     page_title="Īres un nomas līgumu analizētājs",
     page_icon="🏠",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------
@@ -226,6 +227,12 @@ for _l, _extra in TR_NEW2.items():
 TR_NEW = {
     "Latviešu": {
         "reset_btn": "🔄 Notīrīt sesiju / Sākt no jauna",
+        "sidebar_toggle": "Rādīt / paslēpt iestatījumu paneli",
+        "tab_risks": "📊 Risku analīze",
+        "tab_calc": "🧮 Soda kalkulators",
+        "tab_docs": "📄 Dokumentu lejupielāde",
+        "tab_chat": "💬 Čats ar līgumu",
+        "tab_fixes": "### 🟢 Ieteikumi un labojumi",
         "cite_cl_gen": "Civillikuma {n}. panta",
         "cite_cl_acc": "Civillikuma {n}. pantu",
         # --- kalkulators
@@ -272,13 +279,19 @@ TR_NEW = {
         "mock_terminate": "🧪 **Uzteikums:** īrniekam ir tiesības vienpusēji atkāpties no līguma, rakstveidā brīdinot izīrētāju vismaz 1 mēnesi iepriekš (līgumiem līdz 10 gadiem) {dtil27} {dtil20}. Izīrētājs var izbeigt līgumu tikai likumā noteiktajos gadījumos {dtil21}, piemēram, ja īre kavēta vairāk nekā 2 mēnešus {dtil24}. Pārbaudiet, vai līguma uzteikuma punkts atbilst šiem termiņiem.",
         "mock_deposit": "🧪 **Drošības nauda:** tā nedrīkst pārsniegt divu mēnešu īres maksu un jāatdod ne vēlāk kā dienā, kad telpa tiek atbrīvota, ja līgumā nav noteikts citādi {dtil12}. Līguma 4.3. punkts ļauj ieturēt naudu bez saskaņošanas, tāpēc ieteicams prasīt abpusēji parakstītu defektu aktu.",
         "mock_land": "🧪 **Zemesgrāmata:** ja telpu pārdod, jaunajam īpašniekam līgums ir saistošs tikai tad, ja īres tiesības ir ierakstītas zemesgrāmatā {dtil28} {dtil35}. Pretējā gadījumā viņš var prasīt telpas atbrīvot 2 mēnešu laikā.",
-        "mock_penalty": "🧪 **Līgumsods un procenti:** līgumsods par kavējumu kopumā nevar pārsniegt 10% no parāda {cl1716}, un tam jābūt samērīgam {cl1717}. Konkrētu summu aprēķiniet kalkulatorā lapas apakšā.",
+        "mock_penalty": "🧪 **Līgumsods un procenti:** līgumsods par kavējumu kopumā nevar pārsniegt 10% no parāda {cl1716}, un tam jābūt samērīgam {cl1717}. Konkrētu summu aprēķiniet cilnē „🧮 Soda kalkulators”.",
         "mock_rent": "🧪 **Īres maksa:** līguma laikā to drīkst mainīt tikai tad, ja līgumā ir paredzēti maksas grozīšanas nosacījumi un kārtība {dtil10}.",
         "mock_repairs": "🧪 **Remonti:** līguma 6.1.2. punktā „sīkie remontdarbi” nav definēti, tāpēc var rasties strīds, kurš maksā par sadzīves tehnikas vai santehnikas bojājumiem. Izīrētājs savukārt nodrošina telpas lietošanas iespēju visu līguma laiku {dtil18}.",
         "mock_default": "🧪 **Testa atbilde:** jautājums saņemts („{question}”). Testa režīmā Gemini netiek izsaukts. Īstajā režīmā atbildi sagatavotu Gemini, balstoties uz līguma tekstu. Pamēģiniet jautāt par mājdzīvniekiem, uzteikumu, drošības naudu, zemesgrāmatu, līgumsodu, īres maksu vai remontiem.",
     },
     "English": {
         "reset_btn": "🔄 Clear session / Start over",
+        "sidebar_toggle": "Show / hide the settings panel",
+        "tab_risks": "📊 Risk analysis",
+        "tab_calc": "🧮 Penalty calculator",
+        "tab_docs": "📄 Document download",
+        "tab_chat": "💬 Chat with the contract",
+        "tab_fixes": "### 🟢 Recommendations and corrections",
         "cite_cl_gen": "Civil Law, Art. {n}",
         "cite_cl_acc": "Civil Law, Art. {n}",
         "calc_title": "🧮 Penalty and interest calculator",
@@ -323,13 +336,19 @@ TR_NEW = {
         "mock_terminate": "🧪 **Termination:** the tenant may withdraw from the contract unilaterally by giving the landlord at least 1 month’s written notice (for contracts of up to 10 years) {dtil27} {dtil20}. The landlord may terminate the contract only in the cases set out in the law {dtil21}, for example if rent is more than 2 months overdue {dtil24}. Check that the termination clause of the contract matches these periods.",
         "mock_deposit": "🧪 **Security deposit:** it may not exceed two months’ rent and must be returned no later than the day the premises are vacated, unless the contract says otherwise {dtil12}. Clause 4.3 of the contract allows money to be withheld without agreement, so it is advisable to require a defects report signed by both parties.",
         "mock_land": "🧪 **Land register:** if the premises are sold, the contract binds the new owner only if the lease rights are entered in the land register {dtil28} {dtil35}. Otherwise the new owner may demand that the premises be vacated within 2 months.",
-        "mock_penalty": "🧪 **Penalty and interest:** a penalty for late payment cannot in total exceed 10% of the debt {cl1716} and must be proportionate {cl1717}. Calculate the exact amount with the calculator at the bottom of the page.",
+        "mock_penalty": "🧪 **Penalty and interest:** a penalty for late payment cannot in total exceed 10% of the debt {cl1716} and must be proportionate {cl1717}. Calculate the exact amount with the “🧮 Penalty calculator” tab.",
         "mock_rent": "🧪 **Rent:** during the contract it may be changed only if the contract sets out conditions and a procedure for changing it {dtil10}.",
         "mock_repairs": "🧪 **Repairs:** clause 6.1.2 of the contract does not define “minor repairs”, so a dispute may arise over who pays for damage to appliances or plumbing. The landlord, in turn, must keep the premises usable throughout the contract {dtil18}.",
         "mock_default": "🧪 **Test answer:** your question was received (“{question}”). In test mode Gemini is not called. In real mode Gemini would answer based on the contract text. Try asking about pets, termination, the security deposit, the land register, penalties, rent or repairs.",
     },
     "Русский": {
         "reset_btn": "🔄 Очистить сессию / Начать заново",
+        "sidebar_toggle": "Показать / скрыть панель настроек",
+        "tab_risks": "📊 Анализ рисков",
+        "tab_calc": "🧮 Калькулятор штрафов",
+        "tab_docs": "📄 Скачать документы",
+        "tab_chat": "💬 Чат с договором",
+        "tab_fixes": "### 🟢 Рекомендации и исправления",
         "cite_cl_gen": "Гражданский закон, ст. {n}",
         "cite_cl_acc": "Гражданский закон, ст. {n}",
         "calc_title": "🧮 Калькулятор штрафов и процентов",
@@ -374,7 +393,7 @@ TR_NEW = {
         "mock_terminate": "🧪 **Расторжение:** арендатор вправе в одностороннем порядке отказаться от договора, письменно уведомив арендодателя не менее чем за 1 месяц (для договоров до 10 лет) {dtil27} {dtil20}. Арендодатель может расторгнуть договор только в случаях, предусмотренных законом {dtil21}, например, если просрочка арендной платы превышает 2 месяца {dtil24}. Проверьте, соответствует ли пункт договора о расторжении этим срокам.",
         "mock_deposit": "🧪 **Залог:** он не может превышать арендную плату за два месяца и должен быть возвращён не позднее дня освобождения помещения, если в договоре не предусмотрено иное {dtil12}. Пункт 4.3 договора позволяет удерживать деньги без согласования, поэтому желательно требовать акт о дефектах, подписанный обеими сторонами.",
         "mock_land": "🧪 **Земельная книга:** если помещение продаётся, договор обязателен для нового собственника только в том случае, если права аренды внесены в земельную книгу {dtil28} {dtil35}. В противном случае он может потребовать освободить помещение в течение 2 месяцев.",
-        "mock_penalty": "🧪 **Неустойка и проценты:** неустойка за просрочку в совокупности не может превышать 10% от долга {cl1716} и должна быть соразмерной {cl1717}. Точную сумму рассчитайте в калькуляторе внизу страницы.",
+        "mock_penalty": "🧪 **Неустойка и проценты:** неустойка за просрочку в совокупности не может превышать 10% от долга {cl1716} и должна быть соразмерной {cl1717}. Точную сумму рассчитайте во вкладке «🧮 Калькулятор штрафов».",
         "mock_rent": "🧪 **Арендная плата:** в течение срока договора её можно изменять только в том случае, если в договоре предусмотрены условия и порядок изменения платы {dtil10}.",
         "mock_repairs": "🧪 **Ремонт:** в пункте 6.1.2 договора «мелкий ремонт» не определён, поэтому может возникнуть спор о том, кто платит за повреждения бытовой техники или сантехники. Арендодатель, в свою очередь, обеспечивает возможность пользоваться помещением в течение всего срока договора {dtil18}.",
         "mock_default": "🧪 **Тестовый ответ:** вопрос получен («{question}»). В тестовом режиме Gemini не вызывается. В реальном режиме ответ подготовил бы Gemini на основе текста договора. Попробуйте спросить о домашних животных, расторжении, залоге, земельной книге, неустойке, арендной плате или ремонте.",
@@ -548,6 +567,100 @@ with st.sidebar:
     components.html(THEME_HTML, height=50)
 
 # ---------------------------------------------------------------
+# Bīdāms sānu panelis (drawer): pastāvīga poga pie kreisās malas atver/aizver
+# st.sidebar. Izmanto Streamlit iebūvētās pogas, tāpēc stāvoklis paliek sinhronizēts.
+# Kad panelis aizvērts, galvenais saturs kļūst platāks. Izvēle tiek atcerēta pārlūkā.
+# Īsinājumtaustiņš: Alt+S. Mobilajā ierīcē panelis aizveras ar Esc vai pieskārienu ārpus tā.
+# ---------------------------------------------------------------
+DRAWER_HTML = """
+<script>
+(function () {
+  var P = window.parent, D = P.document;
+  var TITLE = __TITLE__;
+  function sidebar() { return D.querySelector('[data-testid="stSidebar"]'); }
+  function isOpen() { var sb = sidebar(); return !!sb && sb.getAttribute("aria-expanded") !== "false"; }
+  function clickNative(open) {
+    var b = open
+      ? D.querySelector('[data-testid="stExpandSidebarButton"]') ||
+        D.querySelector('[data-testid="stSidebarCollapsedControl"] button')
+      : D.querySelector('[data-testid="stSidebarCollapseButton"] button') ||
+        D.querySelector('[data-testid="stSidebarCollapseButton"]');
+    if (b) { b.click(); return true; }
+    return false;
+  }
+  function setOpen(open, remember) {
+    if (isOpen() !== open) clickNative(open);
+    if (remember) { try { P.localStorage.setItem("appSidebarOpen", open ? "1" : "0"); } catch (e) {} }
+  }
+  function toggle() { setOpen(!isOpen(), true); }
+
+  // Stils: poga, platāks saturs, kad panelis aizvērts
+  if (!D.getElementById("app-drawer-style")) {
+    var st = D.createElement("style"); st.id = "app-drawer-style";
+    st.textContent =
+      "#app-drawer-btn { position: fixed; top: 50%; left: 0; z-index: 1000100; transform: translateY(-50%);" +
+      " width: 28px; height: 64px; border: 1px solid rgba(128,128,128,0.45); border-left: none;" +
+      " border-radius: 0 10px 10px 0; background: rgba(255,75,75,0.88); color: #fff; font-size: 16px;" +
+      " cursor: pointer; padding: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.25);" +
+      " transition: left 0.3s ease, background 0.2s; }" +
+      "#app-drawer-btn:hover { background: #ff4b4b; }" +
+      "#app-drawer-btn:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }" +
+      ".stApp:has([data-testid='stSidebar'][aria-expanded='false']) [data-testid='stMainBlockContainer']" +
+      " { max-width: min(1200px, 100%) !important; transition: max-width 0.3s ease; }" +
+      "[data-testid='stElementContainer']:has(iframe[height='0']) { display: none !important; }" +
+      "@media print { #app-drawer-btn { display: none !important; } }";
+    D.head.appendChild(st);
+  }
+
+  var btn = D.getElementById("app-drawer-btn");
+  if (!btn) {
+    btn = D.createElement("button"); btn.id = "app-drawer-btn"; btn.type = "button";
+    D.body.appendChild(btn);
+  }
+  btn.onclick = toggle;
+  btn.title = TITLE + " (Alt+S)";
+  btn.setAttribute("aria-label", TITLE);
+
+  function sync() {
+    var open = isOpen(), sb = sidebar();
+    btn.textContent = open ? "\u276E" : "\u276F";      // ❮ / ❯
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    btn.style.left = (open && sb) ? Math.max(0, sb.getBoundingClientRect().right) + "px" : "0px";
+  }
+
+  if (!P.__appDrawerInit) {
+    P.__appDrawerInit = true;
+    // Atjaunot pēdējo izvēli
+    var saved = null;
+    try { saved = P.localStorage.getItem("appSidebarOpen"); } catch (e) {}
+    if (saved === "0" || saved === "1") {
+      var tries = 0, want = saved === "1";
+      var iv = P.setInterval(function () {
+        tries++;
+        if (sidebar() && (isOpen() === want || clickNative(want) || tries > 40)) P.clearInterval(iv);
+      }, 100);
+    }
+    P.addEventListener("keydown", function (e) {
+      if (e.altKey && (e.code === "KeyS")) { e.preventDefault(); toggle(); }
+      else if (e.key === "Escape" && P.innerWidth < 768 && isOpen()) { setOpen(false, false); }
+    });
+    P.addEventListener("resize", function () { P.requestAnimationFrame(sync); });
+    // Sekot panelim (arī tad, ja to aizver/atver ar iebūvētajām pogām vai velkot platumu)
+    new P.MutationObserver(function () { P.requestAnimationFrame(sync); })
+      .observe(D.body, { attributes: true, subtree: true, attributeFilter: ["aria-expanded", "style"] });
+    P.setInterval(sync, 500);
+  }
+  sync();
+})();
+</script>
+"""
+
+components.html(
+    DRAWER_HTML.replace("__TITLE__", json.dumps(T.get("sidebar_toggle", "Show / hide the settings panel"))),
+    height=0,
+)
+
+# ---------------------------------------------------------------
 # Sesijas pārvaldība (st.session_state): analīžu vēsture un "Sākt no jauna"
 # Struktūra:
 #   history      - saraksts ar analīzēm šajā sesijā (līdz 10): laiks, nosaukums, režīms, rezultāts, līguma dati
@@ -598,6 +711,8 @@ def reset_session():
     st.session_state["uploader_gen"] = gen           # jauna atslēga = tīrs failu augšupielādes lauks
 st.title(T["title"])
 st.markdown(T["subtitle"])
+# Vieta analīzes rezultātu cilnēm: lapas augšā (virs augšupielādes), aizpilda koda beigās
+results_slot = st.container()
 
 # Sānu josla
 st.sidebar.header(T["sidebar_header"])
@@ -1250,9 +1365,14 @@ def render_dashboard(text):
         )
 
 
-def render_sections(text):
-    """Katra sadaļa ir sakļaujama. Pēc noklusējuma atvērtas: kopējais novērtējums, kritiskie, brīdinājumi."""
+def render_sections(text, only=None, skip=()):
+    """Katra sadaļa ir sakļaujama. Pēc noklusējuma atvērtas: kopējais novērtējums, kritiskie, brīdinājumi.
+    only: rādīt tikai sadaļas ar šīm emocijzīmēm; skip: izlaist sadaļas ar šīm emocijzīmēm."""
     for head, body in split_sections(text):
+        if only is not None and not (head and any(e in head for e in only)):
+            continue
+        if head and any(e in head for e in skip):
+            continue
         if head is None:
             st.markdown(body)
             continue
@@ -2146,14 +2266,17 @@ def penalty_calc(principal, days, rate, daily, cap_declared):
     return res
 
 
-def render_calculator():
-    """Soda naudas kalkulators izvēlētajā valodā. Ievades dati tiek saglabāti sesijā katrai analīzei atsevišķi."""
+def render_calculator(boxed=True):
+    """Soda naudas kalkulators izvēlētajā valodā. Ievades dati tiek saglabāti sesijā katrai analīzei atsevišķi.
+    boxed=False: bez sakļaujamā rāmja (izmanto cilnē)."""
     entry = current_entry()
     terms = (entry["terms"] if entry else st.session_state.get("terms")) or {}
     sig = entry["id"] if entry else "none"
     store = st.session_state.setdefault("calc_store", {})
     saved = store.get(sig, {})
-    with st.expander(T["calc_title"], expanded=False):
+    if not boxed:
+        st.markdown(f"### {T['calc_title']}")
+    with (st.expander(T["calc_title"], expanded=False) if boxed else st.container()):
         if terms:
             st.caption(T["calc_autofill"])
         opts = [T["calc_kind_daily"], T["calc_kind_annual"]]
@@ -2324,6 +2447,52 @@ def render_chat_widget():
 
     components.html(CHAT_JS.replace("__TOKEN__", f"{len(mine)}-{int(is_open)}"), height=0)
     inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(shown(m) for m in mine))
+def render_chat_tab():
+    """Čats ar līgumu kā parasta saskarne cilnē (ziņas tās pašas, kas st.session_state["messages"])."""
+    entry = current_entry()
+    if not entry:
+        return
+    msgs = st.session_state.setdefault("messages", [])
+    mine = [m for m in msgs if m["entry"] == entry["id"] and not m.get("greeting")]
+    use_mock = test_mode or entry["mode"] == "test"
+    seen = st.session_state.setdefault("chat_seen", [])
+    if entry["id"] not in seen:
+        seen.append(entry["id"])
+
+    st.markdown(f"### {T['chat_title']}")
+    st.caption(T["chat_cap_mock"] if use_mock else T["chat_cap_real"])
+    box = st.container(height=440)
+    prompt = st.chat_input(T["chat_placeholder"], key="chat_tab_input")
+
+    with box:                                                # ziņas tiek zīmētas virs ievades lauka
+        with st.chat_message("assistant"):
+            st.markdown(T["chat_greeting"])
+        for m in mine:
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
+        if prompt:
+            msgs.append({"role": "user", "content": prompt, "entry": entry["id"], "mock": use_mock})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            with st.chat_message("assistant"):
+                if use_mock:
+                    answer = linkify(mock_chat_answer(prompt))
+                elif not api_key:
+                    answer = T["chat_no_key"]
+                else:
+                    try:
+                        with st.spinner(T["chat_spinner"]):
+                            answer = chat_answer(prompt, entry, mine)
+                    except Exception as e:
+                        answer = tfmt("chat_error", error=e)
+                st.markdown(answer)
+            msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
+            mine = [m for m in msgs if m["entry"] == entry["id"] and not m.get("greeting")]
+
+    if mine:   # skaidrojumi uz pantu atsaucēm arī čatā
+        inject_law_tips(entry["result"]["analysis"] + "\n" + "\n".join(m["content"] for m in mine))
+
+
 # ---------------------------------------------------------------
 # Čats kā atbīdāms sānu panelis no labās puses (aizstāj peldošo pogu apakšējā labajā stūrī)
 # Pārraksta iepriekšējo CHAT_CSS; render_chat_widget() to nolasa izpildes brīdī
@@ -2649,16 +2818,36 @@ if "result" in st.session_state:
     if saved["lang"] != T["report_lang_name"]:              # valoda mainīta: Word un PDF tiek izveidoti no jauna
         saved.update(build_downloads(loc + "\n\n## " + T["sources_head"] + "\n" + sources_md()))
         saved["lang"] = T["report_lang_name"]
-    render_history_picker()
-    st.caption(f"{T['law_source']}: {localize_source(saved['laws_source'])}")
-    note = saved.get("cache_note", "")
-    if note:
-        st.info(T["test_note"] if note.startswith("🧪") else note)
-    render_dashboard(loc)
-    render_sections(loc)
-    render_law_help(loc)
-    inject_law_tips(loc)
-    st.markdown(sources_md())
-    render_downloads(saved)
-render_chat_widget()
-render_calculator()
+    with results_slot:                                      # cilnes lapas augšā
+        render_history_picker()
+        tab_risks, tab_calc, tab_docs, tab_chat = st.tabs([
+            T.get("tab_risks", "📊 Risk analysis"),
+            T.get("tab_calc", "🧮 Penalty calculator"),
+            T.get("tab_docs", "📄 Document download"),
+            T.get("tab_chat", "💬 Chat with the contract"),
+        ])
+        with tab_risks:                                     # kopsavilkums + detaļas
+            st.caption(f"{T['law_source']}: {localize_source(saved['laws_source'])}")
+            note = saved.get("cache_note", "")
+            if note:
+                st.info(T["test_note"] if note.startswith("🧪") else note)
+            render_dashboard(loc)
+            render_sections(loc, skip=("🟢",))
+            render_law_help(loc)
+            inject_law_tips(loc)
+            st.markdown(sources_md())
+        with tab_calc:
+            render_calculator(boxed=False)
+        with tab_docs:                                      # Word/PDF + ieteikumi un labojumi
+            render_downloads(saved)
+            fixes = [(h, b) for h, b in split_sections(loc) if h and "🟢" in h]
+            if fixes:
+                st.markdown("---")
+                st.markdown(T.get("tab_fixes", "### 🟢 " + fixes[0][0]))
+                for _, body in fixes:
+                    st.markdown(body)
+        with tab_chat:
+            render_chat_tab()
+        st.divider()
+else:
+    render_calculator()
