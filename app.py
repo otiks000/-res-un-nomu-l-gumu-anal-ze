@@ -45,6 +45,12 @@ footer, [data-testid="stFooter"], .viewerBadge_container__1QSob,
     padding-top: 0.4rem !important;
 }
 [data-testid="stMainBlockContainer"] h1 { padding-top: 0 !important; margin-top: 0 !important; }
+@media (max-width: 640px) {
+    [data-testid="stMainBlockContainer"] h1 {
+        font-size: 1.45rem !important; line-height: 1.2 !important;
+        overflow-wrap: anywhere; word-break: normal;
+    }
+}
 </style>
 """,
     unsafe_allow_html=True,
