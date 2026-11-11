@@ -41,6 +41,10 @@ footer, [data-testid="stFooter"], .viewerBadge_container__1QSob,
     visibility: hidden !important;
 }
 [data-testid="stHeader"] { background: transparent !important; box-shadow: none !important; }
+[data-testid="stMainBlockContainer"], .stMainBlockContainer, .block-container {
+    padding-top: 0.4rem !important;
+}
+[data-testid="stMainBlockContainer"] h1 { padding-top: 0 !important; margin-top: 0 !important; }
 </style>
 """,
     unsafe_allow_html=True,
