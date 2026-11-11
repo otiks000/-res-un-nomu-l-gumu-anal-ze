@@ -136,8 +136,8 @@ TR_EXTRA = {
     "Latviešu": {
         "report_lang_name": "latviešu",
         "paste_label": "Vai ielīmē līguma tekstu šeit (ja ielīmēts teksts, fails netiek izmantots):",
-        "h_overall": "Kopējais novērtējums", "h_crit": "Kritiski riski (Latvijas likuma pārkāpumi)", "h_warn": "Brīdinājumi (neprecīzi noformulēti punkti)",
-        "h_recs": "Ieteiktie labojumi (kā labot katru atrasto punktu)", "h_border": "Apsveramie punkti (lietas, kas jāizrunā)", "h_neutral": "Neitrālās piezīmes (gramatikas un citas kļūdas)",
+        "h_overall": "Kopējais novērtējums", "h_crit": "Riska faktori (finansiāli un citi zaudējumi)", "h_warn": "Brīdinājumi (likuma pārkāpumi bez tieša zaudējuma)",
+        "h_recs": "Ieteiktie labojumi (kā labot katru atrasto punktu)", "h_border": "Apsveramie punkti (ieteicams pievienot vai precizēt)", "h_neutral": "Neitrālās piezīmes (gramatikas un citas kļūdas)",
         "no_proof_errors": "Korektūras kļūdu netika atrasts.",
         "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
         "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
@@ -152,8 +152,8 @@ TR_EXTRA = {
     "English": {
         "report_lang_name": "angļu",
         "paste_label": "Or paste the contract text here (if text is pasted, the file is not used):",
-        "h_overall": "Overall assessment", "h_crit": "Critical risks (violations of Latvian law)", "h_warn": "Warnings (imprecisely worded clauses)",
-        "h_recs": "Suggested corrections (how to fix each point found)", "h_border": "Points to consider (things to discuss)", "h_neutral": "Neutral notes (grammar and other errors)",
+        "h_overall": "Overall assessment", "h_crit": "Risk factors (financial and other losses)", "h_warn": "Warnings (legal violations without direct loss)",
+        "h_recs": "Suggested corrections (how to fix each point found)", "h_border": "Points to consider (recommended to add or clarify)", "h_neutral": "Neutral notes (grammar and other errors)",
         "no_proof_errors": "No proofreading errors were found.",
         "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
         "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
@@ -169,8 +169,8 @@ TR_EXTRA = {
     "Русский": {
         "report_lang_name": "krievu",
         "paste_label": "Или вставьте текст договора сюда (если текст вставлен, файл не используется):",
-        "h_overall": "Общая оценка", "h_crit": "Критические риски (нарушения законов Латвии)", "h_warn": "Предупреждения (неточно сформулированные пункты)",
-        "h_recs": "Рекомендуемые исправления (как исправить каждый найденный пункт)", "h_border": "Пункты для рассмотрения (что нужно обсудить)", "h_neutral": "Нейтральные замечания (грамматика и другие ошибки)",
+        "h_overall": "Общая оценка", "h_crit": "Факторы риска (финансовые и другие убытки)", "h_warn": "Предупреждения (нарушения закона без прямого убытка)",
+        "h_recs": "Рекомендуемые исправления (как исправить каждый найденный пункт)", "h_border": "Пункты для рассмотрения (рекомендуется добавить или уточнить)", "h_neutral": "Нейтральные замечания (грамматика и другие ошибки)",
         "no_proof_errors": "Ошибок при корректуре не найдено.",
         "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
         "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
@@ -1335,7 +1335,7 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v5-exhaustive"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v6-riskfactors"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
 def legal_notes_text():
@@ -1489,7 +1489,7 @@ def generate_pretty_docx(analysis_text):
             heading_text = strip_emoji(clean_markdown(line_str.lstrip("#"))).strip()
             h = doc.add_heading(heading_text, level=1)
 
-            if "Kritiski" in line_str or "🔴" in line_str:
+            if "Riska faktori" in line_str or "🔴" in line_str:
                 color = RGBColor(220, 38, 38)
             elif "Brīdinājumi" in line_str or "🟡" in line_str:
                 color = RGBColor(217, 119, 6)
@@ -1591,7 +1591,7 @@ def generate_pretty_pdf(analysis_text):
             pdf.ln(4)
             pdf.set_font("DejaVu", "B", 11)
 
-            if "Kritiski" in raw or "🔴" in raw:
+            if "Riska faktori" in raw or "🔴" in raw:
                 pdf.set_text_color(220, 38, 38)
             elif "Brīdinājumi" in raw or "🟡" in raw:
                 pdf.set_text_color(217, 119, 6)
@@ -1865,7 +1865,7 @@ def render_dashboard(text):
                 totals[emoji] += count_items(head, body)
     cards = [("🔴", "#dc2626", T["h_crit"]), ("🟡", "#d97706", T["h_warn"]), ("🔵", "#2563eb", T["h_border"])]
     for col, (emoji, color, label) in zip(st.columns(3), cards):
-        name, _, sub = label.partition(" (")                # "Kritiski riski (Latvijas likuma pārkāpumi)"
+        name, _, sub = label.partition(" (")                # "Riska faktori (finansiāli un citi zaudējumi)"
         sub = f'<div style="font-size:0.75rem;opacity:0.75">{sub.rstrip(")")}</div>' if sub else ""
         col.markdown(
             f'<div style="border-left:6px solid {color};background:{color}22;border-radius:10px;padding:12px 14px;">'
@@ -1887,7 +1887,7 @@ def render_sections(text, only=None, skip=()):
             st.markdown(body)
             continue
         n = count_items(head, body)
-        name, sep, sub = head.partition(" (")              # skaits pirms paskaidrojuma: "Kritiski riski · 3 (…)"
+        name, sep, sub = head.partition(" (")              # skaits pirms paskaidrojuma: "Riska faktori · 3 (…)"
         label = name + (f" · {n}" if n else "") + sep + sub
         with st.expander(label, expanded=any(e in head for e in ("📊", "🔴", "🟡", "🟢"))):
             st.markdown(body)

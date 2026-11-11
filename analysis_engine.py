@@ -7,7 +7,7 @@ Plūsma jaunam līgumam:
   1. slānis (1 izsaukums): līgums pret VISIEM CHECKLIST kritērijiem -> stingrs JSON.
      Python pārbauda, ka katrs kritērijs ir atgriezts, ka citāti tiešām ir līgumā, un
      vajadzības gadījumā (tikai trūkstošajiem) pieprasa labojumu.
-  2. slānis (1 izsaukums): TIKAI atrastie riski (kritiski + brīdinājumi) pret precīziem likuma
+  2. slānis (1 izsaukums): TIKAI atrastie riska faktori un likuma pārkāpumi pret precīziem likuma
      pantiem. Python pieņem tikai tādus pantus, kas tiešām eksistē likuma tekstā.
   Python sakārto un uzraksta gala atskaiti, tāpēc nekas netiek izlaists un secība vienmēr ir tā pati.
 """
@@ -30,25 +30,25 @@ SECTION = {"kritisks": ("🔴", "K"), "bridinajums": ("🟡", "B"), "apsverams":
 # ---------------------------------------------------------------
 CHECKLIST = [
     ("PARTIES", "Pušu dati un rekvizīti",
-     "Vai ir paredzēta vieta pušu vārdiem, personas kodiem, adresēm, tālrunim, e-pastam (tukši lauki NAV kļūda; kļūda ir, ja vietas VISPĀR nav).", "bridinajums"),
+     "Vai ir paredzēta vieta pušu vārdiem, personas kodiem, adresēm, tālrunim, e-pastam (tukši lauki NAV kļūda; kļūda ir, ja vietas VISPĀR nav).", "apsverams"),
     ("PREMISES", "Telpu apraksts",
-     "Precīza adrese, platība, kadastra apzīmējums, telpu raksturojums (DTIL 8. pants).", "bridinajums"),
+     "Precīza adrese, platība, kadastra apzīmējums, telpu raksturojums (DTIL 8. pants).", "apsverams"),
     ("TERM", "Līguma termiņš",
-     "Vai ir noteikts sākuma un beigu datums (līgums jāslēdz uz noteiktu termiņu). Tukšs termiņa lauks ir jāatzīmē.", "bridinajums"),
+     "Vai ir noteikts sākuma un beigu datums (līgums jāslēdz uz noteiktu termiņu). Tukšs termiņa lauks ir jāatzīmē.", "apsverams"),
     ("RENEWAL", "Pagarināšana",
      "Kā līgumu var pagarināt vai atjaunot; vai nav automātisku vienpusēju nosacījumu.", "apsverams"),
     ("TENANT_NOTICE", "Īrnieka uzteikums",
-     "Īrnieka tiesības izbeigt līgumu, uzteikuma termiņš un kārtība (nedrīkst būt sliktāk par likumu, DTIL 20., 27. pants).", "bridinajums"),
+     "Īrnieka tiesības izbeigt līgumu, uzteikuma termiņš un kārtība (nedrīkst būt sliktāk par likumu, DTIL 20., 27. pants).", "apsverams"),
     ("LANDLORD_NOTICE", "Izīrētāja uzteikums un atkāpšanās",
-     "Pamati un termiņi, kad izīrētājs drīkst izbeigt līgumu (tikai likumā noteiktie gadījumi, DTIL 21.–27. pants); vienpusēja izlikšana.", "bridinajums"),
+     "Pamati un termiņi, kad izīrētājs drīkst izbeigt līgumu (tikai likumā noteiktie gadījumi, DTIL 21.–27. pants); vienpusēja izlikšana.", "apsverams"),
     ("RENT_AMOUNT", "Īres maksas apmērs",
-     "Summa, valūta, kas ir iekļauts maksā. Tukša summa ir jāatzīmē.", "bridinajums"),
+     "Summa, valūta, kas ir iekļauts maksā. Tukša summa ir jāatzīmē.", "kritisks"),
     ("RENT_PAYMENT", "Īres maksas samaksa",
-     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "bridinajums"),
+     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "apsverams"),
     ("RENT_CHANGE", "Īres maksas maiņa",
-     "Vai izīrētājs var vienpusēji palielināt maksu; vai ir likumiski nosacījumi un kārtība (DTIL 10. pants).", "bridinajums"),
+     "Vai izīrētājs var vienpusēji palielināt maksu; vai ir likumiski nosacījumi un kārtība (DTIL 10. pants).", "apsverams"),
     ("UTILITIES", "Komunālie maksājumi",
-     "Kas, cik un kā maksā komunālos pakalpojumus; rēķinu uzrādīšanas kārtība, skaitītāji, norēķini.", "bridinajums"),
+     "Kas, cik un kā maksā komunālos pakalpojumus; rēķinu uzrādīšanas kārtība, skaitītāji, norēķini.", "apsverams"),
     ("FUND", "Uzkrājumu fonds un kapitālie maksājumi",
      "Vai īrniekam uzlikti kapitālā remonta, uzkrājumu fonda vai citi īpašnieka pienākumi apmaksāt maksājumi.", "nav"),
     ("DEPOSIT_AMOUNT", "Drošības depozīta apmērs",
@@ -56,21 +56,21 @@ CHECKLIST = [
     ("DEPOSIT_USE", "Depozīta ieturēšana",
      "Kādos gadījumos un kā drīkst ieturēt; vai tiek paziņots un pierādīti zaudējumi; patvaļīga ieturēšana.", "apsverams"),
     ("DEPOSIT_REFUND", "Depozīta atmaksa",
-     "Atmaksas termiņš (garāks par 10 darba dienām = apsverams punkts), kārtība.", "bridinajums"),
+     "Atmaksas termiņš (garāks par 10 darba dienām = apsverams punkts), kārtība.", "apsverams"),
     ("LATE_INTEREST", "Nokavējuma procenti",
      "Procentu apmērs un aprēķins; vai nav pārmērīgi (CL 1764.–1765. pants).", "apsverams"),
     ("PENALTY_CAP", "Līgumsodi un to griesti",
-     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "bridinajums"),
+     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "apsverams"),
     ("LIABILITY", "Atbildība par zaudējumiem",
      "Atbildība bez vainas vai bez pierādījumiem, pārmērīga atbildība par bojājumiem, atbildības ierobežojumi.", "nav"),
     ("REPAIRS_MINOR", "Sīkie remontdarbi",
-     "Vai ir definēts, kas ir 'sīkie remontdarbi' un kurš tos sedz.", "bridinajums"),
+     "Vai ir definēts, kas ir 'sīkie remontdarbi' un kurš tos sedz.", "apsverams"),
     ("REPAIRS_MAJOR", "Lielie remonti un avārijas",
-     "Kas sedz lielos remontus, avārijas un apkopi; izīrētāja pienākumi uzturēt telpas (DTIL 18. pants).", "bridinajums"),
+     "Kas sedz lielos remontus, avārijas un apkopi; izīrētāja pienākumi uzturēt telpas (DTIL 18. pants).", "apsverams"),
     ("ENTRY", "Izīrētāja piekļuve un apskate",
-     "Vai izīrētājs drīkst ienākt mājoklī; brīdinājuma laiks, biežums, iemesli (DTIL 13. pants). Brīvas ieiešanas tiesības = risks.", "bridinajums"),
+     "Vai izīrētājs drīkst ienākt mājoklī; brīdinājuma laiks, biežums, iemesli (DTIL 13. pants). Brīvas ieiešanas tiesības = risks.", "apsverams"),
     ("HANDOVER", "Pieņemšanas-nodošanas akts",
-     "Akts, telpu un inventāra stāvoklis nodošanas brīdī un atdošanas brīdī.", "bridinajums"),
+     "Akts, telpu un inventāra stāvoklis nodošanas brīdī un atdošanas brīdī.", "apsverams"),
     ("OCCUPANTS", "Iemitinātās personas un deklarēšana",
      "Personu skaits, ģimenes locekļi, tiesības deklarēt dzīvesvietu (DTIL 14., 15. pants).", "apsverams"),
     ("RESTRICTIONS", "Apakšīre, dzīvnieki un lietošanas ierobežojumi",
@@ -80,7 +80,7 @@ CHECKLIST = [
     ("VACATE", "Telpu atbrīvošana",
      "Telpu atbrīvošanas kārtība un termiņi līguma beigās; soda sankcijas par aizkavēšanos (DTIL 29. pants).", "apsverams"),
     ("DISPUTES", "Strīdu risināšana un piemērojamais likums",
-     "Piemērojamais likums, jurisdikcija, strīdu kārtība, paziņojumu forma un adreses.", "bridinajums"),
+     "Piemērojamais likums, jurisdikcija, strīdu kārtība, paziņojumu forma un adreses.", "apsverams"),
     ("BLANKS", "Tukši vai neskaidri būtiski lauki",
      "Finansiāli vai juridiski būtiski tukši lauki (summas, termiņi, procenti) un nenoteikti termini ('citi maksājumi', 'pēc vajadzības').", "nav"),
 ]
@@ -91,11 +91,11 @@ LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbau
 
 MĒRĶIS: atrast VISUS problemātiskos punktus, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus kritērijus.
 
-KLASIFIKĀCIJA (riska_limenis):
-- "kritisks": VISS, kas pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, Fizisko personu datu apstrādes noteikumi u.c.): imperatīvo normu pārkāpumi, īrnieka tiesību sašaurināšana pretēji likumam, prettiesiski uzteikuma pamati vai termiņi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, nelikumīga ieeja mājoklī, tiesību uz īres nostiprināšanu liegšana u.tml. Ja šaubies, vai tas pārkāpj likumu, bet pārkāpums ir iespējams, liec šeit.
-- "bridinajums": VISS, kas var nest finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības), arī ja nav tiešs likuma pārkāpums: neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, samaksas kārtības trūkums, nesamērīgas sankcijas.
-- "apsverams": VISS, kas nav līdz galam izrunāts vai var radīt pārpratumus: nenoteikti termini, nepilnīgi definīti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi.
-- "nav": kritērijs izpildīts un problēmu nav.
+KLASIFIKĀCIJA (riska_limenis). Katram atradumam piemēro PRIORITĀTI no augšas uz leju, un izvēlies tikai VIENU līmeni:
+1) "kritisks" = RISKA FAKTORS: VISS, kas var radīt finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības): neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, tiesību uz īres nostiprināšanu zaudēšana, vienpusēja izlikšana u.tml. Ja punkts vienlaikus pārkāpj likumu UN rada zaudējumus, tas ir "kritisks".
+2) "bridinajums" = LIKUMA PĀRKĀPUMS BEZ TIEŠA ZAUDĒJUMA: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), bet nerada tiešu finansiālu vai citu zaudējumu (piem., formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana bez naudas sekām). Ja šaubies, vai tas ir likuma pārkāpums, un zaudējumu nav, liec šeit.
+3) "apsverams" = PIEVIENOJAMS VAI PRECIZĒJAMS PUNKTS: punkts, kura līgumā NAV un kuru ieteicams pievienot (atrasts=false), vai kas nav līdz galam izrunāts: nenoteikti termini, nepilnīgi definēti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi, un nav ne zaudējumu, ne likuma pārkāpuma.
+4) "nav": kritērijs izpildīts un problēmu nav.
 Valodas, gramatikas un pareizrakstības kļūdas šeit NEVĒRTĒ (tās izvērtē cits modulis).
 
 TUKŠIE LAUKI: tukši lauki, kas jāaizpilda parakstot un kas ir personas vai identifikācijas dati (vārdi, personas kodi, adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, paraksti, noslēgšanas vieta un datums), NAV kļūda, un tos neatzīmē. Finansiāli vai juridiski būtiski tukši lauki (īres summa, depozīta summa, termiņi, procenti, uzteikuma termiņš) JĀATZĪMĒ. Ja līgumā VISPĀR nav vietas svarīgiem datiem (piem., kur maksāt īri), tas jāatzīmē.
@@ -104,7 +104,7 @@ NOTEIKUMI:
 - Atgriez vismaz vienu ierakstu katram kritērija id, tādā secībā kā sarakstā. Neizlaid nevienu id.
 - VAIRĀKAS PROBLĒMAS: ja kritērijam ir vairākas atsevišķas problēmas (dažādos punktos vai dažādi pārkāpumi vienā punktā), atgriez katru kā ATSEVIŠĶU ierakstu ar to pašu id (ne "papildus"). Nekad nesavieno vairākus punktus vienā ierakstā un nekad neierobežo atradumu skaitu.
 - Vienā līguma punktā var būt vairākas dažāda līmeņa problēmas: katrai atsevišķs ieraksts.
-- "atrasts": true, ja līgumā ir punkts par šo tēmu; false, ja tēmas līgumā nav. Ja tēmas nav, bet likums to prasa, riska_limenis nedrīkst būt zemāks par kritērijā norādīto "ja trūkst" līmeni.
+- "atrasts": true, ja līgumā ir punkts par šo tēmu; false, ja tēmas līgumā nav. Ja tēmas nav, riska_limenis nedrīkst būt zemāks par kritērijā norādīto "ja trūkst" līmeni (parasti "apsverams" = ieteicams pievienot).
 - "originalais_teksts": precīzs, burtisks citāts no līguma (kopē rakstzīmi pa rakstzīmei, līdz 300 rakstzīmēm; ar "..." vari izlaist vidu). Ja atrasts=false, atstāj "".
 - "punkts": tikai līguma punkta numurs (piemēram "4.3"), ja zināms, citādi "".
 - "problema": konkrēti: kāpēc tas ir risks (kurš likums vai kāds zaudējums vai kas nav izrunāts), 1–2 teikumi.
@@ -128,14 +128,14 @@ Katram punktam (pēc id):
 - "pamatojums": 1 teikums, kurš pants (vai kurš finansiālais zaudējums) apstiprina vai noraida risku.
 - "verdikts":
     "apstiprinats" - punkts tiešām pārkāpj konkrētu likuma pantu VAI rada nepamatotus finansiālus zaudējumus;
-    "pazeminat_bridinajums" - nav skaidra pārkāpuma, bet punkts ir neskaidrs vai nepilnīgs;
-    "pazeminat_apsverams" - punkts ir likumīgs, bet vienai pusei neizdevīgs.
-  Punktiem, kas atzīmēti kā brīdinājums, vienmēr raksti "apstiprinats" (tev tikai jāatrod panti).
+    "pazeminat_apsverams" - punkts atzīmēts kā likuma pārkāpums (brīdinājums), bet NAV pārkāpuma un zaudējumu: tas ir tikai neskaidrs, nepilnīgs vai vienai pusei neizdevīgs.
+  Punktiem, kas atzīmēti kā "kritisks" (finansiāls vai cits zaudējums), vienmēr raksti "apstiprinats" (tev tikai jāatrod panti).
+  Brīdinājumu pazemini TIKAI tad, ja vari nosaukt iemeslu, kāpēc likuma pants netiek pārkāpts; citādi raksti "apstiprinats".
 - "panti": masīvs ar pantiem, kas šo punktu tieši regulē: [{"likums": "DTIL" vai "CL", "nr": panta numurs}]. Drīksti norādīt TIKAI pantus, kas ir sniegtajā likumu tekstā. Ja neesi pārliecināts, atstāj tukšu. Neizdomā pantu numurus.
 
 JSON STRUKTŪRA:
 {"kopsavilkums": "...", "items": [{"id": "...", "pamatojums": "...", "verdikts": "...", "panti": []}]}
-"kopsavilkums": 1–2 teikumi atskaites valodā, kuros ņemti vērā TIKAI pēc pārbaudes palikušie kritiskie riski: vai līgumu drīkst parakstīt un kāds ir galvenais risks.
+"kopsavilkums": 1–2 teikumi atskaites valodā, kuros ņemti vērā TIKAI pēc pārbaudes palikušie riska faktori un likuma pārkāpumi: vai līgumu drīkst parakstīt un kāds ir galvenais risks.
 Atbildes tekstus ("pamatojums", "kopsavilkums") raksti atskaites valodā.
 """
 LAYER2_LAW_HEADER = (
@@ -443,7 +443,7 @@ def _clean_extras(extras, contract_norm):
 
 
 SWEEP_SYSTEM = """PAPILDU PĀRBAUDE. Tu esi Latvijas īres tiesību eksperts. Tev ir dots līgums un saraksts ar problēmām, kas jau atrastas. Tavs uzdevums ir atrast visu, kas VĒL IR IZLAISTS. Izej cauri līgumam punkts pa punktam.
-Meklē: (1) likumu pārkāpumus (kritisks); (2) kas var nest finansiālus vai citus zaudējumus (bridinajums); (3) kas nav līdz galam izrunāts vai var radīt pārpratumus, pretrunas starp punktiem (apsverams).
+Meklē: (1) kas var nest finansiālus vai citus zaudējumus, arī ja tas pārkāpj likumu (kritisks); (2) likumu pārkāpumus bez tieša zaudējuma (bridinajums); (3) trūkstošus punktus, ko ieteicams pievienot, neskaidrus formulējumus un pretrunas starp punktiem (apsverams).
 Neatkārto jau atrastās problēmas un neatzīmē valodas kļūdas. Tukši personas dati (vārdi, personas kodi, adreses, konti, paraksti, vieta un datums) nav kļūda.
 Atgriez TIKAI derīgu JSON: {"papildus": [ieraksti]}. Katrs ieraksts: {"id": "CITS" vai tuvākais kritērija id, "atrasts": true, "riska_limenis": "apsverams|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "burtisks citāts līdz 300 rakstzīmēm", "problema": "", "ko_mainit": "", "labojums": "gatavs teksts līguma valodā bez pēdiņām", "labojums_tulkojums": ""}.
 Ja nekā jauna nav, atgriez {"papildus": []}."""
@@ -491,7 +491,7 @@ def run_layer2(ctx, findings):
 
 
 def apply_layer2(ctx, findings, data):
-    """Pielieto verifikāciju. Nekad neizdzēš atradumu: kritisko drīkst tikai pazemināt."""
+    """Pielieto verifikāciju. Nekad neizdzēš atradumu; riska faktoru (kritisks) nepazemina, likuma pārkāpumu drīkst pazemināt tikai uz apsverams."""
     verified = 0
     by_uid = {f["_uid"]: f for f in findings}
     valid = {code: (ctx.valid_articles(code) if ctx.valid_articles else set()) for code in ("DTIL", "CL")}
@@ -510,11 +510,9 @@ def apply_layer2(ctx, findings, data):
                 arts.append((code, nr))
         f["articles"] = arts[:4]
         verdict = _strip_diacritics(str(raw.get("verdikts", ""))).lower()
-        if f["level"] == "kritisks":
-            if "apsverams" in verdict:
-                f["level"] = "apsverams"
-            elif "bridinaj" in verdict:
-                f["level"] = "bridinajums"
+        # 🔴 (zaudējumi) netiek pazemināti; 🟡 (likuma pārkāpums) pazemina tikai ar skaidru verdiktu
+        if f["level"] == "bridinajums" and "apsverams" in verdict:
+            f["level"] = "apsverams"
     return verified
 
 
