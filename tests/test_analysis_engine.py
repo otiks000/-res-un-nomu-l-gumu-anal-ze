@@ -223,5 +223,29 @@ class Cache(unittest.TestCase):
                 self.assertIsNone(c.get(h, *other))
 
 
+class CompareTests(unittest.TestCase):
+    A = "## 🔴 K\nK1. 4.3. (Depozīts): slikti [[DTIL 12]]\n> „teksts”\n\n## 🟡 B\nB1. 6.1. (Ieeja): ok\n\n## 🟢 R\nK1. 4.3.: Mainīt. Piedāvātais: „Labāk”\n"
+    B = "## 🔴 K\nK1. 4.3. (Depozīts): slikti\n\n## 🟡 B\n–\n"
+
+    def test_parse(self):
+        items = ae.parse_report(self.A)
+        self.assertEqual([i["code"] for i in items], ["K1", "B1"])
+        self.assertEqual(items[0]["fix"], "Labāk")
+        self.assertEqual(items[0]["quote"], "„teksts”")
+
+    def test_compare(self):
+        r = ae.compare_reports([self.A, self.B, self.A])
+        st = {row["ref"]: row["status"] for row in r["rows"]}
+        self.assertEqual(st["4.3. (Depozīts)"], "stable")
+        self.assertEqual(st["6.1. (Ieeja)"], "partial")
+        self.assertAlmostEqual(r["stability"], 0.5)
+        self.assertEqual(r["counts"][1]["bridinajums"], 0)
+
+    def test_level_change(self):
+        b = self.A.replace("## 🔴 K\nK1.", "## 🔴 K\nX9.").replace("## 🟡 B\nB1. 6.1.", "## 🟡 B\nB1. 4.3. (Depozīts): z\nB2. 6.1.")
+        r = ae.compare_reports([self.A, b])
+        self.assertIn("level", {row["status"] for row in r["rows"]})
+
+
 if __name__ == "__main__":
     unittest.main()

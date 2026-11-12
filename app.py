@@ -1313,7 +1313,7 @@ def legal_notes_text():
     return "\n".join(f"- {c} {n}. pants: {t}" for (c, n), t in ARTICLE_NOTES.items())
 
 
-def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER, progress=None):
+def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER, progress=None, store=True):
     """Pilna analīze: SQLite kešs -> 1. slānis (kritēriju grupas, objektīvā klasifikācija Python kodā) -> korektūra.
     Atslēga SQLite kešā = līguma SHA-256 + prompta versija + modelis + atskaites valoda.
     nonce != 0 (poga "Jauna analīze") apiet kešu un pārraksta ierakstu."""
@@ -1351,7 +1351,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
     analysis_all = main_text + ("\n\n" + proof_text if proof_text.strip() else "")
     cost = cost_usd(ctx.tokens_in, ctx.tokens_out)
     source = (laws_source + " | " + info + f" | 💲≈${cost:.3f}")
-    if ctx.complete and proof_ok:
+    if ctx.complete and proof_ok and store:     # salīdzināšanas režīmā atsevišķas analīzes kešā netiek rakstītas
         db.put(chash, pver, MODEL_PRIMARY, lang_name, {"analysis": analysis_all, "laws_source": source})
     return analysis_all, source
 
@@ -1585,6 +1585,13 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 test_mode = st.checkbox(T["test_mode_label"], key="test_mode")
 force_new = st.checkbox(T["force_new_label"], key="force_new")
+compare_mode = st.checkbox(
+    T.get("compare_mode_label", "🔬 Compare mode: analyse the file 3 separate times and compare the points"),
+    key="compare_mode",
+    help=T.get("compare_mode_help", "Runs the full analysis 3 times (3× the cost, cache is bypassed) and shows which points "
+                                    "are stable, which differ in level and which appear only in some runs."),
+)
+COMPARE_RUNS = 3
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
 
@@ -1833,6 +1840,64 @@ def render_dashboard(text):
             f'<div style="font-size:0.85rem;font-weight:600;opacity:0.95">{name}</div>{sub}</div>',
             unsafe_allow_html=True,
         )
+
+
+COMPARE_ICON = {"kritisks": "🔴", "bridinajums": "🟡", "nauda": "💶", None: "—"}
+COMPARE_STATUS = {
+    "stable": ("🟢", "Stabils: visās analīzēs ar to pašu līmeni", "Stable: found in every run at the same level"),
+    "level": ("🟠", "Atšķiras līmenis: atrasts visur, bet ar dažādu svarīgumu",
+              "Level differs: found in every run, but with different severity"),
+    "partial": ("🔴", "Nestabils: atrasts tikai dažās analīzēs", "Unstable: found in only some runs"),
+}
+
+
+def render_compare(cmp):
+    """Viena faila vairākas analīzes: kopsavilkums, punktu tabula un ieteikumi uzlabojumiem."""
+    lv = T["report_lang_name"] == "latviešu"
+    n = cmp["runs"]
+    rows = cmp["rows"]
+    with st.expander("🔬 " + ("Analīžu salīdzinājums" if lv else "Analysis comparison") + f" ({n}×)", expanded=True):
+        st.metric("Stabilitāte" if lv else "Stability", f"{cmp['stability'] * 100:.0f}%",
+                  help="Punktu daļa, kas atrasta visās analīzēs ar to pašu līmeni." if lv else
+                       "Share of points found in every run at the same level.")
+        cnt = ["| | " + " | ".join(f"#{i + 1}" for i in range(n)) + " |", "|---|" + "---|" * n]
+        for lvl in ("kritisks", "bridinajums", "nauda"):
+            cnt.append(f"| {COMPARE_ICON[lvl]} | " + " | ".join(str(c[lvl]) for c in cmp["counts"]) + " |")
+        st.markdown("\n".join(cnt))
+        head = ("| Punkts | " if lv else "| Clause | ") + " | ".join(f"#{i + 1}" for i in range(n)) + " | " + ("Statuss" if lv else "Status") + " |"
+        lines = [head, "|---|" + "---|" * n + "---|"]
+        for r in rows:
+            lines.append(f"| {r['ref']} | " + " | ".join(COMPARE_ICON[x] for x in r["levels"]) + f" | {COMPARE_STATUS[r['status']][0]} |")
+        st.markdown("\n".join(lines) if rows else "–")
+        st.caption(" · ".join(f"{v[0]} {v[1] if lv else v[2]}" for v in COMPARE_STATUS.values()))
+        shaky = [r for r in rows if r["status"] != "stable"]
+        st.markdown("**" + ("Kā uzlabot" if lv else "How to improve") + "**")
+        if not shaky:
+            st.success("Visi punkti ir stabili: kritēriji darbojas vienādi katrā analīzē." if lv else
+                       "All points are stable: the criteria behave the same in every run.")
+        for r in shaky:
+            lvls = " / ".join(COMPARE_ICON[x] for x in r["levels"])
+            if r["status"] == "partial":
+                tip = ("Atrasts " + f"{r['found']}/{n}" + " analīzēs: kritērijs vai līguma formulējums ir neskaidrs. "
+                       "Precizē kritērija aprakstu (CHECKLIST) vai līguma punktu; ja punkts ir reāls, tas jāpadara obligāts.") if lv else (
+                       f"Found in {r['found']}/{n} runs: the criterion or the contract wording is ambiguous. "
+                       "Sharpen the CHECKLIST description or the clause; if the point is real, make it mandatory.")
+            else:
+                tip = ("Līmenis mainās: jā/nē pazīmes modelis atbild atšķirīgi. Precizē pazīmju definīcijas (classify), lai līmeni nosaka skaidrs noteikums.") if lv else (
+                       "Level changes: the model answers the yes/no flags differently. Sharpen the flag definitions (classify) so a clear rule decides the level.")
+            with st.expander(f"{COMPARE_STATUS[r['status']][0]} {r['ref']}  {lvls}"):
+                st.markdown(tip)
+                for i in range(n):
+                    if r["levels"][i]:
+                        st.markdown(f"**#{i + 1} {COMPARE_ICON[r['levels'][i]]}** {r['problems'][i]}"
+                                    + (f"  \n*{r['fixes'][i]}*" if r["fixes"][i] else ""))
+                    else:
+                        st.markdown(f"**#{i + 1}** — " + ("nav atrasts" if lv else "not found"))
+        with st.expander("📄 " + ("Visas atskaites" if lv else "All reports")):
+            tabs = st.tabs([f"#{i + 1}" for i in range(n)])
+            for t, rep_text in zip(tabs, cmp.get("reports", [])):
+                with t:
+                    st.markdown(rep_text)
 
 
 def render_sections(text, only=None, skip=()):
@@ -3413,13 +3478,30 @@ if analyze_button:
             def _show_partial(md, _stage):
                 live.markdown(linkify(md))
 
+            compare_data = None
             try:
                 with st.spinner(T["spinner_analysis"]):
-                    analysis_all, laws_source = analyze_contract(
-                        api_key, T["report_lang_name"], kind, content,
-                        datetime.datetime.now().timestamp() if force_new else 0,
-                        progress=_show_partial,
-                    )
+                    if compare_mode:
+                        # 3 neatkarīgas analīzes (kešs apiets, nonce katrai atšķirīgs), rezultāts netiek keširāts
+                        base_nonce = datetime.datetime.now().timestamp()
+                        runs = []
+                        for _i in range(COMPARE_RUNS):
+                            banner.empty()
+                            _show_banner(f"{T['live_provisional']} ({_i + 1}/{COMPARE_RUNS})", "#d97706")
+                            runs.append(analyze_contract(
+                                api_key, T["report_lang_name"], kind, content, base_nonce + _i + 1,
+                                progress=_show_partial, store=False,
+                            ))
+                        analysis_all, laws_source = runs[0]
+                        compare_data = ae.compare_reports([r[0] for r in runs])
+                        compare_data["reports"] = [r[0] for r in runs]
+                        compare_data["sources"] = [r[1] for r in runs]
+                    else:
+                        analysis_all, laws_source = analyze_contract(
+                            api_key, T["report_lang_name"], kind, content,
+                            datetime.datetime.now().timestamp() if force_new else 0,
+                            progress=_show_partial,
+                        )
             finally:
                 banner.empty()
             st.session_state["just_done"] = True
@@ -3439,6 +3521,8 @@ if analyze_button:
                     "analysis": analysis_all,
                     "laws_source": laws_source,
                 })
+                if compare_data:
+                    result["compare"] = compare_data
                 # Saglabā, lai analīze nepazustu pēc lejupielādes
                 session_add(
                     result, st.session_state.get("terms", {}),
@@ -3485,6 +3569,8 @@ if "result" in st.session_state:
             note = saved.get("cache_note", "")
             if note:
                 st.info(T["test_note"] if note.startswith("🧪") else note)
+            if saved.get("compare"):
+                render_compare(saved["compare"])
             render_dashboard(loc)
             render_sections(loc, skip=("🟢", "⚪"))        # 📊 🔴 🟡 🔵
             render_sections(loc, only=("🟢",))             # 🟢 ieteiktie labojumi visiem K, B, A

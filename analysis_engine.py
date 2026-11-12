@@ -777,3 +777,76 @@ def run_proofread(ctx, labels, start=1, with_head=True):
         out.append(line)
     return "\n".join(out) + "\n", True
 
+
+
+# ---------------------------------------------------------------
+# Salīdzināšanas režīms: viena faila vairākas neatkarīgas analīzes -> kā atšķiras punkti
+# ---------------------------------------------------------------
+_ITEM_RE = re.compile(r"^\s*([KBM])(\d+)\.\s+(.*?):\s+(.*)$")
+_LEVEL_BY_LETTER = {"K": "kritisks", "B": "bridinajums", "M": "nauda"}
+
+
+def parse_report(text):
+    """No gatavas markdown atskaites izvelk 🔴/🟡/💶 punktus: [{level, code, ref, key, problem, quote, fix}]."""
+    items, by_code, cur, in_recs = [], {}, None, False
+    for line in (text or "").split("\n"):
+        if line.startswith("## "):
+            in_recs = "🟢" in line
+            cur = None
+            continue
+        m = _ITEM_RE.match(line)
+        if m:
+            letter, num, ref, rest = m.groups()
+            code = f"{letter}{num}"
+            if in_recs:                               # 🟢 ieteikums pie jau atrasta punkta
+                if code in by_code:
+                    fix = re.search(r"[:：]\s*„(.+?)”", rest)
+                    by_code[code]["fix"] = _clean(fix.group(1) if fix else rest)
+                cur = None
+                continue
+            if letter not in _LEVEL_BY_LETTER:
+                cur = None
+                continue
+            title = re.search(r"\(([^)]*)\)", ref)
+            key = (clause_key(ref), _norm_text(title.group(1)) if title else _norm_text(ref))
+            cur = {"level": _LEVEL_BY_LETTER[letter], "code": code, "ref": ref.strip(), "key": key,
+                   "problem": _clean(re.sub(r"\[\[[^\]]*\]\]", "", rest)), "quote": "", "fix": ""}
+            items.append(cur)
+            by_code[code] = cur
+        elif cur and line.startswith(">") and not cur["quote"]:
+            cur["quote"] = _clean(line.lstrip("> "))
+    return items
+
+
+def compare_reports(reports):
+    """Salīdzina N atskaites (tekstus). Atgriež:
+    counts - [{level: skaits}] katrai analīzei;
+    rows   - katram punktam (clause+kritērijs): ref, levels (pa analīzēm, None ja nav atrasts), problems, fixes, status;
+    status: 'stable' (visās analīzēs, viens līmenis) | 'level' (visās, bet atšķirīgs līmenis) | 'partial' (ne visās);
+    stability - stabilo punktu daļa 0..1."""
+    n = len(reports)
+    parsed = [parse_report(r) for r in reports]
+    counts = [{lvl: sum(1 for it in p if it["level"] == lvl) for lvl in _LEVEL_BY_LETTER.values()} for p in parsed]
+    rows = {}
+    for i, p in enumerate(parsed):
+        for it in p:
+            row = rows.setdefault(it["key"], {"key": it["key"], "ref": it["ref"], "levels": [None] * n,
+                                              "problems": [""] * n, "fixes": [""] * n, "quotes": [""] * n})
+            if row["levels"][i] is None:              # tas pats punkts atkārtoti vienā analīzē - pirmais uzvar
+                row["levels"][i] = it["level"]
+                row["problems"][i] = it["problem"]
+                row["fixes"][i] = it["fix"]
+                row["quotes"][i] = it["quote"]
+    out = []
+    for row in sorted(rows.values(), key=lambda r: r["key"]):
+        found = [l for l in row["levels"] if l]
+        if len(found) < n:
+            row["status"] = "partial"
+        elif len(set(found)) > 1:
+            row["status"] = "level"
+        else:
+            row["status"] = "stable"
+        row["found"] = len(found)
+        out.append(row)
+    stable = sum(1 for r in out if r["status"] == "stable")
+    return {"runs": n, "counts": counts, "rows": out, "stability": (stable / len(out)) if out else 1.0}
