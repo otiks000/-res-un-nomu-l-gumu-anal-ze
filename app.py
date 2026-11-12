@@ -1,6 +1,5 @@
 import streamlit as st
 import google.generativeai as genai
-from google.generativeai import caching
 import docx
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -143,7 +142,8 @@ TR_EXTRA = {
         "report_lang_name": "latviešu",
         "paste_label": "Vai ielīmē līguma tekstu šeit (ja ielīmēts teksts, fails netiek izmantots):",
         "h_overall": "Kopējais novērtējums", "h_crit": "Riska faktori (finansiāli un citi zaudējumi)", "h_warn": "Brīdinājumi (likuma pārkāpumi, neierakstīti vai neskaidri punkti)",
-        "h_recs": "Ieteiktie labojumi (kā labot katru riska faktoru un brīdinājumu)", "h_border": "Apsveramie punkti (ieteicams pievienot vai precizēt)", "h_neutral": "Neitrālās piezīmes (gramatikas un citas kļūdas)",
+        "h_recs": "Ieteiktie labojumi (kā labot katru riska faktoru un brīdinājumu)", "h_border": "Apsveramie punkti (ieteicams pievienot vai precizēt)", "h_neutral": "Neitrālās piezīmes (citi nosacījumi un gramatikas kļūdas)",
+        "h_money": "Naudas nosacījumi (neitrāls saraksts bez vērtējuma)",
         "no_proof_errors": "Korektūras kļūdu netika atrasts.",
         "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
         "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
@@ -159,7 +159,8 @@ TR_EXTRA = {
         "report_lang_name": "angļu",
         "paste_label": "Or paste the contract text here (if text is pasted, the file is not used):",
         "h_overall": "Overall assessment", "h_crit": "Risk factors (financial and other losses)", "h_warn": "Warnings (legal violations, missing or unclear points)",
-        "h_recs": "Suggested corrections (how to fix each point found)", "h_border": "Points to consider (recommended to add or clarify)", "h_neutral": "Neutral notes (grammar and other errors)",
+        "h_recs": "Suggested corrections (how to fix each point found)", "h_border": "Points to consider (recommended to add or clarify)", "h_neutral": "Neutral notes (other terms and grammar errors)",
+        "h_money": "Money terms (neutral list, no judgement)",
         "no_proof_errors": "No proofreading errors were found.",
         "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
         "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
@@ -176,7 +177,8 @@ TR_EXTRA = {
         "report_lang_name": "krievu",
         "paste_label": "Или вставьте текст договора сюда (если текст вставлен, файл не используется):",
         "h_overall": "Общая оценка", "h_crit": "Факторы риска (финансовые и другие убытки)", "h_warn": "Предупреждения (нарушения закона, отсутствующие или неясные пункты)",
-        "h_recs": "Рекомендуемые исправления (как исправить каждый найденный пункт)", "h_border": "Пункты для рассмотрения (рекомендуется добавить или уточнить)", "h_neutral": "Нейтральные замечания (грамматика и другие ошибки)",
+        "h_recs": "Рекомендуемые исправления (как исправить каждый найденный пункт)", "h_border": "Пункты для рассмотрения (рекомендуется добавить или уточнить)", "h_neutral": "Нейтральные замечания (другие условия и грамматические ошибки)",
+        "h_money": "Денежные условия (нейтральный список, без оценки)",
         "no_proof_errors": "Ошибок при корректуре не найдено.",
         "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
         "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
@@ -1292,41 +1294,6 @@ def det_config(**extra):
     return cfg
 
 
-# ---------------------------------------------------------------
-# Gemini Context Caching (tikai 2. slānim: verifikācijas instrukcija + likumu teksts, TTL 24 stundas)
-# Ieslēdz ar USE_CONTEXT_CACHE = True, kad izmaksu žurnāls (🪙 atskaites rindā) rāda, ka likumu teksts ir liela daļa no rēķina.
-# Ja kešs nav pieejams (par maz žetonu, modelis neatbalsta), automātiski tiek izmantots parasts izsaukums.
-# ---------------------------------------------------------------
-CACHE_MODEL = "models/gemini-3.8-flash"  # modelim jāatbalsta Context Caching
-CACHE_TTL = datetime.timedelta(hours=24)
-USE_CONTEXT_CACHE = False
-
-
-@st.cache_resource(ttl=datetime.timedelta(hours=23, minutes=30), show_spinner=False)
-def create_prompt_cache(api_key, system_text, laws_block):
-    """Izveido Gemini kešatmiņu. Streamlit to neveido atkārtoti 23,5 h laikā (Gemini kešatmiņas TTL ir 24 h)."""
-    genai.configure(api_key=api_key)
-    return caching.CachedContent.create(
-        model=CACHE_MODEL,
-        display_name="ires-liguma-skeneris",
-        system_instruction=system_text,
-        contents=[laws_block],
-        ttl=CACHE_TTL,
-    )
-
-
-def get_cached_model(api_key, generation_config):
-    """Atgriež modeli ar kešatmiņu vai None, ja kešatmiņu nevar izmantot."""
-    laws_text, _ = load_laws()
-    if not laws_text:
-        return None
-    try:
-        cache = create_prompt_cache(api_key, ae.LAYER2_SYSTEM, ae.LAYER2_LAW_HEADER + laws_text)
-        return genai.GenerativeModel.from_cached_content(cached_content=cache, generation_config=generation_config)
-    except Exception:
-        return None
-
-
 def _resp_text(resp):
     try:
         return resp.text or ""
@@ -1339,7 +1306,7 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v10-law-red-warn-unclear"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v11-objective-money"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
 def legal_notes_text():
@@ -1347,7 +1314,7 @@ def legal_notes_text():
 
 
 def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER, progress=None):
-    """Pilna analīze: SQLite kešs -> 1. slānis (checklist JSON) -> 2. slānis (likumu pārbaude) -> korektūra.
+    """Pilna analīze: SQLite kešs -> 1. slānis (kritēriju grupas, objektīvā klasifikācija Python kodā) -> korektūra.
     Atslēga SQLite kešā = līguma SHA-256 + prompta versija + modelis + atskaites valoda.
     nonce != 0 (poga "Jauna analīze") apiet kešu un pārraksta ierakstu."""
     genai.configure(api_key=_api_key)
@@ -1365,23 +1332,9 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
         resp = GeminiModel(det_config(response_mime_type="application/json", max_output_tokens=max_tokens)).generate_content(parts)
         return _resp_text(resp), _resp_usage(resp)
 
-    def llm_verify(system_text, parts, max_tokens):
-        cfg = det_config(response_mime_type="application/json", max_output_tokens=max_tokens)
-        if USE_CONTEXT_CACHE:
-            cached = get_cached_model(_api_key, cfg)
-            if cached is not None:
-                try:
-                    resp = cached.generate_content(parts)
-                    return _resp_text(resp), _resp_usage(resp)
-                except Exception:
-                    pass
-        prompt = system_text + "\n\n" + ae.LAYER2_LAW_HEADER + laws_text + "\n\n" + "\n".join(parts)
-        resp = GeminiModel(cfg).generate_content(prompt)
-        return _resp_text(resp), _resp_usage(resp)
-
     ctx = ae.AnalysisContext(
         kind=kind, content=content, lang_name=lang_name, labels=T,
-        llm=llm, llm_verify=llm_verify if laws_text else None,
+        llm=llm,
         valid_articles=lambda code: set(article_index(code).keys()),
         legal_notes=legal_notes_text(), progress=progress,
     )
@@ -1392,12 +1345,12 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
 
     # Neitrālā korektūra (2 caurlaides, JSON; Python numurē)
     try:
-        proof_text, proof_ok = ae.run_proofread(ctx, T)
+        proof_text, proof_ok = ae.run_proofread(ctx, T, start=ctx.neutral_count + 1, with_head=ctx.neutral_count == 0)
     except Exception:
         proof_text, proof_ok = "", False
     analysis_all = main_text + ("\n\n" + proof_text if proof_text.strip() else "")
     cost = cost_usd(ctx.tokens_in, ctx.tokens_out)
-    source = (laws_source + " | " + info + f" | 💲≈${cost:.3f}" + (" | ⚡ cache" if USE_CONTEXT_CACHE else ""))
+    source = (laws_source + " | " + info + f" | 💲≈${cost:.3f}")
     if ctx.complete and proof_ok:
         db.put(chash, pver, MODEL_PRIMARY, lang_name, {"analysis": analysis_all, "laws_source": source})
     return analysis_all, source
@@ -1498,6 +1451,8 @@ def generate_pretty_docx(analysis_text):
                 color = RGBColor(217, 119, 6)
             elif "Ieteikumi" in line_str or "🟢" in line_str:
                 color = RGBColor(22, 163, 74)
+            elif "Naudas" in line_str or "💶" in line_str:
+                color = RGBColor(8, 145, 178)
             elif "Neitrāl" in line_str or "⚪" in line_str:
                 color = RGBColor(100, 116, 139)
             elif "Apsver" in line_str or "🔵" in line_str:
@@ -1600,6 +1555,8 @@ def generate_pretty_pdf(analysis_text):
                 pdf.set_text_color(217, 119, 6)
             elif "Ieteikumi" in raw or "🟢" in raw:
                 pdf.set_text_color(22, 163, 74)
+            elif "Naudas" in raw or "💶" in raw:
+                pdf.set_text_color(8, 145, 178)
             elif "Neitrāl" in raw or "⚪" in raw:
                 pdf.set_text_color(100, 116, 139)
             elif "Apsver" in raw or "🔵" in raw:
@@ -1646,7 +1603,7 @@ def recs_last(text):
     rest = [p for p in parts if p not in recs]
     pos = len(rest)
     for i, p in enumerate(rest):
-        if p.startswith("## ") and any(e in p.split("\n", 1)[0] for e in ("🔵", "🔴", "🟡", "📊")):
+        if p.startswith("## ") and any(e in p.split("\n", 1)[0] for e in ("🔵", "🔴", "🟡", "💶", "📊")):
             pos = i + 1
     recs = [r if r.endswith("\n\n") else r.rstrip("\n") + "\n\n" for r in recs]
     rest = [r if (not r.startswith("## ") or r.endswith("\n\n")) else r.rstrip("\n") + "\n\n" for r in rest]
@@ -1836,7 +1793,7 @@ def build_downloads(report_text):
 # ---------------------------------------------------------------
 # Kopsavilkuma panelis (kartītes) un sakļaujamās sadaļas
 # ---------------------------------------------------------------
-SECTION_CODES = {"🔴": "K", "🟡": "B", "🔵": "A", "⚪": "N"}
+SECTION_CODES = {"🔴": "K", "🟡": "B", "💶": "M", "🔵": "A", "⚪": "N"}
 
 
 def split_sections(text):
@@ -1861,13 +1818,13 @@ def count_items(head, body):
 
 
 def render_dashboard(text):
-    totals = {"🔴": 0, "🟡": 0, "⚪": 0}
+    totals = {"🔴": 0, "🟡": 0, "💶": 0, "⚪": 0}
     for head, body in split_sections(text):
         for emoji in totals:
             if head and emoji in head:
                 totals[emoji] += count_items(head, body)
-    cards = [("🔴", "#dc2626", T["h_crit"]), ("🟡", "#d97706", T["h_warn"]), ("⚪", "#6b7280", T["h_neutral"])]
-    for col, (emoji, color, label) in zip(st.columns(3), cards):
+    cards = [("🔴", "#dc2626", T["h_crit"]), ("🟡", "#d97706", T["h_warn"]), ("💶", "#0891b2", T["h_money"]), ("⚪", "#6b7280", T["h_neutral"])]
+    for col, (emoji, color, label) in zip(st.columns(4), cards):
         name, _, sub = label.partition(" (")                # "Riska faktori (finansiāli un citi zaudējumi)"
         sub = f'<div style="font-size:0.75rem;opacity:0.75">{sub.rstrip(")")}</div>' if sub else ""
         col.markdown(
@@ -3082,7 +3039,7 @@ CHAT_CSS = """
 # Valodas maiņa pēc analīzes: virsraksti, pantu nosaukumi, avoti un atskaites tiek pārslēgti bez jaunas analīzes (bez Gemini)
 # Pārraksta iepriekšējās render_history_picker, render_law_help un law_tip_map definīcijas
 # ---------------------------------------------------------------
-HEAD_EMOJI_KEYS = {"📊": "h_overall", "🔴": "h_crit", "🟡": "h_warn", "🟢": "h_recs", "🔵": "h_border", "⚪": "h_neutral"}
+HEAD_EMOJI_KEYS = {"📊": "h_overall", "🔴": "h_crit", "🟡": "h_warn", "🟢": "h_recs", "🔵": "h_border", "💶": "h_money", "⚪": "h_neutral"}
 
 
 def localize_analysis(text):
@@ -3358,6 +3315,10 @@ B6. 4.5. punkts (Depozīta atmaksa): Termiņš 1 mēnesis ir pieļaujams, bet ga
 
 B7. 1. sadaļa (Bankas konts): Īrniekam nav vietas bankas rekvizītiem, uz kuriem atmaksāt drošības naudu.
 
+## 💶 {T['h_money']}
+M1. 3.1. punkts (Īres maksa): Īres maksa mēnesī, maksājama līdz katra mēneša 5. datumam.
+M2. 4.5. punkts (Depozīta atmaksa): Drošības naudu atmaksā 1 mēneša laikā pēc telpu nodošanas.
+
 ## 🟢 {T['h_recs']}
 K1. 2.2. punkts: Pievienot punktu par īres tiesību nostiprināšanu zemesgrāmatā. {T['label_proposed']}: „Puses vienojas nostiprināt īres tiesības zemesgrāmatā. Izīrētājs 10 darba dienu laikā paraksta nostiprinājuma lūgumu.”
 
@@ -3380,8 +3341,6 @@ B7. 1. sadaļa: Pievienot vietu īrnieka bankas rekvizītiem. {T['label_proposed
 B5. 7.1. punkts: Atstāt vienu mehānismu: vai nu procentus, vai līgumsodu. {T['label_proposed']}: „Par maksājuma kavējumu īrnieks maksā līgumsodu 0,1% dienā, kopā ne vairāk kā 10% no parāda.”
 
 A1. 4.5. punkts: Saīsināt atmaksas termiņu. {T['label_proposed']}: „Izīrētājs atgriež drošības naudu 10 darba dienu laikā pēc nodošanas-pieņemšanas akta parakstīšanas.”
-
-B7. 1. sadaļa: Pievienot īrnieka bankas rekvizītus. {T['label_proposed']}: „Īrnieka konts drošības naudas atmaksai: IBAN ____________________.”
 
 ## ⚪ {T['h_neutral']}
 N1. 2.1. punkts: Vārds „istabu” rakstīts ar divām atstarpēm.
