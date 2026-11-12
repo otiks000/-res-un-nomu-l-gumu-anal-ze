@@ -96,7 +96,9 @@ LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbau
 MĒRĶIS: atrast VISUS problemātiskos punktus, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus kritērijus.
 
 KLASIFIKĀCIJA (riska_limenis). Katram atradumam piemēro PRIORITĀTI no augšas uz leju, un izvēlies tikai VIENU līmeni:
-1) "kritisks" = RISKA FAKTORS: (a) JEBKURŠ LIKUMA PĀRKĀPUMS: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), arī ja tiešu zaudējumu nav (formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana u.tml.); (b) VISS, kas var radīt finansiālus zaudējumus, arī ja likums nav pārkāpts: neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, vienpusēja īres maksas vai citu maksājumu celšana, vienpusēja izlikšana, tiesību uz īres nostiprināšanu zaudēšana u.tml. VISS, kas saistīts ar naudu (īre, depozīts, soda naudas, procenti, remonti, komunālie maksājumi), ir "kritisks", ja tas ir neizdevīgs īrniekam vai neskaidrs.
+1) "kritisks" = RISKA FAKTORS. Tikai šie gadījumi (slēgts saraksts), pārējo NEKLASIFICĒ kā "kritisks":
+ (a) LIKUMA PĀRKĀPUMS: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), arī ja tiešu zaudējumu nav (formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana u.tml.);
+ (b) NAUDAS RISKS: JEBKURŠ punkts, kas skar naudu (īre, depozīts, soda nauda, procenti, remonti, komunālie un citi maksājumi) un kas ir kaut kas no: tukša vai neskaidra summa, termiņš vai procents; nenosaukti vai neierobežoti maksājumi ("citi maksājumi"); nesamērīgs līgumsods vai procenti; patvaļīga depozīta ieturēšana vai pārāk ilga atmaksa; atbildība par bojājumiem bez vainas vai pierādījumiem; neskaidrs remontu vai komunālo izmaksu sadalījums; vienpusēja maksas celšana; vienpusēja izlikšana vai tiesību uz īri zaudēšana. Ja punkts skar naudu un ir neizdevīgs īrniekam vai neskaidrs, tas ir "kritisks", nevis "bridinajums".
 2) "bridinajums" = BRĪDINĀJUMS: tas, kas NAV likuma pārkāpums un nerada tiešus naudas zaudējumus, bet ir neskaidrs vai nepilnīgs, vai kā līgumā NAV, lai gan tas ir svarīgi (atrasts=false): nenoteikti termini, nepilnīgi definēti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi. Ja šaubies, vai tas ir likuma pārkāpums, un naudas zaudējumu nav, liec šeit.
 3) Līmeni "apsverams" nelieto (izmanto "bridinajums").
 4) "nav": kritērijs izpildīts un problēmu nav.
@@ -119,9 +121,10 @@ NOTEIKUMI:
 - "labojums_tulkojums": labojuma tulkojums atskaites valodā; tukšs, ja līguma valoda sakrīt ar atskaites valodu.
 - Esi rūpīgs un kritisks: labāk atzīmē vairāk potenciālu problēmu nekā mazāk.
 - "kopsavilkums": 1–2 teikumi atskaites valodā: vai līgumu drīkst parakstīt un kāds ir galvenais risks.
+- "skaitli": skaitļi, ko izvelc burtiski no līguma (nekad neaprēķini un neizdomā; ja nav norādīts, null): "ires_summa_mened" (skaitlis), "depozits" (skaitlis), "depozita_atmaksa_darba_dienas" (skaitlis), "soda_likme_diena_proc" (līgumsoda vai nokavējuma procenti, pārrēķināti uz % dienā, ja norādīti citādi; null, ja nav), "tuksi_naudas_lauki" (true, ja ir tukša vai nenoteikta īres, depozīta, soda vai procentu summa/termiņš), "neierobezoti_maksajumi" (true, ja ir maksājumi bez summas vai griestiem, piem. "citi maksājumi").
 
 JSON STRUKTŪRA:
-{"kopsavilkums": "...", "items": [{"id": "...", "atrasts": true, "riska_limenis": "nav|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
+{"kopsavilkums": "...", "skaitli": {"ires_summa_mened": null, "depozits": null, "depozita_atmaksa_darba_dienas": null, "soda_likme_diena_proc": null, "tuksi_naudas_lauki": false, "neierobezoti_maksajumi": false}, "items": [{"id": "...", "atrasts": true, "riska_limenis": "nav|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
 """
 
 # Statiskā daļa (valodas neatkarīga): to var droši ievietot Gemini Context Cache kopā ar likumu tekstu.
@@ -234,6 +237,7 @@ class AnalysisContext:
     tokens_out: int = 0
     notes: list = field(default_factory=list)
     complete: bool = True          # False, ja kāds slānis neizdevās -> rezultātu nekešo
+    figures: dict = field(default_factory=dict)   # skaitļi, ko 1. slānis izvilcis no līguma (robežas pārbauda Python)
     progress: Callable = None      # progress(markdown_vai_None, statusa_teksts): starprezultāts lietotāja saskarnei (neietekmē analīzi)
 
 
@@ -375,6 +379,7 @@ def run_layer1(ctx):
     contract_norm = _norm_text(ctx.content) if ctx.kind == "txt" else None
     data = _ask(ctx, _content_parts(ctx, _layer1_intro(ctx, CHECK_IDS)))
     summary = _clean(data.get("kopsavilkums"))
+    ctx.figures = data.get("skaitli") if isinstance(data.get("skaitli"), dict) else {}
     by_id, extras = {}, []
 
     def absorb(payload):
@@ -522,6 +527,93 @@ def apply_layer2(ctx, findings, data):
 
 
 # ---------------------------------------------------------------
+# Naudas robežas: lēmumus pieņem Python, nevis modelis (stabili rezultāti starp skrējieniem)
+# ---------------------------------------------------------------
+DEPOSIT_MAX_MONTHS = 2          # DTIL 12. pants
+REFUND_MAX_WORKDAYS = 10
+RATE_MAX_PER_DAY = 0.1          # % dienā; augstāk = nesamērīgi (CL 1716., 1717., 1764. pants)
+
+RULE_TEXT = {
+    "latviešu": {
+        "deposit": "Drošības depozīts ({a:g}) pārsniedz {m} mēnešu īres maksu ({b:g}).",
+        "refund": "Depozīta atmaksas termiņš ({a:g} darba dienas) pārsniedz {m} darba dienas.",
+        "rate": "Līgumsoda vai nokavējuma procents ({a:g}% dienā) pārsniedz {m}% dienā.",
+        "blank": "Līgumā ir tukša vai nenoteikta naudas summa, termiņš vai procents.",
+        "open": "Līgumā ir maksājumi bez summas vai griestiem.",
+    },
+    "angļu": {
+        "deposit": "The security deposit ({a:g}) exceeds {m} months' rent ({b:g}).",
+        "refund": "The deposit refund period ({a:g} working days) exceeds {m} working days.",
+        "rate": "The penalty or late-payment rate ({a:g}% per day) exceeds {m}% per day.",
+        "blank": "The contract has an empty or undefined money amount, deadline or rate.",
+        "open": "The contract has payments without an amount or a cap.",
+    },
+    "krievu": {
+        "deposit": "Залог ({a:g}) превышает арендную плату за {m} мес. ({b:g}).",
+        "refund": "Срок возврата залога ({a:g} рабочих дней) превышает {m} рабочих дней.",
+        "rate": "Неустойка или пеня ({a:g}% в день) превышает {m}% в день.",
+        "blank": "В договоре есть пустая или неопределённая сумма, срок или процент.",
+        "open": "В договоре есть платежи без суммы или предела.",
+    },
+}
+
+MONEY_WORDS = re.compile(
+    r"(\d\s*(€|eur\b|euro|%|procent|percent|руб|евро)|"
+    r"īres\s*mak|nomas\s*mak|depozīt|drošības\s*nau|soda\s*nau|līgumsod|nokavējum|procent|remont|komunāl|"
+    r"maksājum|zaudējum|atlīdzīb|rēķin|kompensāc|nauda|naudas|"
+    r"deposit|penalt|interest|repair|utilit|payment|rent\b|fee\b|compensat|damages|"
+    r"залог|депозит|штраф|пени|процент|ремонт|коммунал|платёж|платеж|аренд\w*\s*плат|убытк|компенсац)",
+    re.I)
+
+
+def _num(v):
+    try:
+        return float(str(v).replace(",", ".").strip()) if v not in (None, "", False) else None
+    except ValueError:
+        return None
+
+
+def apply_money_rules(ctx, items, extras, swept):
+    """1) skaitliskās robežas, 2) naudas atradumu atpazīšana pēc satura. Atgriež jaunus atradumus."""
+    txt = RULE_TEXT.get(ctx.lang_name, RULE_TEXT["angļu"])
+    fig = ctx.figures or {}
+    by_id = {f["id"]: f for f in items}
+    new = []
+
+    def breach(cid, text):
+        f = by_id.get(cid)
+        if f and f["atrasts"] and f["level"] != "nav":
+            f["level"] = "kritisks"
+            if text[:40] not in f["problema"]:
+                f["problema"] = (f["problema"] + " " + text).strip()
+        else:
+            new.append({"id": cid, "atrasts": True, "level": "kritisks", "punkts": f["punkts"] if f else "",
+                        "nosaukums": CHECK_BY_ID[cid][1], "quote": "", "problema": text, "ko_mainit": "",
+                        "labojums": "", "tulkojums": "", "articles": []})
+
+    rent, dep = _num(fig.get("ires_summa_mened")), _num(fig.get("depozits"))
+    if rent and dep and dep > DEPOSIT_MAX_MONTHS * rent:
+        breach("DEPOSIT_AMOUNT", txt["deposit"].format(a=dep, b=rent, m=DEPOSIT_MAX_MONTHS))
+    days = _num(fig.get("depozita_atmaksa_darba_dienas"))
+    if days and days > REFUND_MAX_WORKDAYS:
+        breach("DEPOSIT_REFUND", txt["refund"].format(a=days, m=REFUND_MAX_WORKDAYS))
+    rate = _num(fig.get("soda_likme_diena_proc"))
+    if rate and rate > RATE_MAX_PER_DAY:
+        breach("PENALTY_CAP", txt["rate"].format(a=rate, m=RATE_MAX_PER_DAY))
+    if _bool(fig.get("tuksi_naudas_lauki")) and not any(f["id"] in MONEY_IDS and f["level"] == "kritisks" and f["atrasts"] for f in items):
+        breach("RENT_AMOUNT", txt["blank"])
+    if _bool(fig.get("neierobezoti_maksajumi")) and not any(f["id"] in ("UTILITIES", "FUND") and f["level"] == "kritisks" for f in items):
+        breach("UTILITIES", txt["open"])
+
+    # naudas atradumi pēc satura (arī "CITS" un sweep): 🔵/🟡 -> 🔴
+    for f in items + extras + swept + new:
+        if f["atrasts"] and f["level"] in ("apsverams", "bridinajums") and \
+                (f["id"] in MONEY_IDS or MONEY_WORDS.search(f"{f['quote']} {f['nosaukums']}")):
+            f["level"] = "kritisks"
+    return new
+
+
+# ---------------------------------------------------------------
 # Atskaites veidošana (Python): fiksēta secība, kodi K/B/A, ieteikumi visiem kodiem
 # ---------------------------------------------------------------
 def render_report(findings, summary, labels):
@@ -581,11 +673,8 @@ def run_analysis(ctx):
     """Atgriež (markdown atskaite, info rinda). ctx.complete=False, ja kāds slānis neizdevās (nekešot)."""
     items, extras, summary, unchecked, contract_norm = run_layer1(ctx)
     swept = run_sweep(ctx, items, extras, contract_norm)
-    findings = [f for f in items + extras + swept if f["level"] != "nav"]
-    for f in findings:
-        # viss, kas saistīts ar naudu un ir līgumā (neskaidrs, neizdevīgs vai pārkāpj likumu) = 🔴; trūkstošus naudas punktus 🔴 padara CHECKLIST minimums;
-        if f["id"] in MONEY_IDS and f["atrasts"] and f["level"] in ("apsverams", "bridinajums"):
-            f["level"] = "kritisks"
+    ruled = apply_money_rules(ctx, items, extras, swept)
+    findings = [f for f in items + extras + swept + ruled if f["level"] != "nav"]
     for i, f in enumerate(findings):
         f["_uid"] = f"F{i}"
     sent = sum(1 for f in findings if f["level"] == "kritisks")

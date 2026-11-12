@@ -188,6 +188,25 @@ class Engine(unittest.TestCase):
         self.assertIn("## 🔴 Kritiski\n–", report)
 
 
+    def test_money_rules(self):
+        data = self.good()
+        data["skaitli"] = {"ires_summa_mened": 400, "depozits": 1200, "depozita_atmaksa_darba_dienas": 30,
+                           "soda_likme_diena_proc": 0.5, "tuksi_naudas_lauki": False, "neierobezoti_maksajumi": False}
+        ctx = make_ctx(Fake(data))
+        report, _ = ae.run_analysis(ctx)
+        self.assertIn("pārsniedz 2 mēnešu īres maksu", report)
+        self.assertIn("atmaksas termiņš (30 darba dienas)", report)
+        self.assertIn("0.5% dienā", report)
+
+    def test_money_content_becomes_red(self):
+        data = self.good()
+        data["papildus"] = [item("CITS", "bridinajums", punkts="7.1", originalais_teksts="Izīrētājs drīkst ieturēt drošības naudu",
+                                 problema="Neskaidrs.", ko_mainit="Precizēt")]
+        report, _ = ae.run_analysis(make_ctx(Fake(data)))
+        red = report.split("## 🟡")[0]
+        self.assertIn("7.1", red)
+
+
 class Cache(unittest.TestCase):
     def test_roundtrip_and_keys(self):
         with tempfile.TemporaryDirectory() as d:

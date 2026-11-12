@@ -77,6 +77,8 @@ TR = {
         "proof_spinner": "✏️ Notiek korektūras pārbaude...",
         "proof_fail": "Korektūras pārbaudi neizdevās veikt",
         "success": "✅ Analīze veiksmīgi pabeigta!",
+        "live_provisional": "🔄 Analīze vēl notiek. Šobrīd redzamā analīze ir provizoriska: tā vēl tiek pārbaudīta un papildināta.",
+        "live_done": "✅ Analīze ir beigusies.",
         "dl_header": "### 📥 Lejupielādēt analīzes atskaiti:",
         "dl_word": "📄 Lejupielādēt Word (.docx)",
         "dl_pdf": "📄 Lejupielādēt PDF (.pdf)",
@@ -100,6 +102,8 @@ TR = {
         "proof_spinner": "✏️ Proofreading check in progress...",
         "proof_fail": "Proofreading check failed",
         "success": "✅ Analysis completed successfully!",
+        "live_provisional": "🔄 The analysis is still running. What you see now is provisional: it is still being verified and extended.",
+        "live_done": "✅ The analysis has finished.",
         "dl_header": "### 📥 Download the analysis report:",
         "dl_word": "📄 Download Word (.docx)",
         "dl_pdf": "📄 Download PDF (.pdf)",
@@ -123,6 +127,8 @@ TR = {
         "proof_spinner": "✏️ Выполняется корректорская проверка...",
         "proof_fail": "Не удалось выполнить корректорскую проверку",
         "success": "✅ Анализ успешно завершён!",
+        "live_provisional": "🔄 Анализ ещё выполняется. Показанный сейчас результат предварительный: он ещё проверяется и дополняется.",
+        "live_done": "✅ Анализ завершён.",
         "dl_header": "### 📥 Скачать отчёт об анализе:",
         "dl_word": "📄 Скачать Word (.docx)",
         "dl_pdf": "📄 Скачать PDF (.pdf)",
@@ -554,52 +560,32 @@ OTHER_LANG = "🌍 Cita valoda / Other / Другой…"
 
 
 # ---------------------------------------------------------------
-# Modeļi: pamatā gemini-3.8-flash, ja nav pieejams - gemini-2.0-flash, tad gemini-1.5-flash
+# Modelis: tikai gemini-3.8-flash (rezerves modeļu nav)
 # ---------------------------------------------------------------
 MODEL_PRIMARY = "gemini-3.8-flash"
-MODEL_FALLBACKS = ("gemini-2.0-flash", "gemini-1.5-flash")
 # Cena USD par 1 miljonu žetonu (ievade, izvade; izvade ietver thinking). Kešotā ievade: 0.075.
 PRICE_PER_M = (0.75, 3.75)
 
 
 def cost_usd(tokens_in, tokens_out):
     return (tokens_in * PRICE_PER_M[0] + tokens_out * PRICE_PER_M[1]) / 1_000_000
-_UNAVAILABLE_HINTS = ("not found", "404", "not supported", "unavailable", "503", "does not exist", "deprecated")
 
 
-def _model_unavailable(exc):
-    """Vai kļūda nozīmē, ka modelis nav pieejams (nevis, piem., nederīga API atslēga vai kvota)."""
-    name = type(exc).__name__
-    if name in ("NotFound", "ServiceUnavailable", "MethodNotImplemented"):
-        return True
-    return any(h in str(exc).lower() for h in _UNAVAILABLE_HINTS)
-
-
-class FallbackModel:
-    """Ap GenerativeModel: izmēģina gemini-3.8-flash, pēc nepieejamības kļūdas pārslēdzas uz rezerves modeļiem."""
+class GeminiModel:
+    """Ap GenerativeModel: vienmēr izmanto tikai gemini-3.8-flash."""
 
     def __init__(self, generation_config=None):
         self.cfg = generation_config
-        self.names = (MODEL_PRIMARY,) + MODEL_FALLBACKS
 
     def generate_content(self, contents, **kw):
-        last = None
-        for name in self.names:
-            try:
-                m = genai.GenerativeModel(name, generation_config=self.cfg)
-                return m.generate_content(contents, **kw)
-            except Exception as e:
-                last = e
-                if not _model_unavailable(e):
-                    raise
-        raise last
+        return genai.GenerativeModel(MODEL_PRIMARY, generation_config=self.cfg).generate_content(contents, **kw)
 
 
 @st.cache_data(show_spinner=False)
 def translate_ui(lang_name, _api_key):
     """Iztulko visus saskarnes tekstus izvēlētajā valodā (rezultāts tiek saglabāts kešatmiņā)."""
     genai.configure(api_key=_api_key)
-    model = FallbackModel(genai.GenerationConfig(temperature=0, response_mime_type="application/json"))
+    model = GeminiModel(genai.GenerationConfig(temperature=0, response_mime_type="application/json"))
     base = {k: v for k, v in TR["English"].items() if k != "report_lang_name"}
     prompt = (
         f"Translate the values of this JSON object into {lang_name}. They are user-interface texts of a web "
@@ -1365,7 +1351,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
     laws_text, laws_source = load_laws()
 
     def llm(parts, max_tokens):
-        resp = FallbackModel(det_config(response_mime_type="application/json", max_output_tokens=max_tokens)).generate_content(parts)
+        resp = GeminiModel(det_config(response_mime_type="application/json", max_output_tokens=max_tokens)).generate_content(parts)
         return _resp_text(resp), _resp_usage(resp)
 
     def llm_verify(system_text, parts, max_tokens):
@@ -1379,7 +1365,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
                 except Exception:
                     pass
         prompt = system_text + "\n\n" + ae.LAYER2_LAW_HEADER + laws_text + "\n\n" + "\n".join(parts)
-        resp = FallbackModel(cfg).generate_content(prompt)
+        resp = GeminiModel(cfg).generate_content(prompt)
         return _resp_text(resp), _resp_usage(resp)
 
     ctx = ae.AnalysisContext(
@@ -2481,7 +2467,7 @@ def mock_chat_answer(question):
 def chat_answer(question, entry, previous):
     """Reālais režīms: jautājums + līguma konteksts uz Gemini."""
     genai.configure(api_key=api_key)
-    model = FallbackModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
+    model = GeminiModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
     plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
     parts = [CHAT_SYSTEM]
     if entry.get("contract_text"):
@@ -2878,7 +2864,7 @@ def mock_chat_answer(question):
 def _chat_model_and_prompt(question, entry, previous):
     """Čata modelis un uzaicinājums (kopīgs parastajai un straumētajai atbildei; saturs nemainās)."""
     genai.configure(api_key=api_key)
-    model = FallbackModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
+    model = GeminiModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
     plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
     system = CHAT_SYSTEM.replace(
         "latviešu valodā (ja lietotājs raksta citā valodā, atbildi tajā)", T["report_lang_name"] + " valodā"
@@ -3417,7 +3403,7 @@ if analyze_button:
     else:
         try:
             genai.configure(api_key=api_key)
-            model = FallbackModel(genai.GenerationConfig(
+            model = GeminiModel(genai.GenerationConfig(
                     temperature=0,
                     top_p=1,
                     top_k=1
@@ -3443,15 +3429,30 @@ if analyze_button:
             _t0 = datetime.datetime.now()
             live = st.empty()                       # starprezultāts parādās, tiklīdz gatavs 1. slānis
 
-            def _show_partial(md, _stage):
-                live.markdown(linkify(md) + "\n\n" + T["spinner_analysis"] + " ⏳")
+            banner = st.empty()                      # fiksēts lapas augšā, redzams ritinot
 
-            with st.spinner(T["spinner_analysis"]):
-                analysis_all, laws_source = analyze_contract(
-                    api_key, T["report_lang_name"], kind, content,
-                    datetime.datetime.now().timestamp() if force_new else 0,
-                    progress=_show_partial,
-                )
+            def _show_banner(text, color):
+                banner.markdown(
+                    "<div style='position:fixed;top:0;left:0;right:0;z-index:1000000;padding:0.6rem 1rem;"
+                    f"text-align:center;font-weight:600;color:#fff;background:{color};"
+                    "box-shadow:0 2px 8px rgba(0,0,0,.3)'>" + text + "</div>",
+                    unsafe_allow_html=True)
+
+            _show_banner(T["live_provisional"], "#d97706")      # analīze vēl notiek visu laiku
+
+            def _show_partial(md, _stage):
+                live.markdown(linkify(md))
+
+            try:
+                with st.spinner(T["spinner_analysis"]):
+                    analysis_all, laws_source = analyze_contract(
+                        api_key, T["report_lang_name"], kind, content,
+                        datetime.datetime.now().timestamp() if force_new else 0,
+                        progress=_show_partial,
+                    )
+            finally:
+                banner.empty()
+            st.session_state["just_done"] = True
             _secs = (datetime.datetime.now() - _t0).total_seconds()
             if "💾" not in laws_source and _secs < 2:
                 laws_source += " | 💾 0 cost (cache)"
@@ -3489,6 +3490,8 @@ if "result" in st.session_state:
         saved.update(build_downloads(loc + "\n\n## " + T["sources_head"] + "\n" + sources_md()))
         saved["lang"] = report_key
     with results_slot:                                      # cilnes lapas augšā
+        if st.session_state.pop("just_done", False):
+            st.success(T["live_done"])
         render_history_picker()
         st.markdown(
             "<style>"
