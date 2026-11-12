@@ -1583,14 +1583,20 @@ def generate_pretty_pdf(analysis_text):
 # ---------------------------------------------------------------
 # Poga līguma analīzei
 # ---------------------------------------------------------------
-test_mode = st.checkbox(T["test_mode_label"], key="test_mode")
-force_new = st.checkbox(T["force_new_label"], key="force_new")
-compare_mode = st.checkbox(
-    T.get("compare_mode_label", "🔬 Compare mode: analyse the file 3 separate times and compare the points"),
-    key="compare_mode",
-    help=T.get("compare_mode_help", "Runs the full analysis 3 times (3× the cost, cache is bypassed) and shows which points "
-                                    "are stable, which differ in level and which appear only in some runs."),
+_lv = T["report_lang_name"] == "latviešu"
+_MODES = {
+    "one": "1️⃣ " + ("Viena analīze" if _lv else "Single analysis"),
+    "three": "🔬 " + ("3 analīzes un salīdzinājums (3× izmaksas)" if _lv else "3 analyses and comparison (3× cost)"),
+    "test": T["test_mode_label"],
+}
+_mode = st.radio(
+    "Režīms" if _lv else "Mode", list(_MODES), format_func=_MODES.get, key="run_mode", horizontal=True,
+    help=("Trīs analīzes darbojas bez keša un parāda, kuri punkti ir stabili un kuri mainās." if _lv else
+          "Three analyses bypass the cache and show which points are stable and which change."),
 )
+test_mode = _mode == "test"
+compare_mode = _mode == "three"
+force_new = st.checkbox(T["force_new_label"], key="force_new", disabled=_mode != "one")
 COMPARE_RUNS = 3
 analyze_button = st.button(T["analyze_btn"], type="primary")
 
