@@ -1335,7 +1335,7 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v6-riskfactors"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v8-money-red-missing"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
 def legal_notes_text():

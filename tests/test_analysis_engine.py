@@ -115,6 +115,24 @@ class Engine(unittest.TestCase):
         report, _ = ae.run_analysis(make_ctx(f))
         self.assertIn("(Maksas celšana)", report.split("## 🟡")[0])
 
+    def test_money_criterion_vague_clause_becomes_risk_factor(self):
+        data = self.good()
+        data["items"].append(item("UTILITIES", "apsverams", punkts="4.1", nosaukums="Komunālie",
+                                  originalais_teksts="jebkurā laikā", problema="Neskaidrs sadalījums."))
+        f = Fake(data, l2={"items": []})
+        report, _ = ae.run_analysis(make_ctx(f))
+        self.assertIn("(Komunālie)", report.split("## 🟡")[0])
+
+    def test_missing_money_clause_is_risk_factor(self):
+        data = self.good()
+        for i in data["items"]:
+            if i["id"] == "UTILITIES":
+                i.update(riska_limenis="apsverams", atrasts=False, nosaukums="Komunālie",
+                         problema="Nav minēti.", ko_mainit="Pievienot")
+        f = Fake(data, l1_repair=data, l2={"items": []})
+        report, _ = ae.run_analysis(make_ctx(f))
+        self.assertIn("Komunālie: Nav minēti", report.split("## 🟡")[0])
+
     def test_floor_for_missing_mandatory_clause(self):
         data = self.good()
         for i in data["items"]:

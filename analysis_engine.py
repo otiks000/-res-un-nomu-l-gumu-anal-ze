@@ -44,29 +44,29 @@ CHECKLIST = [
     ("RENT_AMOUNT", "Īres maksas apmērs",
      "Summa, valūta, kas ir iekļauts maksā. Tukša summa ir jāatzīmē.", "kritisks"),
     ("RENT_PAYMENT", "Īres maksas samaksa",
-     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "apsverams"),
+     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "kritisks"),
     ("RENT_CHANGE", "Īres maksas maiņa",
-     "Vai izīrētājs var vienpusēji palielināt maksu; vai ir likumiski nosacījumi un kārtība (DTIL 10. pants).", "apsverams"),
+     "Vai izīrētājs var vienpusēji palielināt maksu; vai ir likumiski nosacījumi un kārtība (DTIL 10. pants).", "kritisks"),
     ("UTILITIES", "Komunālie maksājumi",
-     "Kas, cik un kā maksā komunālos pakalpojumus; rēķinu uzrādīšanas kārtība, skaitītāji, norēķini.", "apsverams"),
+     "Kas, cik un kā maksā komunālos pakalpojumus; rēķinu uzrādīšanas kārtība, skaitītāji, norēķini.", "kritisks"),
     ("FUND", "Uzkrājumu fonds un kapitālie maksājumi",
      "Vai īrniekam uzlikti kapitālā remonta, uzkrājumu fonda vai citi īpašnieka pienākumi apmaksāt maksājumi.", "nav"),
     ("DEPOSIT_AMOUNT", "Drošības depozīta apmērs",
-     "Apmērs; nedrīkst pārsniegt divu mēnešu īres maksu (DTIL 12. pants).", "apsverams"),
+     "Apmērs; nedrīkst pārsniegt divu mēnešu īres maksu (DTIL 12. pants).", "kritisks"),
     ("DEPOSIT_USE", "Depozīta ieturēšana",
-     "Kādos gadījumos un kā drīkst ieturēt; vai tiek paziņots un pierādīti zaudējumi; patvaļīga ieturēšana.", "apsverams"),
+     "Kādos gadījumos un kā drīkst ieturēt; vai tiek paziņots un pierādīti zaudējumi; patvaļīga ieturēšana.", "kritisks"),
     ("DEPOSIT_REFUND", "Depozīta atmaksa",
-     "Atmaksas termiņš (garāks par 10 darba dienām = apsverams punkts), kārtība.", "apsverams"),
+     "Atmaksas termiņš (garāks par 10 darba dienām = apsverams punkts), kārtība.", "kritisks"),
     ("LATE_INTEREST", "Nokavējuma procenti",
-     "Procentu apmērs un aprēķins; vai nav pārmērīgi (CL 1764.–1765. pants).", "apsverams"),
+     "Procentu apmērs un aprēķins; vai nav pārmērīgi (CL 1764.–1765. pants).", "kritisks"),
     ("PENALTY_CAP", "Līgumsodi un to griesti",
-     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "apsverams"),
+     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "kritisks"),
     ("LIABILITY", "Atbildība par zaudējumiem",
      "Atbildība bez vainas vai bez pierādījumiem, pārmērīga atbildība par bojājumiem, atbildības ierobežojumi.", "nav"),
     ("REPAIRS_MINOR", "Sīkie remontdarbi",
-     "Vai ir definēts, kas ir 'sīkie remontdarbi' un kurš tos sedz.", "apsverams"),
+     "Vai ir definēts, kas ir 'sīkie remontdarbi' un kurš tos sedz.", "kritisks"),
     ("REPAIRS_MAJOR", "Lielie remonti un avārijas",
-     "Kas sedz lielos remontus, avārijas un apkopi; izīrētāja pienākumi uzturēt telpas (DTIL 18. pants).", "apsverams"),
+     "Kas sedz lielos remontus, avārijas un apkopi; izīrētāja pienākumi uzturēt telpas (DTIL 18. pants).", "kritisks"),
     ("ENTRY", "Izīrētāja piekļuve un apskate",
      "Vai izīrētājs drīkst ienākt mājoklī; brīdinājuma laiks, biežums, iemesli (DTIL 13. pants). Brīvas ieiešanas tiesības = risks.", "apsverams"),
     ("HANDOVER", "Pieņemšanas-nodošanas akts",
@@ -84,8 +84,8 @@ CHECKLIST = [
     ("BLANKS", "Tukši vai neskaidri būtiski lauki",
      "Finansiāli vai juridiski būtiski tukši lauki (summas, termiņi, procenti) un nenoteikti termini ('citi maksājumi', 'pēc vajadzības').", "nav"),
 ]
-# Kritēriji, kas pēc būtības skar naudu: atradums tajos ar likuma-pārkāpuma līmeni (🟡) tiek paaugstināts uz 🔴,
-# jo prioritāte ir zaudējumi > likuma pārkāpums (tā nav atkarīga no modeļa noskaņojuma).
+# Kritēriji, kas pēc būtības skar naudu: jebkurš atradums tajos, kas ir līgumā (🔵 vai 🟡), tiek paaugstināts uz 🔴,
+# jo prioritāte ir zaudējumi > likuma pārkāpums > trūkstošs/neskaidrs (tā nav atkarīga no modeļa noskaņojuma).
 MONEY_IDS = {"RENT_AMOUNT", "RENT_PAYMENT", "RENT_CHANGE", "UTILITIES", "FUND", "DEPOSIT_AMOUNT", "DEPOSIT_USE",
              "DEPOSIT_REFUND", "LATE_INTEREST", "PENALTY_CAP", "LIABILITY", "REPAIRS_MINOR", "REPAIRS_MAJOR"}
 CHECK_IDS = [c[0] for c in CHECKLIST]
@@ -581,7 +581,8 @@ def run_analysis(ctx):
     swept = run_sweep(ctx, items, extras, contract_norm)
     findings = [f for f in items + extras + swept if f["level"] != "nav"]
     for f in findings:
-        if f["id"] in MONEY_IDS and f["level"] == "bridinajums":
+        # viss, kas saistīts ar naudu un ir līgumā (neskaidrs, neizdevīgs vai pārkāpj likumu) = 🔴; trūkstošus naudas punktus 🔴 padara CHECKLIST minimums;
+        if f["id"] in MONEY_IDS and f["atrasts"] and f["level"] in ("apsverams", "bridinajums"):
             f["level"] = "kritisks"
     for i, f in enumerate(findings):
         f["_uid"] = f"F{i}"
