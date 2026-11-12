@@ -1079,7 +1079,18 @@ results_slot = st.container()
 
 # Sānu josla
 st.sidebar.header(T["sidebar_header"])
-api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input")
+def _saved_api_key():
+    """Noklusētā atslēga no Streamlit Secrets vai vides mainīgā GEMINI_API_KEY (nav jāievada katru reizi)."""
+    try:
+        k = st.secrets.get("GEMINI_API_KEY", "")
+    except Exception:                       # secrets.toml nav
+        k = ""
+    return str(k or os.environ.get("GEMINI_API_KEY", "")).strip()
+
+
+_SAVED_KEY = _saved_api_key()
+api_key = st.sidebar.text_input(T["api_label"], type="password", key="api_key_input",
+                                placeholder="✅ saglabāta (var atstāt tukšu)" if _SAVED_KEY else "") or _SAVED_KEY
 st.sidebar.button(T["reset_btn"], on_click=reset_session, use_container_width=True)
 
 # PWA instalēšanas poga sānu joslas apakšā (loģika: window.__pwaInstall galvenajā lapā, sk. PWA_JS)
