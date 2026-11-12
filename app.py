@@ -1335,7 +1335,7 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v9-four-sections"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v10-law-red-warn-unclear"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
 def legal_notes_text():
@@ -2869,8 +2869,8 @@ def mock_chat_answer(question):
     return tfmt("mock_default", question=question.strip(), **MOCK_REFS)
 
 
-def chat_answer(question, entry, previous):
-    """Reālais režīms: jautājums + līguma konteksts uz Gemini. Atbilde izvēlētajā saskarnes valodā."""
+def _chat_model_and_prompt(question, entry, previous):
+    """Čata modelis un uzaicinājums (kopīgs parastajai un straumētajai atbildei; saturs nemainās)."""
     genai.configure(api_key=api_key)
     model = FallbackModel(genai.GenerationConfig(temperature=0.2, max_output_tokens=800))
     plain = lambda s: re.sub(r"\[([^\]]+)\]\(https?://[^)]+\)", r"\1", s)     # noņem saites, lai nelieki tokeni
@@ -2886,7 +2886,35 @@ def chat_answer(question, entry, previous):
             f"{'Lietotājs' if m['role'] == 'user' else 'Palīgs'}: {plain(m['content'])}" for m in previous[-6:]
         ))
     parts.append("JAUTĀJUMS: " + question)
-    return linkify(model.generate_content("\n\n".join(parts)).text)
+    return model, "\n\n".join(parts)
+
+
+def chat_answer(question, entry, previous):
+    """Reālais režīms: jautājums + līguma konteksts uz Gemini. Atbilde izvēlētajā saskarnes valodā."""
+    model, prompt = _chat_model_and_prompt(question, entry, previous)
+    return linkify(model.generate_content(prompt).text)
+
+
+def chat_answer_stream(question, entry, previous):
+    """Tas pats pieprasījums kā chat_answer, bet atbilde parādās pa daļām (straumējot). Analīzi neskar."""
+    model, prompt = _chat_model_and_prompt(question, entry, previous)
+    def chunks():
+        for part in model.generate_content(prompt, stream=True):
+            try:
+                yield part.text
+            except ValueError:          # bloķēts vai tukšs fragments
+                continue
+    yield from linkify_stream(chunks())
+
+
+def stream_chat_answer(question, entry, previous):
+    """Parāda atbildi straumējot un atgriež pilno tekstu (saglabāšanai ziņu vēsturē)."""
+    try:
+        text = st.write_stream(chat_answer_stream(question, entry, previous))
+    except Exception:                   # straumēšana neizdevās: parastā atbilde
+        text = chat_answer(question, entry, previous)
+        st.markdown(text)
+    return text if isinstance(text, str) else "".join(map(str, text))
 
 
 def render_chat_widget():
@@ -2936,17 +2964,19 @@ def render_chat_widget():
             with st.chat_message("user"):
                 st.markdown(prompt)
             with st.chat_message("assistant"):
+                streamed = False
                 if use_mock:
                     answer = linkify(mock_chat_answer(prompt))
                 elif not api_key:
                     answer = T["chat_no_key"]
                 else:
                     try:
-                        with st.spinner(T["chat_spinner"]):
-                            answer = chat_answer(prompt, entry, mine)
+                        answer = stream_chat_answer(prompt, entry, mine)   # tiek parādīta pa daļām
+                        streamed = True
                     except Exception as e:
                         answer = tfmt("chat_error", error=e)
-                st.markdown(answer)
+                if not streamed:
+                    st.markdown(answer)
             msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
             mine = [m for m in msgs if m["entry"] == entry["id"]]
 
@@ -2980,17 +3010,19 @@ def render_chat_tab():
             with st.chat_message("user"):
                 st.markdown(prompt)
             with st.chat_message("assistant"):
+                streamed = False
                 if use_mock:
                     answer = linkify(mock_chat_answer(prompt))
                 elif not api_key:
                     answer = T["chat_no_key"]
                 else:
                     try:
-                        with st.spinner(T["chat_spinner"]):
-                            answer = chat_answer(prompt, entry, mine)
+                        answer = stream_chat_answer(prompt, entry, mine)   # tiek parādīta pa daļām
+                        streamed = True
                     except Exception as e:
                         answer = tfmt("chat_error", error=e)
-                st.markdown(answer)
+                if not streamed:
+                    st.markdown(answer)
             msgs.append({"role": "assistant", "content": answer, "entry": entry["id"], "mock": use_mock})
             mine = [m for m in msgs if m["entry"] == entry["id"] and not m.get("greeting")]
 

@@ -96,9 +96,9 @@ LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbau
 MĒRĶIS: atrast VISUS problemātiskos punktus, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus kritērijus.
 
 KLASIFIKĀCIJA (riska_limenis). Katram atradumam piemēro PRIORITĀTI no augšas uz leju, un izvēlies tikai VIENU līmeni:
-1) "kritisks" = RISKA FAKTORS: VISS, kas var radīt finansiālus vai cita veida zaudējumus (naudas, laika, tiesību, mantas, drošības): neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, tiesību uz īres nostiprināšanu zaudēšana, vienpusēja īres maksas vai citu maksājumu celšana, izīrētāja tiesības mainīt noteikumus vienpusēji, vienpusēja izlikšana u.tml. VISS, kas saistīts ar naudu (īre, depozīts, soda naudas, procenti, remonti, komunālie maksājumi), ir "kritisks", nevis "bridinajums", ja tas ir neizdevīgs īrniekam vai neskaidrs. Ja punkts vienlaikus pārkāpj likumu UN rada zaudējumus, tas ir "kritisks".
-2) "bridinajums" = LIKUMA PĀRKĀPUMS BEZ TIEŠA ZAUDĒJUMA: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), bet nerada tiešu finansiālu vai citu zaudējumu (piem., formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana bez naudas sekām). Ja šaubies, vai tas ir likuma pārkāpums, un zaudējumu nav, liec šeit.
-3) "apsverams" = PIEVIENOJAMS VAI PRECIZĒJAMS PUNKTS: punkts, kura līgumā NAV un kuru ieteicams pievienot (atrasts=false), vai kas nav līdz galam izrunāts: nenoteikti termini, nepilnīgi definēti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi, un nav ne zaudējumu, ne likuma pārkāpuma.
+1) "kritisks" = RISKA FAKTORS: (a) JEBKURŠ LIKUMA PĀRKĀPUMS: punkts pārkāpj Latvijas likumus (Dzīvojamo telpu īres likums, Civillikums, Patērētāju tiesību aizsardzības likums, datu aizsardzības noteikumi u.c.), arī ja tiešu zaudējumu nav (formāli pārkāpumi, nelikumīga paziņošanas kārtība, tiesību sašaurināšana u.tml.); (b) VISS, kas var radīt finansiālus zaudējumus, arī ja likums nav pārkāpts: neskaidras vai tukšas summas un termiņi, neierobežoti vai nenosaukti maksājumi, nesamērīgi līgumsodi un procenti, patvaļīga depozīta ieturēšana, atbildība par bojājumiem, remontu un komunālo izmaksu sadalījums, vienpusēja īres maksas vai citu maksājumu celšana, vienpusēja izlikšana, tiesību uz īres nostiprināšanu zaudēšana u.tml. VISS, kas saistīts ar naudu (īre, depozīts, soda naudas, procenti, remonti, komunālie maksājumi), ir "kritisks", ja tas ir neizdevīgs īrniekam vai neskaidrs.
+2) "bridinajums" = BRĪDINĀJUMS: tas, kas NAV likuma pārkāpums un nerada tiešus naudas zaudējumus, bet ir neskaidrs vai nepilnīgs, vai kā līgumā NAV, lai gan tas ir svarīgi (atrasts=false): nenoteikti termini, nepilnīgi definēti pienākumi, divējādi traktējami formulējumi, trūkstošas procedūras, pretrunas starp punktiem, vienai pusei neizdevīgi, bet likumīgi nosacījumi. Ja šaubies, vai tas ir likuma pārkāpums, un naudas zaudējumu nav, liec šeit.
+3) Līmeni "apsverams" nelieto (izmanto "bridinajums").
 4) "nav": kritērijs izpildīts un problēmu nav.
 Valodas, gramatikas un pareizrakstības kļūdas šeit NEVĒRTĒ (tās izvērtē cits modulis).
 
@@ -108,7 +108,7 @@ NOTEIKUMI:
 - Atgriez vismaz vienu ierakstu katram kritērija id, tādā secībā kā sarakstā. Neizlaid nevienu id.
 - VAIRĀKAS PROBLĒMAS: ja kritērijam ir vairākas atsevišķas problēmas (dažādos punktos vai dažādi pārkāpumi vienā punktā), atgriez katru kā ATSEVIŠĶU ierakstu ar to pašu id (ne "papildus"). Nekad nesavieno vairākus punktus vienā ierakstā un nekad neierobežo atradumu skaitu.
 - Vienā līguma punktā var būt vairākas dažāda līmeņa problēmas: katrai atsevišķs ieraksts.
-- "atrasts": true, ja līgumā ir punkts par šo tēmu; false, ja tēmas līgumā nav. Ja tēmas nav, riska_limenis nedrīkst būt zemāks par kritērijā norādīto "ja trūkst" līmeni (parasti "apsverams" = ieteicams pievienot).
+- "atrasts": true, ja līgumā ir punkts par šo tēmu; false, ja tēmas līgumā nav. Ja tēmas nav, riska_limenis nedrīkst būt zemāks par kritērijā norādīto "ja trūkst" līmeni (parasti brīdinājums = ieteicams pievienot).
 - "originalais_teksts": precīzs, burtisks citāts no līguma (kopē rakstzīmi pa rakstzīmei, līdz 300 rakstzīmēm; ar "..." vari izlaist vidu). Ja atrasts=false, atstāj "".
 - "punkts": tikai līguma punkta numurs (piemēram "4.3"), ja zināms, citādi "".
 - "problema": konkrēti: kāpēc tas ir risks (kurš likums vai kāds zaudējums vai kas nav izrunāts), 1–2 teikumi.
@@ -121,7 +121,7 @@ NOTEIKUMI:
 - "kopsavilkums": 1–2 teikumi atskaites valodā: vai līgumu drīkst parakstīt un kāds ir galvenais risks.
 
 JSON STRUKTŪRA:
-{"kopsavilkums": "...", "items": [{"id": "...", "atrasts": true, "riska_limenis": "nav|apsverams|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
+{"kopsavilkums": "...", "items": [{"id": "...", "atrasts": true, "riska_limenis": "nav|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
 """
 
 # Statiskā daļa (valodas neatkarīga): to var droši ievietot Gemini Context Cache kopā ar likumu tekstu.
@@ -132,9 +132,9 @@ Katram punktam (pēc id):
 - "pamatojums": 1 teikums, kurš pants (vai kurš finansiālais zaudējums) apstiprina vai noraida risku.
 - "verdikts":
     "apstiprinats" - punkts tiešām pārkāpj konkrētu likuma pantu VAI rada nepamatotus finansiālus zaudējumus;
-    "pazeminat_apsverams" - punkts atzīmēts kā likuma pārkāpums (brīdinājums), bet NAV pārkāpuma un zaudējumu: tas ir tikai neskaidrs, nepilnīgs vai vienai pusei neizdevīgs.
-  Punktiem, kas atzīmēti kā "kritisks" (finansiāls vai cits zaudējums), vienmēr raksti "apstiprinats" (tev tikai jāatrod panti).
-  Brīdinājumu pazemini TIKAI tad, ja vari nosaukt iemeslu, kāpēc likuma pants netiek pārkāpts; citādi raksti "apstiprinats".
+    "pazeminat_apsverams" - punkts atzīmēts kā riska faktors (likuma pārkāpums), bet NAV likuma pārkāpuma: tas ir tikai neskaidrs, nepilnīgs vai vienai pusei neizdevīgs, un nerada naudas zaudējumus.
+  Punktiem ar naudas zaudējumiem vienmēr raksti "apstiprinats" (tev tikai jāatrod panti).
+  Pazemini TIKAI tad, ja vari nosaukt iemeslu, kāpēc likuma pants netiek pārkāpts; citādi raksti "apstiprinats".
 - "panti": masīvs ar pantiem, kas šo punktu tieši regulē: [{"likums": "DTIL" vai "CL", "nr": panta numurs}]. Drīksti norādīt TIKAI pantus, kas ir sniegtajā likumu tekstā. Ja neesi pārliecināts, atstāj tukšu. Neizdomā pantu numurus.
 
 JSON STRUKTŪRA:
@@ -447,9 +447,9 @@ def _clean_extras(extras, contract_norm):
 
 
 SWEEP_SYSTEM = """PAPILDU PĀRBAUDE. Tu esi Latvijas īres tiesību eksperts. Tev ir dots līgums un saraksts ar problēmām, kas jau atrastas. Tavs uzdevums ir atrast visu, kas VĒL IR IZLAISTS. Izej cauri līgumam punkts pa punktam.
-Meklē: (1) kas var nest finansiālus vai citus zaudējumus, arī ja tas pārkāpj likumu (kritisks); (2) likumu pārkāpumus bez tieša zaudējuma (bridinajums); (3) trūkstošus punktus, ko ieteicams pievienot, neskaidrus formulējumus un pretrunas starp punktiem (apsverams).
+Meklē: (1) jebkuru likuma pārkāpumu un visu, kas var nest finansiālus zaudējumus (kritisks); (2) neskaidrus formulējumus, pretrunas starp punktiem un trūkstošus svarīgus punktus, ko ieteicams pievienot, ja tie nav ne likuma pārkāpums, ne naudas risks (bridinajums).
 Neatkārto jau atrastās problēmas un neatzīmē valodas kļūdas. Tukši personas dati (vārdi, personas kodi, adreses, konti, paraksti, vieta un datums) nav kļūda.
-Atgriez TIKAI derīgu JSON: {"papildus": [ieraksti]}. Katrs ieraksts: {"id": "CITS" vai tuvākais kritērija id, "atrasts": true, "riska_limenis": "apsverams|bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "burtisks citāts līdz 300 rakstzīmēm", "problema": "", "ko_mainit": "", "labojums": "gatavs teksts līguma valodā bez pēdiņām", "labojums_tulkojums": ""}.
+Atgriez TIKAI derīgu JSON: {"papildus": [ieraksti]}. Katrs ieraksts: {"id": "CITS" vai tuvākais kritērija id, "atrasts": true, "riska_limenis": "bridinajums|kritisks", "punkts": "", "nosaukums": "", "originalais_teksts": "burtisks citāts līdz 300 rakstzīmēm", "problema": "", "ko_mainit": "", "labojums": "gatavs teksts līguma valodā bez pēdiņām", "labojums_tulkojums": ""}.
 Ja nekā jauna nav, atgriez {"papildus": []}."""
 
 
@@ -479,9 +479,9 @@ def run_layer2(ctx, findings):
     if not findings or ctx.llm_verify is None:
         return None
     payload = [
-        {"id": f["_uid"], "riska_limenis": "kritisks" if f["level"] == "kritisks" else "bridinajums",
+        {"id": f["_uid"], "riska_limenis": "kritisks",
          "punkts": f["punkts"], "nosaukums": f["nosaukums"], "originalais_teksts": f["quote"], "problema": f["problema"]}
-        for f in findings if f["level"] in ("kritisks", "bridinajums")
+        for f in findings if f["level"] == "kritisks"
     ]
     if not payload:
         return None
@@ -495,7 +495,7 @@ def run_layer2(ctx, findings):
 
 
 def apply_layer2(ctx, findings, data):
-    """Pielieto verifikāciju. Nekad neizdzēš atradumu; riska faktoru (kritisks) nepazemina, likuma pārkāpumu drīkst pazemināt tikai uz apsverams."""
+    """Pielieto verifikāciju. Nekad neizdzēš atradumu; naudas riskus nepazemina, likuma pārkāpumu drīkst pazemināt tikai uz brīdinājumu."""
     verified = 0
     by_uid = {f["_uid"]: f for f in findings}
     valid = {code: (ctx.valid_articles(code) if ctx.valid_articles else set()) for code in ("DTIL", "CL")}
@@ -514,9 +514,9 @@ def apply_layer2(ctx, findings, data):
                 arts.append((code, nr))
         f["articles"] = arts[:4]
         verdict = _strip_diacritics(str(raw.get("verdikts", ""))).lower()
-        # 🔴 (zaudējumi) netiek pazemināti; 🟡 (likuma pārkāpums) pazemina tikai ar skaidru verdiktu
-        if f["level"] == "bridinajums" and "apsverams" in verdict:
-            f["level"] = "apsverams"
+        # 🔴 naudas punkti netiek pazemināti; 🔴 likuma pārkāpums pazeminās uz 🟡 tikai ar skaidru verdiktu
+        if f["level"] == "kritisks" and f["id"] not in MONEY_IDS and "apsverams" in verdict:
+            f["level"] = "bridinajums"
     return verified
 
 
@@ -587,7 +587,7 @@ def run_analysis(ctx):
             f["level"] = "kritisks"
     for i, f in enumerate(findings):
         f["_uid"] = f"F{i}"
-    sent = sum(1 for f in findings if f["level"] in ("kritisks", "bridinajums"))
+    sent = sum(1 for f in findings if f["level"] == "kritisks")
     verified = 0
     if sent:
         try:

@@ -67,15 +67,15 @@ class Engine(unittest.TestCase):
         ctx = make_ctx(f)
         report, info = ae.run_analysis(ctx)
         self.assertEqual(f.calls, ["l1", "sweep", "l2"])
-        self.assertIn("K1. 2.2. (Zemesgrāmata)", report)
+        self.assertIn("B1. 2.2. (Zemesgrāmata)", report)         # likuma pārkāpums bez naudas, pārbaude pazemināja uz 🟡
         self.assertIn("[[DTIL 28]]", report)
         self.assertNotIn("999", report)                       # neesošs pants atmests
-        self.assertIn("K2. 4.3. (Depozīts)", report)
-        self.assertIn("A1. 6.1. (Apskate)", report)
-        self.assertIn("A2. 9.1. (Strīdi)", report)           # likuma pārkāpums pazemināts, bet nav izdzēsts
+        self.assertIn("K1. 4.3. (Depozīts)", report)           # naudas punkts paliek 🔴
+        self.assertIn("B2. 6.1. (Apskate)", report)
+        self.assertIn("B3. 9.1. (Strīdi)", report)
         self.assertIn("Pēc pārbaudes.", report)
-        self.assertIn("K1. 2.2.: Pievienot nostiprināšanu. Piedāvātais formulējums: „Puses nostiprina īri zemesgrāmatā.”", report)
-        for code in ("K1", "K2", "A1", "A2"):
+        self.assertIn("B1. 2.2.: Pievienot nostiprināšanu. Piedāvātais formulējums: „Puses nostiprina īri zemesgrāmatā.”", report)
+        for code in ("K1", "B1", "B2", "B3"):
             self.assertEqual(report.count(f"\n{code}. ") + report.startswith(code), 2, code)  # sadaļā + ieteikumos
         self.assertTrue(ctx.complete)
 
@@ -104,7 +104,7 @@ class Engine(unittest.TestCase):
                 i["originalais_teksts"] = "šāda teksta līgumā nav"
         f = Fake(data, l2={"items": []})
         report, _ = ae.run_analysis(make_ctx(f))
-        self.assertIn("A1. 6.1. (Apskate)", report)
+        self.assertIn("B1. 6.1. (Apskate)", report)
         self.assertNotIn("šāda teksta", report)
 
     def test_money_criterion_law_violation_becomes_risk_factor(self):
