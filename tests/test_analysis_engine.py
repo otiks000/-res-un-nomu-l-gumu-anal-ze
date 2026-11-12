@@ -121,6 +121,14 @@ class Engine(unittest.TestCase):
         self.assertNotIn("(Maksāšana)", top(report))
         self.assertIn("(Maksāšana)", report.split("## 💶")[1])
 
+    def test_money_fact_not_duplicated_when_already_flagged(self):
+        data = self.good()
+        data["items"].append(item("DEPOSIT_AMOUNT", "naudas_nosacijums", punkts="4.3", nosaukums="Depozīta apmērs",
+                                  originalais_teksts="drošības naudu pēc saviem ieskatiem", problema="Depozīta fakts."))
+        report, _ = ae.run_analysis(make_ctx(Fake(data)))
+        self.assertNotIn("Depozīta fakts", report)           # 4.3 jau ir 🔴
+        self.assertIn("(Maksāšana)", report.split("## 💶")[1])  # citi naudas fakti paliek
+
     def test_law_violation_without_article_depends_on_money(self):
         data = self.good()
         data["items"].append(item("UTILITIES", "likuma_parkapums", punkts="4.1", nosaukums="Komunālie",

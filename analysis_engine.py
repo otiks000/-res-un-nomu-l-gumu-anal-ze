@@ -687,6 +687,13 @@ def run_analysis(ctx):
     for f in allf:
         f["level"] = classify(f)
     findings = [f for f in allf if f["level"] != "nav"]
+    # 💶 saraksts nedublē to, kas jau atzīmēts kā 🔴 vai 🟡 (tas pats punkta numurs vai tas pats citāts)
+    flagged = [f for f in findings if f["level"] in ("kritisks", "bridinajums")]
+    keys_n = {clause_key(f["punkts"]) for f in flagged if f["punkts"]}
+    keys_q = {_norm_text(f["quote"])[:60] for f in flagged if f["quote"]}
+    findings = [f for f in findings if not (
+        f["level"] == "nauda" and ((f["punkts"] and clause_key(f["punkts"]) in keys_n)
+                                   or (f["quote"] and _norm_text(f["quote"])[:60] in keys_q)))]
     ctx.neutral_count = sum(1 for f in findings if f["level"] == "neitrals")
     if ctx.progress:
         try:
