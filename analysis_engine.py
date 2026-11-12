@@ -234,6 +234,7 @@ class AnalysisContext:
     tokens_out: int = 0
     notes: list = field(default_factory=list)
     complete: bool = True          # False, ja kāds slānis neizdevās -> rezultātu nekešo
+    progress: Callable = None      # progress(markdown_vai_None, statusa_teksts): starprezultāts lietotāja saskarnei (neietekmē analīzi)
 
 
 def _strip_diacritics(s):
@@ -589,6 +590,11 @@ def run_analysis(ctx):
         f["_uid"] = f"F{i}"
     sent = sum(1 for f in findings if f["level"] == "kritisks")
     verified = 0
+    if ctx.progress:
+        try:
+            ctx.progress(render_report(findings, summary, ctx.labels), "layer1")
+        except Exception:
+            pass                                 # saskarnes kļūda nedrīkst traucēt analīzi
     if sent:
         try:
             data = run_layer2(ctx, findings)

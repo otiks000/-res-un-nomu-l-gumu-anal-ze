@@ -1137,7 +1137,14 @@ uploaded_file = st.file_uploader(
     key=f"uploader_{st.session_state.get('uploader_gen', 0)}",
 )
 
-pasted_text = st.text_area(T["paste_label"], height=200, key="pasted_text")
+with st.expander(T["paste_label"], expanded=False):
+    # Augstums pēc teksta garuma, lai pilns teksts būtu redzams bez ritināšanas
+    _pt = st.session_state.get("pasted_text", "") or ""
+    _lines = sum(max(1, -(-len(l) // 90)) for l in _pt.split("\n"))
+    pasted_text = st.text_area(
+        T["paste_label"], height=min(max(200, 26 * _lines + 40), 5000),
+        key="pasted_text", label_visibility="collapsed",
+    )
 
 # ---------------------------------------------------------------
 # Likumu teksts: automātiski no likumi.lv (atjaunojas reizi 24 stundās)
@@ -1342,8 +1349,7 @@ def legal_notes_text():
     return "\n".join(f"- {c} {n}. pants: {t}" for (c, n), t in ARTICLE_NOTES.items())
 
 
-@st.cache_data(ttl=datetime.timedelta(days=7), max_entries=100, show_spinner=False)
-def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER):
+def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER, progress=None):
     """Pilna analīze: SQLite kešs -> 1. slānis (checklist JSON) -> 2. slānis (likumu pārbaude) -> korektūra.
     Atslēga SQLite kešā = līguma SHA-256 + prompta versija + modelis + atskaites valoda.
     nonce != 0 (poga "Jauna analīze") apiet kešu un pārraksta ierakstu."""
@@ -1380,7 +1386,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
         kind=kind, content=content, lang_name=lang_name, labels=T,
         llm=llm, llm_verify=llm_verify if laws_text else None,
         valid_articles=lambda code: set(article_index(code).keys()),
-        legal_notes=legal_notes_text(),
+        legal_notes=legal_notes_text(), progress=progress,
     )
     report, info = ae.run_analysis(ctx)
     if not report.strip() or "## " not in report:
@@ -3435,10 +3441,16 @@ if analyze_button:
             st.session_state["terms"] = extract_terms(content) if kind == 'txt' else {}
 
             _t0 = datetime.datetime.now()
+            live = st.empty()                       # starprezultāts parādās, tiklīdz gatavs 1. slānis
+
+            def _show_partial(md, _stage):
+                live.markdown(linkify(md) + "\n\n" + T["spinner_analysis"] + " ⏳")
+
             with st.spinner(T["spinner_analysis"]):
                 analysis_all, laws_source = analyze_contract(
                     api_key, T["report_lang_name"], kind, content,
                     datetime.datetime.now().timestamp() if force_new else 0,
+                    progress=_show_partial,
                 )
             _secs = (datetime.datetime.now() - _t0).total_seconds()
             if "💾" not in laws_source and _secs < 2:
@@ -3446,7 +3458,7 @@ if analyze_button:
             else:
                 laws_source += f" | ⏱ {int(_secs // 60)} min {int(_secs % 60)} s" if _secs >= 60 else f" | ⏱ {_secs:.0f} s"
             st.caption(f"{T['law_source']}: {laws_source}")
-            st.markdown(analysis_all)
+            live.markdown(analysis_all)
 
             if analysis_all:
                 st.markdown(sources_md())
