@@ -525,17 +525,18 @@ def apply_layer2(ctx, findings, data):
 # ---------------------------------------------------------------
 def render_report(findings, summary, labels):
     order = {cid: i for i, cid in enumerate(CHECK_IDS)}
-    groups = {lvl: [] for lvl in SECTION}
+    groups = {"kritisks": [], "bridinajums": []}            # 4 sadaļu shēma: "apsverams" tiek rādīts kopā ar 🟡
     for f in findings:
-        if f["level"] in groups:
-            groups[f["level"]].append(f)
+        lvl = "bridinajums" if f["level"] == "apsverams" else f["level"]
+        if lvl in groups:
+            groups[lvl].append(f)
     for lst in groups.values():
         lst.sort(key=lambda f: (clause_key(f["punkts"]), order.get(f["id"], 999), f["problema"]))
 
-    heads = {"kritisks": labels["h_crit"], "bridinajums": labels["h_warn"], "apsverams": labels["h_border"]}
+    heads = {"kritisks": labels["h_crit"], "bridinajums": labels["h_warn"]}
     out = [f"## 📊 {labels['h_overall']}", summary or "", ""]
     coded = []
-    for lvl in ("kritisks", "bridinajums", "apsverams"):
+    for lvl in ("kritisks", "bridinajums"):
         emoji, letter = SECTION[lvl]
         out.append(f"## {emoji} {heads[lvl]}")
         if not groups[lvl]:
