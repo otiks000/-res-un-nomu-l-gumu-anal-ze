@@ -88,8 +88,9 @@ CHECKLIST = [
 ]
 MONEY_IDS = {"RENT_AMOUNT", "RENT_PAYMENT", "RENT_CHANGE", "UTILITIES", "FUND", "DEPOSIT_AMOUNT", "DEPOSIT_USE",
              "DEPOSIT_REFUND", "LATE_INTEREST", "PENALTY_CAP", "LIABILITY", "REPAIRS_MINOR", "REPAIRS_MAJOR"}
-# Panti, kas skar naudu un zaudējumus: to pārkāpums ir 🔴; visi pārējie likuma pārkāpumi ir 🟡.
-MONEY_ARTICLES = {("DTIL", 8), ("DTIL", 10), ("DTIL", 11), ("DTIL", 12), ("DTIL", 18),
+# Panti, kas skar naudu un zaudējumus: to pārkāpums ir 🔴 (tikai naudas kritērijiem); visi pārējie likuma pārkāpumi ir 🟡.
+# DTIL 8 (līguma saturs) šeit nav: modelis to min gandrīz pie jebkura trūkstoša lauka, un tas pārslēgtu līmeni starp skrējieniem.
+MONEY_ARTICLES = {("DTIL", 10), ("DTIL", 11), ("DTIL", 12), ("DTIL", 18),
                   ("CL", 1716), ("CL", 1717), ("CL", 1764), ("CL", 1765)}
 CHECK_IDS = [c[0] for c in CHECKLIST]
 CHECK_BY_ID = {c[0]: c for c in CHECKLIST}
@@ -335,7 +336,7 @@ def classify(f):
         return "kritisks"
     if f["kind"] == "likuma_parkapums":
         if f["articles"]:
-            return "kritisks" if any(a in MONEY_ARTICLES for a in f["articles"]) else "bridinajums"
+            return "kritisks" if money_item and any(a in MONEY_ARTICLES for a in f["articles"]) else "bridinajums"
         return "kritisks" if cid in MONEY_IDS else "bridinajums"
     if f["kind"] == "naudas_nosacijums":
         return "nauda"
@@ -610,6 +611,41 @@ def apply_money_rules(ctx, items):
 
 
 # ---------------------------------------------------------------
+# Dublikāti: viena problēma nedrīkst parādīties vairākos ierakstos (skaits svārstītos starp skrējieniem)
+# ---------------------------------------------------------------
+_LEVEL_RANK = {"kritisks": 3, "bridinajums": 2}
+
+
+def merge_duplicates(findings):
+    """Apvieno 🔴/🟡 ierakstus ar to pašu punkta numuru un to pašu citātu, ja tie ir tā paša kritērija,
+    dala kādu likuma pantu vai ir viena līmeņa. Paliek augstākais līmenis; panti tiek apvienoti."""
+    out, kept = [], []
+    for f in findings:
+        if f["level"] not in _LEVEL_RANK or not f["punkts"]:
+            out.append(f)
+            continue
+        q = _norm_text(f["quote"])[:60]
+        target = None
+        for g in kept:
+            if clause_key(g["punkts"]) != clause_key(f["punkts"]):
+                continue
+            if not q or _norm_text(g["quote"])[:60] != q:
+                continue
+            if g["id"] == f["id"] or set(g["articles"]) & set(f["articles"]) or g["level"] == f["level"]:
+                target = g
+                break
+        if target is None:
+            kept.append(f)
+            out.append(f)
+            continue
+        if _LEVEL_RANK[f["level"]] > _LEVEL_RANK[target["level"]]:    # augstākā līmeņa ieraksta teksts uzvar
+            for k in ("level", "id", "problema", "ko_mainit", "labojums", "tulkojums", "nosaukums"):
+                target[k] = f[k]
+        target["articles"] = (target["articles"] + [a for a in f["articles"] if a not in target["articles"]])[:4]
+    return out
+
+
+# ---------------------------------------------------------------
 # Atskaites veidošana (Python): fiksēta secība, kodi K/B/M/N, ieteikumi K un B kodiem
 # ---------------------------------------------------------------
 def render_report(findings, summary, labels):
@@ -666,6 +702,8 @@ def _ref(f, with_title=True):
     m = re.search(r"\d+(?:\.\d+)*", f["punkts"] or "")
     num = (m.group() + ".") if m else ""
     title = f["nosaukums"] or (CHECK_BY_ID[f["id"]][1] if f["id"] in CHECK_BY_ID else "")
+    if not num and f["id"] in CHECK_BY_ID:                # punktam bez numura nosaukums ir fiksēts (nemainās starp skrējieniem)
+        title = CHECK_BY_ID[f["id"]][1]
     if with_title:
         return f"{num} ({title})".strip() if num else title
     return num or title
@@ -686,7 +724,7 @@ def run_analysis(ctx):
     allf += ruled
     for f in allf:
         f["level"] = classify(f)
-    findings = [f for f in allf if f["level"] != "nav"]
+    findings = merge_duplicates([f for f in allf if f["level"] != "nav"])
     # 💶 saraksts nedublē to, kas jau atzīmēts kā 🔴 vai 🟡 (tas pats punkta numurs vai tas pats citāts)
     flagged = [f for f in findings if f["level"] in ("kritisks", "bridinajums")]
     keys_n = {clause_key(f["punkts"]) for f in flagged if f["punkts"]}
@@ -808,7 +846,8 @@ def parse_report(text):
                 cur = None
                 continue
             title = re.search(r"\(([^)]*)\)", ref)
-            key = (clause_key(ref), _norm_text(title.group(1)) if title else _norm_text(ref))
+            ck = clause_key(ref)       # ar numuru: tikai numurs (modeļa nosaukums mainās); bez numura: fiksētais kritērija nosaukums
+            key = (ck, "") if ck[0] < 10 ** 6 else (ck, _norm_text(title.group(1)) if title else _norm_text(ref))
             cur = {"level": _LEVEL_BY_LETTER[letter], "code": code, "ref": ref.strip(), "key": key,
                    "problem": _clean(re.sub(r"\[\[[^\]]*\]\]", "", rest)), "quote": "", "fix": ""}
             items.append(cur)
@@ -816,6 +855,9 @@ def parse_report(text):
         elif cur and line.startswith(">") and not cur["quote"]:
             cur["quote"] = _clean(line.lstrip("> "))
     return items
+
+
+_SEV = {"kritisks": 3, "bridinajums": 2, "nauda": 1}
 
 
 def compare_reports(reports):
@@ -832,7 +874,7 @@ def compare_reports(reports):
         for it in p:
             row = rows.setdefault(it["key"], {"key": it["key"], "ref": it["ref"], "levels": [None] * n,
                                               "problems": [""] * n, "fixes": [""] * n, "quotes": [""] * n})
-            if row["levels"][i] is None:              # tas pats punkts atkārtoti vienā analīzē - pirmais uzvar
+            if row["levels"][i] is None or _SEV[it["level"]] > _SEV[row["levels"][i]]:   # atkārtoti vienā analīzē - augstākais līmenis uzvar
                 row["levels"][i] = it["level"]
                 row["problems"][i] = it["problem"]
                 row["fixes"][i] = it["fix"]

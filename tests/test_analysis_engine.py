@@ -88,7 +88,7 @@ class Engine(unittest.TestCase):
         data["items"] = [i for i in data["items"] if i["id"] != "RENT_AMOUNT"]
         repair = {"items": [item("RENT_AMOUNT", "neskaidrs_vai_truksts", atrasts=False, nosaukums="Īres summa", problema="Summa nav norādīta.")]}
         report, info = ae.run_analysis(make_ctx(Fake(data, l1_repair=repair)))
-        self.assertIn("Īres summa", top(report))                             # trūkstoša naudas summa = 🔴
+        self.assertIn("Īres maksas apmērs", top(report))      # punktam bez numura nosaukums ir fiksēts                             # trūkstoša naudas summa = 🔴
         self.assertIn(f"{len(ae.CHECK_IDS)}/{len(ae.CHECK_IDS)}", info)
 
     def test_unrepairable_missing_is_reported_and_not_cached(self):
@@ -145,7 +145,7 @@ class Engine(unittest.TestCase):
             if i["id"] == "UTILITIES":
                 i.update(veids="neskaidrs_vai_truksts", atrasts=False, nosaukums="Komunālie", problema="Nav minēti.")
         report, _ = ae.run_analysis(make_ctx(Fake(data)))
-        self.assertIn("Komunālie: Nav minēti", top(report))
+        self.assertIn("Komunālie maksājumi: Nav minēti", top(report))
 
     def test_floor_for_missing_mandatory_clause(self):
         data = self.good()
@@ -195,6 +195,32 @@ class Engine(unittest.TestCase):
         text, _ = ae.run_proofread(ctx, labels, start=3, with_head=False)    # turpina piezīmju numerāciju zem esošās ⚪ sadaļas
         self.assertNotIn("##", text)
         self.assertIn("N3. 1. Kļūda A", text)
+
+    def test_dwelling_article_8_does_not_escalate(self):
+        f = {"id": "PREMISES", "atrasts": True, "kind": "likuma_parkapums", "flags": dict.fromkeys(ae.FLAGS, False),
+             "articles": [("DTIL", 8)], "force_red": False}
+        self.assertEqual(ae.classify(f), "bridinajums")
+        g = dict(f, id="DEPOSIT_USE", articles=[("DTIL", 12)])
+        self.assertEqual(ae.classify(g), "kritisks")
+        h = dict(f, id="ENTRY", articles=[("DTIL", 18)])         # naudas pants nekāpina ne-naudas kritēriju
+        self.assertEqual(ae.classify(h), "bridinajums")
+
+    def test_duplicates_for_same_clause_are_merged(self):
+        def mk(cid, level, arts):
+            return {"id": cid, "level": level, "punkts": "5.1", "quote": "Īrnieks veic kapitālo remontu", "articles": arts,
+                    "problema": cid, "ko_mainit": "", "labojums": "", "tulkojums": "", "nosaukums": cid}
+        out = ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", [("DTIL", 18)]), mk("FUND", "kritisks", []),
+                                   mk("LIABILITY", "bridinajums", [("DTIL", 18)])])
+        self.assertEqual(len(out), 1)
+        other = mk("TERM", "bridinajums", [("DTIL", 9)])          # cits līmenis, cits kritērijs, nav kopīgu pantu -> paliek atsevišķi
+        self.assertEqual(len(ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", [("DTIL", 18)]), other])), 2)
+
+    def test_compare_ignores_model_titles_and_duplicates(self):
+        a = "## 🔴 K\nK1. 3.2. (Nokavējuma procenti): X.\n> „q”\n\nK2. 3.2. (Līgumsodi): Y.\n\n## 🟡 B\nB1. Pagarināšana: Z.\n"
+        b = "## 🔴 K\nK1. 3.2. (Līgumsoda griesti): X.\n\n## 🟡 B\nB1. Pagarināšana: Z.\n"
+        c = ae.compare_reports([a, b])
+        self.assertEqual(len(c["rows"]), 2)
+        self.assertEqual(c["stability"], 1.0)
 
     def test_order_is_deterministic_by_clause(self):
         a = self.good(); b = self.good(); b["items"] = list(reversed(b["items"]))
