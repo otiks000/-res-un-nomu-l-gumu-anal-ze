@@ -115,8 +115,8 @@ HARD_BLANK_IDS = MONEY_IDS | {"TERM"}      # tukša vai nenoteikta vērtība še
 # Ne-naudas kritēriji, kuros jebkura problēma (likuma pārkāpums vai neskaidrība) ir 🔴. Fiksēts saraksts pēc līguma veida,
 # lai krāsa nebūtu atkarīga no tā, vai modelis punktu nosauca par "pārkāpumu" vai par "neskaidrību".
 LAW_RED_IDS = {
-    "dz": {"TERM", "TENANT_NOTICE", "LANDLORD_NOTICE", "ENTRY"},      # DTIL: noteikts termiņš, uzteikums, netraucēta lietošana
-    "noma": {"TENANT_NOTICE", "LANDLORD_NOTICE"},                     # CL: uzteikums un patvarīga izlikšana
+    "dz": {"TERM", "TENANT_NOTICE", "LANDLORD_NOTICE", "ENTRY", "LAND_REGISTRY"},   # DTIL: termiņš, uzteikums, netraucēta lietošana, zemesgrāmata
+    "noma": {"TENANT_NOTICE", "LANDLORD_NOTICE", "LAND_REGISTRY"},                  # CL: uzteikums, patvarīga izlikšana, zemesgrāmata (2174. p.)
 }
 TYPE_LABEL = {"dz": "dzīvojamo telpu īre", "noma": "telpu noma", "cits": "cits līgums"}
 TYPE_FROM_MODEL = {"dzivojama_ire": "dz", "telpu_noma": "noma", "cits": "cits"}

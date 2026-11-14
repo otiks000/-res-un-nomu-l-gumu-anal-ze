@@ -69,16 +69,16 @@ class Engine(unittest.TestCase):
         ctx = make_ctx(f)
         report, info = ae.run_analysis(ctx)
         self.assertEqual(sorted(f.calls), ["l1", "l1", "l1", "sweep"])        # 3 kritēriju grupas + papildu pārbaude
-        self.assertIn("K1. 4.3. (Depozīts)", top(report))                    # panta DTIL 12 pārkāpums = 🔴
+        self.assertIn("K2. 4.3. (Depozīts)", top(report))                    # panta DTIL 12 pārkāpums = 🔴
         self.assertIn("[[DTIL 12]]", report)
-        self.assertIn("B1. 2.2. (Zemesgrāmata)", report)                     # panta DTIL 28 pārkāpums = 🟡
+        self.assertIn("K1. 2.2. (Zemesgrāmata)", top(report))                # zemesgrāmatas problēma = 🔴 (fiksēts saraksts)
         self.assertIn("[[DTIL 28]]", report)
         self.assertNotIn("999", report)                                      # neesošs pants atmests
-        self.assertIn("B2. 6.1. (Strīdi)", report)                        # punkta numuru nosaka citāts līgumā, nevis modelis
+        self.assertIn("B1. 6.1. (Strīdi)", report)                        # punkta numuru nosaka citāts līgumā, nevis modelis
         self.assertIn("## 💶 Nauda\nM1. 1. (Maksāšana): Īre tiek maksāta mēnesī.", report)   # naudas fakts bez vērtējuma
         self.assertTrue(report.rstrip().split("## ⚪ Neitrālās\n")[1].startswith("N1. 6.1. (Apskate)"))
         self.assertEqual(ctx.neutral_count, 1)
-        for code in ("K1", "B1", "B2"):
+        for code in ("K1", "K2", "B1"):
             self.assertEqual(report.count(f"\n{code}. "), 2, code)           # sadaļā + ieteikumos
         self.assertNotIn("\nM1. 1.: ", report)                               # 💶 un ⚪ nav ieteikumos
         self.assertTrue(ctx.complete)
@@ -244,6 +244,9 @@ class Engine(unittest.TestCase):
             self.assertEqual(c("TERM", kind), "kritisks")
             self.assertEqual(c("ENTRY", kind), "kritisks")
             self.assertEqual(c("LANDLORD_NOTICE", kind), "kritisks")
+        for kind in ("likuma_parkapums", "neskaidrs_vai_truksts"):                                    # zemesgrāmatas aizliegums = 🔴, klusēšana = 🟡
+            self.assertEqual(c("LAND_REGISTRY", kind), "kritisks")
+        self.assertEqual(c("LAND_REGISTRY", "neskaidrs_vai_truksts", atrasts=False), "bridinajums")
         noma = lambda cid, kind: ae.classify(dict(base, id=cid, kind=kind), "noma")
         self.assertEqual(noma("TERM", "likuma_parkapums"), "bridinajums")                           # nenoteikts termiņš nomā ir atļauts
         self.assertEqual(noma("LANDLORD_NOTICE", "neskaidrs_vai_truksts"), "kritisks")
