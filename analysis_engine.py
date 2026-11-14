@@ -7,7 +7,6 @@ Plūsma jaunam līgumam:
   1. slānis: kritēriji sadalīti grupās (nauda / termiņi un izbeigšana / pārējie); katra grupa
      redz VISU līgumu un paralēli atgriež stingru JSON. Modelis nevērtē, tas tikai nosaka faktus:
      veidu, likuma pantus un jā/nē pazīmes. Riska līmeni (🔴 🟡 💶 ⚪) piešķir Python pēc noteikumiem.
-  2. Papildu pārbaude (sweep): atrod to, ko grupas izlaida.
   3. Python pārbauda skaitliskās robežas, pantu esamību, citātus un uzraksta atskaiti.
 """
 import hashlib
@@ -590,41 +589,10 @@ def _clean_extras(extras, contract_norm):
     return sorted(out, key=lambda e: (clause_key(e["punkts"]), _norm_text(e["problema"])))
 
 
-SWEEP_SYSTEM = """PAPILDU PĀRBAUDE. Tu esi Latvijas īres tiesību eksperts. Tev ir dots līgums un saraksts ar atradumiem, kas jau atrasti. Tavs uzdevums ir atrast visu, kas VĒL IR IZLAISTS. Izej cauri līgumam punkts pa punktam.
-Meklē: (1) likuma pārkāpumus (ar konkrētu pantu); (2) naudas nosacījumus un naudas pazīmes (tukšs, bez griestiem, vienpusējs, bez vainas); (3) neskaidrus formulējumus, pretrunas starp punktiem un trūkstošus svarīgus punktus; (4) citus likumīgus atzīmējamus nosacījumus.
-Tu NEVĒRTĒ, vai kas ir "neizdevīgs", tu nosaki tikai faktus. Neatkārto jau atrastos atradumus un neatzīmē valodas kļūdas. Tukši personas dati (vārdi, personas kodi, adreses, konti, paraksti, vieta un datums) nav kļūda.
-Atgriez TIKAI derīgu JSON: {"papildus": [ieraksti]}. Katrs ieraksts: {"id": "CITS" vai tuvākais kritērija id, "atrasts": true, "veids": "likuma_parkapums|naudas_nosacijums|neskaidrs_vai_truksts|citi_nosacijums", "pazimes": {"tukss": false, "bez_griestiem": false, "vienpusejs": false, "bez_vainas": false}, "panti": [{"likums": "DTIL vai CL", "nr": 0}], "punkts": "", "nosaukums": "", "originalais_teksts": "burtisks citāts līdz 300 rakstzīmēm", "problema": "", "ko_mainit": "", "labojums": "gatavs teksts līguma valodā bez pēdiņām", "labojums_tulkojums": ""}.
-Ja nekā jauna nav, atgriez {"papildus": []}."""
-
-
 # Mainot kritērijus vai promptus, atslēga mainās automātiski -> vecie keša ieraksti vairs netiek izmantoti.
 PROMPT_FINGERPRINT = hashlib.sha256(
-    json.dumps([CHECKLIST, CHECK_GROUPS, sorted(MONEY_ARTICLES), LAYER1_SYSTEM, SWEEP_SYSTEM], ensure_ascii=False).encode("utf-8")
+    json.dumps([CHECKLIST, CHECK_GROUPS, sorted(MONEY_ARTICLES), LAYER1_SYSTEM], ensure_ascii=False).encode("utf-8")
 ).hexdigest()[:10]
-
-
-def run_sweep(ctx, items, extras, contract_norm):
-    """Viens papildu izsaukums: atrod to, ko 1. slānis izlaida. Kļūme nav kritiska."""
-    known = [{"punkts": f["punkts"], "tēma": f["nosaukums"] or f["id"], "problēma": f["problema"][:140]}
-             for f in items + extras if f["kind"] != "nav"]
-    intro = (SWEEP_SYSTEM + f"\nATSKAITES VALODA: {ctx.lang_name}. Tekstus raksti šajā valodā; citātus un labojumu līguma valodā.\n"
-             + (f"\nLĪGUMA VEIDS: {TYPE_LABEL[ctx.contract_type]}. Nomas līgumam DTIL nepiemēro.\n" if ctx.contract_type else "")
-             + (f"\nPAMATNOTEIKUMI (kopsavilkums no likuma):\n{_notes_for(ctx)}\n" if _notes_for(ctx) else "")
-             + "\nJAU ATRASTIE ATRADUMI (JSON):\n" + json.dumps(known, ensure_ascii=False))
-    try:
-        data = _ask(ctx, _content_parts(ctx, intro))
-    except ValueError:
-        ctx.notes.append("papildu pārbaude neizdevās")
-        return []
-    new = []
-    for raw in data.get("papildus", []) or []:
-        it = _normalize_item(raw, forced_id="CITS")
-        if it and it["kind"] != "nav" and it["problema"]:
-            new.append(it)
-    if not new:
-        return []
-    mine = {id(x) for x in new}
-    return [e for e in _clean_extras(extras + new, contract_norm) if id(e) in mine]
 
 
 # ---------------------------------------------------------------
@@ -831,8 +799,7 @@ def _ref(f, with_title=True):
 def run_analysis(ctx):
     """Atgriež (markdown atskaite, info rinda). ctx.complete=False, ja kāds slānis neizdevās (nekešot)."""
     items, extras, summary, unchecked, contract_norm = run_layer1(ctx)
-    swept = run_sweep(ctx, items, extras, contract_norm)
-    allf = items + extras + swept
+    allf = items + extras
     dep = next((f for f in items if f["id"] == "DEPOSIT_AMOUNT"), None)
     if dep and not dep["atrasts"]:               # līgumā nav depozīta: tā ieturēšanas un atmaksas trūkums nav kļūda
         for f in items:
@@ -862,7 +829,7 @@ def run_analysis(ctx):
             pass                                 # saskarnes kļūda nedrīkst traucēt analīzi
     report = render_report(findings, summary, ctx.labels)
     total = len(ctx.check_ids) or len(CHECK_IDS)
-    info = (f"📄 {TYPE_LABEL.get(ctx.contract_type, '?')} | ✅ {total - len(unchecked)}/{total} (+{len(swept)}) | "
+    info = (f"📄 {TYPE_LABEL.get(ctx.contract_type, '?')} | ✅ {total - len(unchecked)}/{total} | "
             f"🪙 {ctx.tokens_in}↑ {ctx.tokens_out}↓")
     if unchecked:
         ctx.complete = False

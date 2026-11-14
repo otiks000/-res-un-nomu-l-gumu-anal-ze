@@ -27,9 +27,6 @@ class Fake:
 
     def llm(self, parts, max_tokens):
         text = str(parts)
-        if "PAPILDU PĀRBAUDE" in text:
-            self.calls.append("sweep")
-            return json.dumps(getattr(self, "sweep", {"papildus": []})), (100, 10)
         if "IEPRIEKŠĒJĀ ATBILDĒ" in text:
             self.calls.append("repair")
             return json.dumps(self.l1_repair or self.l1), (100, 50)
@@ -68,7 +65,7 @@ class Engine(unittest.TestCase):
         f = Fake(self.good())
         ctx = make_ctx(f)
         report, info = ae.run_analysis(ctx)
-        self.assertEqual(sorted(f.calls), ["l1", "l1", "l1", "sweep"])        # 3 kritēriju grupas + papildu pārbaude
+        self.assertEqual(sorted(f.calls), ["l1", "l1", "l1"])        # tikai 3 kritēriju grupas, bez papildu pārbaudes
         self.assertIn("K2. 4.3. (Depozīts)", top(report))                    # panta DTIL 12 pārkāpums = 🔴
         self.assertIn("[[DTIL 12]]", report)
         self.assertIn("K1. 2.2. (Zemesgrāmata)", top(report))                # zemesgrāmatas problēma = 🔴 (fiksēts saraksts)
@@ -158,17 +155,17 @@ class Engine(unittest.TestCase):
         report, _ = ae.run_analysis(make_ctx(Fake(data)))
         self.assertIn("## 🔴 Kritiski\nK", report)
 
-    def test_multiple_findings_per_criterion_and_sweep(self):
+    def test_multiple_findings_per_criterion_and_extras(self):
         data = self.good()
         data["items"].append(item("ENTRY", "neskaidrs_vai_truksts", punkts="6.2", nosaukums="Apskate 2",
                                   originalais_teksts="Izīrētājs drīkst ienākt dzīvoklī", problema="Otrs ieejas jautājums."))
+        data["papildus"] = [item("CITS", "neskaidrs_vai_truksts", punkts="1", nosaukums="Adrese",
+                                 originalais_teksts="dzīvokli Rīgā, Brīvības iela 1-5", problema="Nav stāva.")]
         f = Fake(data)
-        f.sweep = {"papildus": [item("CITS", "neskaidrs_vai_truksts", punkts="1", nosaukums="Adrese",
-                                     originalais_teksts="dzīvokli Rīgā, Brīvības iela 1-5", problema="Nav stāva.")]}
         report, info = ae.run_analysis(make_ctx(f))
         self.assertIn("Otrs ieejas jautājums", report)
-        self.assertIn("Nav stāva", report)
-        self.assertIn("(+1)", info)
+        self.assertIn("Nav stāva", report)                    # papildu atradumi nāk no grupām (papildus), atsevišķa izsaukuma nav
+        self.assertNotIn("sweep", f.calls)
 
     def test_numeric_money_rules(self):
         data = self.good()
@@ -319,7 +316,7 @@ class Engine(unittest.TestCase):
     def test_no_findings(self):
         f = Fake({"kopsavilkums": "OK", "items": full_items({}), "papildus": []})
         report, _ = ae.run_analysis(make_ctx(f))
-        self.assertEqual(sorted(f.calls), ["l1", "l1", "l1", "sweep"])
+        self.assertEqual(sorted(f.calls), ["l1", "l1", "l1"])
         self.assertIn("## 🔴 Kritiski\n–", report)
         self.assertNotIn("## ⚪", report)
 
