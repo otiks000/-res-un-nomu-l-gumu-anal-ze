@@ -111,7 +111,7 @@ MISSING_LEVEL = {c[0]: {"kritisks": "kritisks", "apsverams": "bridinajums", "nav
 # Kuram līguma veidam kritērijs attiecas: dz = dzīvojamā īre, noma = nedzīvojamo telpu noma/cits; pārējie abiem.
 APPLIES = {"OCCUPANTS": "dz", "VAT": "noma", "USE_PURPOSE": "noma", "IMPROVEMENTS": "noma",
            "INSURANCE": "noma", "PERMITS": "noma", "SIGNAGE": "noma"}
-HARD_BLANK_IDS = MONEY_IDS | {"TERM"}      # tukša vai nenoteikta vērtība šeit ir 🔴
+HARD_BLANK_IDS = MONEY_IDS | {"TERM", "BLANKS"}      # tukša vai nenoteikta vērtība šeit ir 🔴
 # Ne-naudas kritēriji, kuros jebkura problēma (likuma pārkāpums vai neskaidrība) ir 🔴. Fiksēts saraksts pēc līguma veida,
 # lai krāsa nebūtu atkarīga no tā, vai modelis punktu nosauca par "pārkāpumu" vai par "neskaidrību".
 LAW_RED_IDS = {
@@ -387,7 +387,7 @@ def classify(f, tip="dz"):
     if f["kind"] == "nav":
         return "nav"
     cid = f["id"]
-    money_item = cid in MONEY_IDS or f["kind"] == "naudas_nosacijums"
+    money_item = cid in MONEY_IDS or f["kind"] == "naudas_nosacijums" or cid not in CHECK_BY_ID   # papildu atradumam pazīmes arī skaitās
     if f.get("force_red"):
         return "kritisks"
     if (money_item and any(f["flags"].values())) or (cid in HARD_BLANK_IDS and f["flags"]["tukss"]):

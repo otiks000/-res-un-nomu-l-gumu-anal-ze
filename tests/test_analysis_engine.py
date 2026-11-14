@@ -247,6 +247,11 @@ class Engine(unittest.TestCase):
         for kind in ("likuma_parkapums", "neskaidrs_vai_truksts"):                                    # zemesgrāmatas aizliegums un klusēšana = 🔴
             self.assertEqual(c("LAND_REGISTRY", kind), "kritisks")
         self.assertEqual(c("LAND_REGISTRY", "neskaidrs_vai_truksts", atrasts=False), "kritisks")     # klusēšana arī = 🔴
+        flag = lambda **kw: dict(base["flags"], **kw)
+        self.assertEqual(c("BLANKS", "neskaidrs_vai_truksts", flags=flag(tukss=True)), "kritisks")        # tukša summa arī šajā kritērijā
+        self.assertEqual(c("BLANKS", "neskaidrs_vai_truksts"), "bridinajums")
+        self.assertEqual(c("CITS", "neskaidrs_vai_truksts", flags=flag(bez_griestiem=True)), "kritisks")  # papildu atradums ar naudas pazīmi
+        self.assertEqual(c("CITS", "neskaidrs_vai_truksts"), "bridinajums")
         noma = lambda cid, kind: ae.classify(dict(base, id=cid, kind=kind), "noma")
         self.assertEqual(noma("TERM", "likuma_parkapums"), "bridinajums")                           # nenoteikts termiņš nomā ir atļauts
         self.assertEqual(noma("LANDLORD_NOTICE", "neskaidrs_vai_truksts"), "kritisks")
