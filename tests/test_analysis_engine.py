@@ -74,7 +74,7 @@ class Engine(unittest.TestCase):
         self.assertIn("B1. 2.2. (Zemesgrāmata)", report)                     # panta DTIL 28 pārkāpums = 🟡
         self.assertIn("[[DTIL 28]]", report)
         self.assertNotIn("999", report)                                      # neesošs pants atmests
-        self.assertIn("B2. 9.1. (Strīdi)", report)
+        self.assertIn("B2. 6.1. (Strīdi)", report)                        # punkta numuru nosaka citāts līgumā, nevis modelis
         self.assertIn("## 💶 Nauda\nM1. 1. (Maksāšana): Īre tiek maksāta mēnesī.", report)   # naudas fakts bez vērtējuma
         self.assertTrue(report.rstrip().split("## ⚪ Neitrālās\n")[1].startswith("N1. 6.1. (Apskate)"))
         self.assertEqual(ctx.neutral_count, 1)
@@ -87,9 +87,12 @@ class Engine(unittest.TestCase):
         data = self.good()
         data["items"] = [i for i in data["items"] if i["id"] != "RENT_AMOUNT"]
         repair = {"items": [item("RENT_AMOUNT", "neskaidrs_vai_truksts", atrasts=False, nosaukums="Īres summa", problema="Summa nav norādīta.")]}
-        report, info = ae.run_analysis(make_ctx(Fake(data, l1_repair=repair)))
-        self.assertIn("Īres maksas apmērs", top(report))      # punktam bez numura nosaukums ir fiksēts                             # trūkstoša naudas summa = 🔴
-        self.assertIn(f"{len(ae.CHECK_IDS)}/{len(ae.CHECK_IDS)}", info)
+        ctx = make_ctx(Fake(data, l1_repair=repair))
+        report, info = ae.run_analysis(ctx)
+        self.assertIn("Īres maksas apmērs", top(report))      # punktam bez numura nosaukums ir fiksēts; trūkstoša summa = 🔴
+        n = len(ctx.check_ids)
+        self.assertEqual(n, len([c for c in ae.CHECK_IDS if ae.applies(c, "dz")]))
+        self.assertIn(f"{n}/{n}", info)
 
     def test_unrepairable_missing_is_reported_and_not_cached(self):
         data = self.good()
@@ -133,8 +136,8 @@ class Engine(unittest.TestCase):
         data = self.good()
         data["items"].append(item("UTILITIES", "likuma_parkapums", punkts="4.1", nosaukums="Komunālie",
                                   originalais_teksts="jebkurā laikā", problema="Pārkāpums."))
-        data["items"].append(item("OCCUPANTS", "likuma_parkapums", punkts="6.2", nosaukums="Iemitinātie",
-                                  originalais_teksts="jebkurā laikā", problema="Pārkāpums."))
+        data["items"].append(item("OCCUPANTS", "likuma_parkapums", punkts="1", nosaukums="Iemitinātie",
+                                  originalais_teksts="Izīrētājs izīrē dzīvokli Rīgā", problema="Pārkāpums."))
         report, _ = ae.run_analysis(make_ctx(Fake(data)))
         self.assertIn("(Komunālie)", top(report))
         self.assertIn("(Iemitinātie)", report.split("## 🟡")[1].split("## 💶")[0])
@@ -150,8 +153,8 @@ class Engine(unittest.TestCase):
     def test_floor_for_missing_mandatory_clause(self):
         data = self.good()
         for i in data["items"]:
-            if i["id"] == "LAND_REGISTRY":
-                i.update(atrasts=False, originalais_teksts="", panti=[])
+            if i["id"] == "TERM":
+                i.update(veids="neskaidrs_vai_truksts", atrasts=False, originalais_teksts="", panti=[], problema="Nav termiņa.")
         report, _ = ae.run_analysis(make_ctx(Fake(data)))
         self.assertIn("## 🔴 Kritiski\nK", report)
 
@@ -206,14 +209,20 @@ class Engine(unittest.TestCase):
         self.assertEqual(ae.classify(h), "bridinajums")
 
     def test_duplicates_for_same_clause_are_merged(self):
-        def mk(cid, level, arts):
-            return {"id": cid, "level": level, "punkts": "5.1", "quote": "Īrnieks veic kapitālo remontu", "articles": arts,
-                    "problema": cid, "ko_mainit": "", "labojums": "", "tulkojums": "", "nosaukums": cid}
+        def mk(cid, level, arts, punkts="5.1", problema=None):
+            return {"id": cid, "level": level, "punkts": punkts, "quote": "q", "articles": arts,
+                    "problema": problema or cid, "ko_mainit": "", "labojums": "", "tulkojums": "", "nosaukums": cid}
         out = ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", [("DTIL", 18)]), mk("FUND", "kritisks", []),
-                                   mk("LIABILITY", "bridinajums", [("DTIL", 18)])])
-        self.assertEqual(len(out), 1)
-        other = mk("TERM", "bridinajums", [("DTIL", 9)])          # cits līmenis, cits kritērijs, nav kopīgu pantu -> paliek atsevišķi
-        self.assertEqual(len(ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", [("DTIL", 18)]), other])), 2)
+                                   mk("RENT_CHANGE", "kritisks", [("DTIL", 10)])])
+        self.assertEqual(len(out), 1)                              # tas pats punkts + tas pats līmenis = viens ieraksts
+        self.assertIn("FUND", out[0]["problema"])                  # problēmu teksti saglabāti
+        self.assertEqual(len(out[0]["articles"]), 2)
+        diff = ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", []), mk("TERM", "bridinajums", [])])
+        self.assertEqual(len(diff), 2)                             # cits līmenis paliek atsevišķi
+        other = ae.merge_duplicates([mk("REPAIRS_MAJOR", "kritisks", []), mk("FUND", "kritisks", [], punkts="6.1")])
+        self.assertEqual(len(other), 2)                            # cits punkts paliek atsevišķi
+        nonum = ae.merge_duplicates([mk("ENTRY", "bridinajums", [], punkts=""), mk("ENTRY", "bridinajums", [], punkts="")])
+        self.assertEqual(len(nonum), 1)                            # bez numura apvieno pēc kritērija
 
     def test_compare_ignores_model_titles_and_duplicates(self):
         a = "## 🔴 K\nK1. 3.2. (Nokavējuma procenti): X.\n> „q”\n\nK2. 3.2. (Līgumsodi): Y.\n\n## 🟡 B\nB1. Pagarināšana: Z.\n"
@@ -221,6 +230,70 @@ class Engine(unittest.TestCase):
         c = ae.compare_reports([a, b])
         self.assertEqual(len(c["rows"]), 2)
         self.assertEqual(c["stability"], 1.0)
+
+    def test_contract_type_detection(self):
+        self.assertEqual(ae.detect_contract_type("Dzīvojamo telpu īres līgums. Īrnieks un Izīrētājs. Dzīvoklis."), "dz")
+        self.assertEqual(ae.detect_contract_type("Nedzīvojamo telpu nomas līgums. Nomnieks, Iznomātājs, birojs."), "noma")
+        self.assertEqual(ae.detect_contract_type("Līgums bez nekādām norādēm."), "")
+
+    def test_fixed_level_table(self):
+        base = {"atrasts": True, "flags": dict.fromkeys(ae.FLAGS, False), "articles": [], "force_red": False}
+        c = lambda cid, kind, **kw: ae.classify(dict(base, id=cid, kind=kind, **kw))
+        self.assertEqual(c("ENTRY", "likuma_parkapums", articles=[("DTIL", 18)]), "bridinajums")   # panti līmeni nemaina
+        self.assertEqual(c("RENT_CHANGE", "neskaidrs_vai_truksts"), "kritisks")                     # naudas kritērijs = 🔴
+        self.assertEqual(c("PARTIES", "neskaidrs_vai_truksts"), "bridinajums")
+        self.assertEqual(c("TERM", "neskaidrs_vai_truksts", flags=dict(base["flags"], tukss=True)), "kritisks")  # tukšs termiņš
+        self.assertEqual(c("RENT_AMOUNT", "naudas_nosacijums", flags=dict(base["flags"], tukss=True)), "kritisks")
+        self.assertEqual(c("RENT_AMOUNT", "naudas_nosacijums"), "nauda")
+        self.assertEqual(c("TERM", "neskaidrs_vai_truksts", atrasts=False), "kritisks")             # trūkst obligāta tēma
+        self.assertEqual(c("PARTIES", "neskaidrs_vai_truksts", atrasts=False), "bridinajums")
+        self.assertEqual(c("PENALTY_CAP", "neskaidrs_vai_truksts", atrasts=False), "nav")           # trūkums netiek atzīmēts
+
+    def test_clause_number_comes_from_contract_quote(self):
+        ctx = make_ctx(Fake({}))
+        f = {"quote": "Izīrētājs drīkst ienākt dzīvoklī jebkurā laikā", "punkts": "99"}
+        ae.assign_clauses(ctx, [f])
+        self.assertEqual(f["punkts"], "6.1")
+
+    def test_no_deposit_means_no_deposit_findings(self):
+        data = self.good()
+        for i in data["items"]:
+            if i["id"] == "DEPOSIT_AMOUNT":
+                i.update(veids="nav", atrasts=False)
+            if i["id"] == "DEPOSIT_REFUND":
+                i.update(veids="neskaidrs_vai_truksts", atrasts=False, problema="Nav atmaksas.")
+        report, _ = ae.run_analysis(make_ctx(Fake(data)))
+        self.assertNotIn("Nav atmaksas", report)
+
+    def test_commercial_lease_uses_lease_criteria_and_no_dtil(self):
+        content = "Nedzīvojamo telpu nomas līgums.\n1. Nomnieks maksā nomas maksu.\n2. Nomas maksa ir _____ EUR."
+        ctx = ae.AnalysisContext(kind="txt", content=content, lang_name="latviešu", labels=LABELS, llm=None,
+                                 valid_articles=lambda c: {8, 12} if c == "DTIL" else {2151})
+        prompts = []
+        def llm(parts, mt):
+            prompts.append(str(parts))
+            items = [item("RENT_AMOUNT", "naudas_nosacijums", punkts="2", nosaukums="Maksa", originalais_teksts="Nomas maksa ir _____ EUR",
+                          problema="Summa nav ierakstīta.", pazimes={"tukss": True}, panti=[{"likums": "DTIL", "nr": 12}])]
+            return json.dumps({"lig_veids": "telpu_noma", "kopsavilkums": "x", "items": items, "papildus": []}), (1, 1)
+        ctx.llm = llm
+        report, info = ae.run_analysis(ctx)
+        joined = "".join(prompts)
+        self.assertEqual(ctx.contract_type, "noma")
+        self.assertIn("telpu noma", info)
+        self.assertNotIn('id="OCCUPANTS"', joined)                       # dzīvojamās īres kritērijs nomai netiek prasīts
+        self.assertIn('id="VAT"', joined)                                # nomas kritērijs tiek prasīts
+        self.assertNotIn("DTIL", joined.split("DOTIE KRITĒRIJI")[1].split("LĪGUMA TEKSTS")[0])
+        self.assertIn("K1. 2. (Maksa)", top(report))                     # tukša cena = 🔴
+        self.assertNotIn("[[DTIL", report)                               # nomai DTIL pants tiek atmests
+
+    def test_unknown_type_is_decided_by_model(self):
+        ctx = ae.AnalysisContext(kind="pdf", content=b"x", lang_name="latviešu", labels=LABELS, llm=None)
+        def llm(parts, mt):
+            return json.dumps({"lig_veids": "telpu_noma", "kopsavilkums": "x", "items": [], "papildus": []}), (1, 1)
+        ctx.llm = llm
+        ae.run_analysis(ctx)
+        self.assertEqual(ctx.contract_type, "noma")
+        self.assertNotIn("OCCUPANTS", ctx.check_ids)
 
     def test_order_is_deterministic_by_clause(self):
         a = self.good(); b = self.good(); b["items"] = list(reversed(b["items"]))

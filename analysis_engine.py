@@ -34,19 +34,19 @@ CHECKLIST = [
     ("PARTIES", "Pušu dati un rekvizīti",
      "Vai ir paredzēta vieta pušu vārdiem, personas kodiem, adresēm, tālrunim, e-pastam (tukši lauki NAV kļūda; kļūda ir, ja vietas VISPĀR nav).", "apsverams"),
     ("PREMISES", "Telpu apraksts",
-     "Precīza adrese, platība, kadastra apzīmējums, telpu raksturojums (DTIL 8. pants).", "apsverams"),
+     "Precīza adrese, platība, kadastra apzīmējums, telpu raksturojums (DTIL 8. pants).", "kritisks"),
     ("TERM", "Līguma termiņš",
-     "Vai ir noteikts sākuma un beigu datums (līgums jāslēdz uz noteiktu termiņu). Tukšs termiņa lauks ir jāatzīmē.", "apsverams"),
+     "Vai ir noteikts sākuma un beigu datums (līgums jāslēdz uz noteiktu termiņu). Tukšs termiņa lauks ir jāatzīmē.", "kritisks"),
     ("RENEWAL", "Pagarināšana",
      "Kā līgumu var pagarināt vai atjaunot; vai nav automātisku vienpusēju nosacījumu.", "apsverams"),
     ("TENANT_NOTICE", "Īrnieka uzteikums",
-     "Īrnieka tiesības izbeigt līgumu, uzteikuma termiņš un kārtība (nedrīkst būt sliktāk par likumu, DTIL 20., 27. pants).", "apsverams"),
+     "Īrnieka tiesības izbeigt līgumu, uzteikuma termiņš un kārtība (nedrīkst būt sliktāk par likumu, DTIL 20., 27. pants).", "kritisks"),
     ("LANDLORD_NOTICE", "Izīrētāja uzteikums un atkāpšanās",
-     "Pamati un termiņi, kad izīrētājs drīkst izbeigt līgumu (tikai likumā noteiktie gadījumi, DTIL 21.–27. pants); vienpusēja izlikšana.", "apsverams"),
+     "Pamati un termiņi, kad izīrētājs drīkst izbeigt līgumu (tikai likumā noteiktie gadījumi, DTIL 21.–27. pants); vienpusēja izlikšana.", "kritisks"),
     ("RENT_AMOUNT", "Īres maksas apmērs",
      "Summa, valūta, kas ir iekļauts maksā. Tukša summa ir jāatzīmē.", "kritisks"),
     ("RENT_PAYMENT", "Īres maksas samaksa",
-     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "kritisks"),
+     "Maksāšanas termiņš, kārtība, kur un kā maksāt (konts/IBAN, maksājuma saņēmējs).", "apsverams"),
     ("RENT_CHANGE", "Īres maksas maiņa",
      "Vai izīrētājs var vienpusēji palielināt maksu; vai ir likumiski nosacījumi un kārtība (DTIL 10. pants).", "kritisks"),
     ("UTILITIES", "Komunālie maksājumi",
@@ -54,15 +54,15 @@ CHECKLIST = [
     ("FUND", "Uzkrājumu fonds un kapitālie maksājumi",
      "Vai īrniekam uzlikti kapitālā remonta, uzkrājumu fonda vai citi īpašnieka pienākumi apmaksāt maksājumi.", "nav"),
     ("DEPOSIT_AMOUNT", "Drošības depozīta apmērs",
-     "Apmērs; nedrīkst pārsniegt divu mēnešu īres maksu (DTIL 12. pants).", "kritisks"),
+     "Apmērs; nedrīkst pārsniegt divu mēnešu īres maksu (DTIL 12. pants).", "apsverams"),
     ("DEPOSIT_USE", "Depozīta ieturēšana",
      "Kādos gadījumos un kā drīkst ieturēt; vai tiek paziņots un pierādīti zaudējumi; patvaļīga ieturēšana.", "kritisks"),
     ("DEPOSIT_REFUND", "Depozīta atmaksa",
      "Atmaksas termiņš (garāks par 10 darba dienām = apsverams punkts), kārtība.", "kritisks"),
     ("LATE_INTEREST", "Nokavējuma procenti",
-     "Procentu apmērs un aprēķins; vai nav pārmērīgi (CL 1764.–1765. pants).", "kritisks"),
+     "Procentu apmērs un aprēķins; vai nav pārmērīgi (CL 1764.–1765. pants).", "nav"),
     ("PENALTY_CAP", "Līgumsodi un to griesti",
-     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "kritisks"),
+     "Līgumsoda apmērs, griesti, samērīgums (CL 1716., 1717. pants); neskaidri 'VAI' formulējumi starp soda veidiem.", "nav"),
     ("LIABILITY", "Atbildība par zaudējumiem",
      "Atbildība bez vainas vai bez pierādījumiem, pārmērīga atbildība par bojājumiem, atbildības ierobežojumi.", "nav"),
     ("REPAIRS_MINOR", "Sīkie remontdarbi",
@@ -78,15 +78,27 @@ CHECKLIST = [
     ("RESTRICTIONS", "Apakšīre, dzīvnieki un lietošanas ierobežojumi",
      "Apakšīre, mājdzīvnieki, viesi, smēķēšana, citi aizliegumi un to sekas.", "apsverams"),
     ("LAND_REGISTRY", "Zemesgrāmata un īpašnieka maiņa",
-     "Vai paredzēta īres tiesību nostiprināšana zemesgrāmatā; bez tās jaunais īpašnieks var prasīt atbrīvot telpas (DTIL 28., 35. pants).", "kritisks"),
+     "Vai paredzēta īres tiesību nostiprināšana zemesgrāmatā; bez tās jaunais īpašnieks var prasīt atbrīvot telpas (DTIL 28., 35. pants).", "apsverams"),
     ("VACATE", "Telpu atbrīvošana",
      "Telpu atbrīvošanas kārtība un termiņi līguma beigās; soda sankcijas par aizkavēšanos (DTIL 29. pants).", "apsverams"),
     ("DISPUTES", "Strīdu risināšana un piemērojamais likums",
      "Piemērojamais likums, jurisdikcija, strīdu kārtība, paziņojumu forma un adreses.", "apsverams"),
+    ("VAT", "PVN",
+     "Vai ir norādīts, vai īres/nomas maksa ir ar PVN vai bez tā un kura puse maksā PVN (tukšs vai nenoteikts = tukss).", "kritisks"),
+    ("USE_PURPOSE", "Atļautais lietošanas veids",
+     "Kādam mērķim un kādai darbībai telpas drīkst izmantot; ierobežojumi (CL 2151. pants).", "apsverams"),
+    ("IMPROVEMENTS", "Uzlabojumi un pārbūve",
+     "Vai nomnieks drīkst veikt uzlabojumus vai pārbūvi (ar kādu piekrišanu), kam tie pieder un vai tos atlīdzina līguma beigās (CL 2140., 2155., 2156. pants).", "apsverams"),
+    ("INSURANCE", "Apdrošināšana",
+     "Kura puse apdrošina telpas, īpašumu un civiltiesisko atbildību.", "apsverams"),
+    ("PERMITS", "Atļaujas un drošība",
+     "Vai paredzētas darbībai nepieciešamās atļaujas, ugunsdrošības un citas prasības un kura puse par tām atbild.", "apsverams"),
+    ("SIGNAGE", "Reklāma un izkārtnes",
+     "Vai nomnieks drīkst izvietot izkārtnes un reklāmu; kārtība.", "nav"),
     ("BLANKS", "Tukši vai neskaidri būtiski lauki",
      "Finansiāli vai juridiski būtiski tukši lauki (summas, termiņi, procenti) un nenoteikti termini ('citi maksājumi', 'pēc vajadzības').", "nav"),
 ]
-MONEY_IDS = {"RENT_AMOUNT", "RENT_PAYMENT", "RENT_CHANGE", "UTILITIES", "FUND", "DEPOSIT_AMOUNT", "DEPOSIT_USE",
+MONEY_IDS = {"VAT", "RENT_AMOUNT", "RENT_PAYMENT", "RENT_CHANGE", "UTILITIES", "FUND", "DEPOSIT_AMOUNT", "DEPOSIT_USE",
              "DEPOSIT_REFUND", "LATE_INTEREST", "PENALTY_CAP", "LIABILITY", "REPAIRS_MINOR", "REPAIRS_MAJOR"}
 # Panti, kas skar naudu un zaudējumus: to pārkāpums ir 🔴 (tikai naudas kritērijiem); visi pārējie likuma pārkāpumi ir 🟡.
 # DTIL 8 (līguma saturs) šeit nav: modelis to min gandrīz pie jebkura trūkstoša lauka, un tas pārslēgtu līmeni starp skrējieniem.
@@ -94,19 +106,56 @@ MONEY_ARTICLES = {("DTIL", 10), ("DTIL", 11), ("DTIL", 12), ("DTIL", 18),
                   ("CL", 1716), ("CL", 1717), ("CL", 1764), ("CL", 1765)}
 CHECK_IDS = [c[0] for c in CHECKLIST]
 CHECK_BY_ID = {c[0]: c for c in CHECKLIST}
+# Trūkstoša kritērija līmenis (fiksēta tabula; modelis to neietekmē). None = trūkums netiek atzīmēts.
+MISSING_LEVEL = {c[0]: {"kritisks": "kritisks", "apsverams": "bridinajums", "nav": None}[c[3]] for c in CHECKLIST}
+# Kuram līguma veidam kritērijs attiecas: dz = dzīvojamā īre, noma = nedzīvojamo telpu noma/cits; pārējie abiem.
+APPLIES = {"OCCUPANTS": "dz", "VAT": "noma", "USE_PURPOSE": "noma", "IMPROVEMENTS": "noma",
+           "INSURANCE": "noma", "PERMITS": "noma", "SIGNAGE": "noma"}
+HARD_BLANK_IDS = MONEY_IDS | {"TERM"}      # tukša vai nenoteikta vērtība šeit ir 🔴
+TYPE_LABEL = {"dz": "dzīvojamo telpu īre", "noma": "telpu noma", "cits": "cits līgums"}
+TYPE_FROM_MODEL = {"dzivojama_ire": "dz", "telpu_noma": "noma", "cits": "cits"}
+
+
+def _group(tip):
+    return "dz" if tip == "dz" else "noma"
+
+
+def applies(cid, tip):
+    """Vai kritērijs attiecas uz līguma veidu tip ('dz'/'noma'/'cits'; tukšs = nav zināms, der visi)."""
+    return not tip or APPLIES.get(cid, "abi") in ("abi", _group(tip))
+
+
+def detect_contract_type(text):
+    """Līguma veids pēc atslēgvārdiem bez modeļa izsaukuma: 'dz', 'noma' vai '' (nav skaidrs)."""
+    t = _strip_diacritics(str(text or "").lower())
+    non_res = t.count("nedzivojam")
+    res = t.count("dzivojam") - non_res + t.count("dzivokl")
+    n_dz = res + t.count("irnieks") + t.count("izireta")
+    n_noma = 4 * non_res + t.count("nomnieks") + t.count("iznomata")
+    if non_res and non_res >= res:
+        return "noma"
+    if not n_dz and not n_noma:
+        return ""
+    if n_noma >= 2 * n_dz:
+        return "noma"
+    if n_dz >= 2 * n_noma:
+        return "dz"
+    return ""
 # Kritēriju grupas: katra grupa redz visu līgumu, bet pārbauda šaurāku tēmu loku (stabilāks rezultāts).
 CHECK_GROUPS = [
     [c for c in CHECK_IDS if c in MONEY_IDS or c == "BLANKS"],
     ["PARTIES", "PREMISES", "TERM", "RENEWAL", "TENANT_NOTICE", "LANDLORD_NOTICE", "LAND_REGISTRY", "VACATE", "DISPUTES"],
-    ["ENTRY", "HANDOVER", "OCCUPANTS", "RESTRICTIONS"],
+    ["ENTRY", "HANDOVER", "OCCUPANTS", "RESTRICTIONS", "USE_PURPOSE", "IMPROVEMENTS", "INSURANCE", "PERMITS", "SIGNAGE"],
 ]
 assert sorted(sum(CHECK_GROUPS, [])) == sorted(CHECK_IDS)
 
-LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres tiesību eksperts. Pārbaudi doto līgumu pret DOTAJIEM kritērijiem un atgriez TIKAI derīgu JSON, bez cita teksta.
+LAYER1_SYSTEM = """Tu esi pieredzējis Latvijas īres un nomas tiesību eksperts. Pārbaudi doto līgumu pret DOTAJIEM kritērijiem un atgriez TIKAI derīgu JSON, bez cita teksta.
 
 MĒRĶIS: atrast VISUS punktus, kas attiecas uz dotajiem kritērijiem, neviena neizlaižot. Izej cauri līgumam punkts pa punktam (katru numurēto punktu un apakšpunktu) un katram piemēro visus dotos kritērijus.
 
 TU NEIZSAKI VIEDOKLI UN NEVĒRTĒ, VAI KAS IR "NEIZDEVĪGS". Tu nosaki tikai faktus: veidu, likuma pantus un jā/nē pazīmes. Riska līmeni piešķir programma.
+
+LĪGUMA VEIDS ("lig_veids"): "dzivojama_ire" (dzīvojamo telpu īre), "telpu_noma" (nedzīvojamo telpu vai citas lietas noma) vai "cits". Nosaki pēc līguma satura un norādi JSON laukā "lig_veids". Kritērijus ar atzīmi [TIKAI DZĪVOJAMAI ĪREI] vai [TIKAI NOMAI] piemēro tikai attiecīgajam veidam; citam veidam to ierakstu atgriez ar veidu "nav" un atrasts=false. Nomas līgumam Dzīvojamo telpu īres likumu (DTIL) NEPIEMĒRO un tā pantus NEMINI.
 
 VEIDS ("veids"), izvēlies VIENU:
 - "likuma_parkapums": punkts pārkāpj konkrētu likuma pantu. Norādi to laukā "panti" (tikai panti no PAMATNOTEIKUMIEM). Ja nevari nosaukt konkrētu pantu, šo veidu NELIETO.
@@ -122,6 +171,7 @@ NAUDAS PAZĪMES ("pazimes", jā/nē, tikai pēc līguma teksta; katram naudas at
 - "vienpusejs": izīrētājs var vienpusēji mainīt maksu vai nosacījumus, ieturēt naudu bez paziņošanas un pierādījumiem vai vienpusēji izlikt.
 - "bez_vainas": īrnieks atbild par zaudējumiem bez vainas vai bez pierādījumiem.
 
+CENAI JĀBŪT FIKSĒTAI: īres vai nomas maksa, depozīts, soda procents un termiņi jābūt ierakstīti uzreiz. Tukšs lauks (_____), "pēc vienošanās", "tirgus apstākļi" vai "pēc vajadzības" ir pazīme "tukss". Tas neattiecas uz personas datiem zemāk.
 TUKŠIE LAUKI: tukši lauki, kas jāaizpilda parakstot un kas ir personas vai identifikācijas dati (vārdi, personas kodi, adreses, tālruņi, e-pasti, bankas konti, kadastra numuri, paraksti, noslēgšanas vieta un datums), NAV kļūda, un tos neatzīmē. Finansiāli vai juridiski būtiski tukši lauki (īres summa, depozīta summa, termiņi, procenti, uzteikuma termiņš) jāatzīmē (pazīme "tukss"). Ja līgumā VISPĀR nav vietas svarīgiem datiem (piem., kur maksāt īri), tas jāatzīmē.
 
 NOTEIKUMI:
@@ -140,7 +190,7 @@ NOTEIKUMI:
 - "skaitli": skaitļi, ko izvelc burtiski no līguma (nekad neaprēķini un neizdomā; ja nav norādīts, null): "ires_summa_mened", "depozits", "depozita_atmaksa_darba_dienas", "soda_likme_diena_proc" (līgumsoda vai nokavējuma procenti, pārrēķināti uz % dienā; null, ja nav), "tuksi_naudas_lauki" (true, ja ir tukša vai nenoteikta īres, depozīta, soda vai procentu summa/termiņš), "neierobezoti_maksajumi" (true, ja ir maksājumi bez summas vai griestiem).
 
 JSON STRUKTŪRA:
-{"kopsavilkums": "...", "skaitli": {"ires_summa_mened": null, "depozits": null, "depozita_atmaksa_darba_dienas": null, "soda_likme_diena_proc": null, "tuksi_naudas_lauki": false, "neierobezoti_maksajumi": false}, "items": [{"id": "...", "atrasts": true, "veids": "likuma_parkapums|naudas_nosacijums|neskaidrs_vai_truksts|citi_nosacijums|nav", "pazimes": {"tukss": false, "bez_griestiem": false, "vienpusejs": false, "bez_vainas": false}, "panti": [], "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
+{"lig_veids": "dzivojama_ire|telpu_noma|cits", "kopsavilkums": "...", "skaitli": {"ires_summa_mened": null, "depozits": null, "depozita_atmaksa_darba_dienas": null, "soda_likme_diena_proc": null, "tuksi_naudas_lauki": false, "neierobezoti_maksajumi": false}, "items": [{"id": "...", "atrasts": true, "veids": "likuma_parkapums|naudas_nosacijums|neskaidrs_vai_truksts|citi_nosacijums|nav", "pazimes": {"tukss": false, "bez_griestiem": false, "vienpusejs": false, "bez_vainas": false}, "panti": [], "punkts": "", "nosaukums": "", "originalais_teksts": "", "problema": "", "ko_mainit": "", "labojums": "", "labojums_tulkojums": ""}], "papildus": [ same structure with "id": "CITS" ]}
 """
 
 # ---------------------------------------------------------------
@@ -219,6 +269,9 @@ class AnalysisContext:
     llm: Callable                  # llm(parts:list, max_tokens:int) -> (teksts, (ievade_žetoni, izvade_žetoni))
     valid_articles: Callable = None  # valid_articles("DTIL"|"CL") -> kopa ar esošajiem pantu numuriem
     legal_notes: str = ""          # īss pamatnoteikumu saraksts 1. slānim
+    legal_notes_noma: str = ""     # tas pats nomas līgumiem (bez DTIL); ja tukšs, lieto legal_notes
+    contract_type: str = ""        # 'dz' | 'noma' | 'cits' | '' (nav zināms; to nosaka detect_contract_type vai modelis)
+    check_ids: list = field(default_factory=list)   # kritēriji, kas attiecas uz šo līgumu
     tokens_in: int = 0
     tokens_out: int = 0
     notes: list = field(default_factory=list)
@@ -314,35 +367,36 @@ def _validate_articles(ctx, f):
             code, nr = str(a.get("likums", "")).upper(), int(a.get("nr"))
         except (AttributeError, TypeError, ValueError):
             continue
+        if code == "DTIL" and ctx.contract_type in ("noma", "cits"):
+            continue
         if code in valid and (valid[code] is None or nr in valid[code]) and (code, nr) not in arts:
             arts.append((code, nr))
     f["articles"] = arts[:4]
 
 
 def classify(f):
-    """Riska līmeni nosaka Python pēc fiksētiem noteikumiem, nevis modelis."""
+    """Riska līmeni nosaka Python pēc fiksētas tabulas (kritērijs + jā/nē pazīmes), nevis modeļa izvēlēti panti.
+    🔴: tukša/nenoteikta cena, termiņš vai procents, vienpusēja vai neierobežota nauda, naudas kritērija problēma,
+    trūkstoša obligāta tēma. 🟡: citu kritēriju problēmas un trūkumi. 💶: naudas fakti. ⚪: neitrāli nosacījumi."""
     if f["kind"] == "nav":
         return "nav"
     cid = f["id"]
     money_item = cid in MONEY_IDS or f["kind"] == "naudas_nosacijums"
     if f.get("force_red"):
         return "kritisks"
-    if not f["atrasts"]:                       # trūkstošs punkts: minimumu nosaka kritērija "floor"
-        floor = CHECK_BY_ID[cid][3] if cid in CHECK_BY_ID else "nav"
-        if floor == "kritisks" or (money_item and f["flags"]["tukss"]):
-            return "kritisks"
-        return "bridinajums"
-    if money_item and any(f["flags"].values()):    # objektīvi naudas gadījumi
-        return "kritisks"
-    if f["kind"] == "likuma_parkapums":
-        if f["articles"]:
-            return "kritisks" if money_item and any(a in MONEY_ARTICLES for a in f["articles"]) else "bridinajums"
-        return "kritisks" if cid in MONEY_IDS else "bridinajums"
+    if (money_item and any(f["flags"].values())) or (cid in HARD_BLANK_IDS and f["flags"]["tukss"]):
+        return "kritisks"                       # objektīvi naudas gadījumi
+    if not f["atrasts"]:                        # trūkstošs punkts: līmeni nosaka kritērija tabula
+        return (MISSING_LEVEL.get(cid) or "nav") if cid in CHECK_BY_ID else "bridinajums"
     if f["kind"] == "naudas_nosacijums":
         return "nauda"
-    if f["kind"] == "neskaidrs_vai_truksts":
-        return "bridinajums"
-    return "neitrals"                           # citi_nosacijums
+    if f["kind"] == "citi_nosacijums":
+        return "neitrals"
+    if cid in CHECK_BY_ID:                      # likuma pārkāpums vai neskaidrība: naudas kritērijs 🔴, pārējie 🟡
+        return "kritisks" if cid in MONEY_IDS else "bridinajums"
+    if f["kind"] == "likuma_parkapums" and any(a in MONEY_ARTICLES for a in f["articles"]):
+        return "kritisks"                       # papildu atradumi bez kritērija: naudas pants
+    return "bridinajums"
 
 
 def _ask(ctx, parts, max_tokens=16000, tries=2):
@@ -367,12 +421,21 @@ def _content_parts(ctx, intro):
     return [intro, {"mime_type": mime, "data": ctx.content}]
 
 
-def _checklist_text(ids):
+def _checklist_text(ids, tip=""):
     lines = []
     for cid in ids:
         _, name, what, floor = CHECK_BY_ID[cid]
-        lines.append(f'- id="{cid}" | {name} | pārbaudi: {what}' + (" | ja trūkst, atzīmē obligāti" if floor != "nav" else ""))
+        if _group(tip) == "noma" and tip:          # nomai DTIL norādes tiek izņemtas
+            what = re.sub(r"\s*\([^()]*DTIL[^()]*\)", "", what)
+        tag = ""
+        if not tip and APPLIES.get(cid, "abi") != "abi":
+            tag = " | [TIKAI DZĪVOJAMAI ĪREI]" if APPLIES[cid] == "dz" else " | [TIKAI NOMAI]"
+        lines.append(f'- id="{cid}" | {name} | pārbaudi: {what}{tag}' + (" | ja trūkst, atzīmē obligāti" if MISSING_LEVEL[cid] else ""))
     return "\n".join(lines)
+
+
+def _notes_for(ctx):
+    return (ctx.legal_notes_noma or ctx.legal_notes) if ctx.contract_type in ("noma", "cits") else ctx.legal_notes
 
 
 def _layer1_intro(ctx, ids):
@@ -380,8 +443,9 @@ def _layer1_intro(ctx, ids):
         LAYER1_SYSTEM
         + f"\nATSKAITES VALODA: {ctx.lang_name}. Visus tekstus (nosaukums, problema, ko_mainit, kopsavilkums, labojums_tulkojums) raksti šajā valodā. "
           "Citātus (originalais_teksts) un labojumu raksti līguma oriģinālvalodā.\n"
-        + (f"\nPAMATNOTEIKUMI (kopsavilkums no likuma):\n{ctx.legal_notes}\n" if ctx.legal_notes else "")
-        + "\nDOTIE KRITĒRIJI (atgriez ierakstu katram id; citus kritērijus šajā izsaukumā nepārbaudi):\n" + _checklist_text(ids)
+        + (f"\nLĪGUMA VEIDS (jau noteikts): {TYPE_LABEL[ctx.contract_type]}.\n" if ctx.contract_type else "")
+        + (f"\nPAMATNOTEIKUMI (kopsavilkums no likuma):\n{_notes_for(ctx)}\n" if _notes_for(ctx) else "")
+        + "\nDOTIE KRITĒRIJI (atgriez ierakstu katram id; citus kritērijus šajā izsaukumā nepārbaudi):\n" + _checklist_text(ids, ctx.contract_type)
     )
 
 
@@ -451,7 +515,7 @@ def _run_group(ctx, ids, contract_norm):
             ctx.notes.append("labošanas izsaukums neizdevās")
 
     for it in by_id.values():                 # obligāts punkts nav līgumā, bet modelis to nav atzīmējis: Python to atzīmē pats
-        if it["kind"] == "nav" and not it["atrasts"] and CHECK_BY_ID[it["id"]][3] != "nav":
+        if it["kind"] == "nav" and not it["atrasts"] and MISSING_LEVEL.get(it["id"]):
             it["kind"] = "neskaidrs_vai_truksts"
             it["problema"] = MISSING_TEXT.get(ctx.lang_name, MISSING_TEXT["angļu"])
     unchecked = []
@@ -463,16 +527,34 @@ def _run_group(ctx, ids, contract_norm):
             it["quote"] = ""                  # pazaudēt neesošu citātu, bet pašu atradumu paturēt
         elif "problēma" in why:
             it["kind"] = "nav"
-    return by_id, extras, _clean(data.get("kopsavilkums")), data.get("skaitli"), unchecked
+    return by_id, extras, _clean(data.get("kopsavilkums")), data.get("skaitli"), unchecked, _clean(data.get("lig_veids")).lower()
+
+
+def _vote_type(votes):
+    """Līguma veids pēc modeļa atbildēm (vairākums; neskaidrības gadījumā dzīvojamā īre)."""
+    tally = {}
+    for v in votes:
+        t = TYPE_FROM_MODEL.get(_strip_diacritics(v).replace(" ", "_"))
+        if t:
+            tally[t] = tally.get(t, 0) + 1
+    return max(sorted(tally), key=lambda k: tally[k]) if tally else "dz"
 
 
 def run_layer1(ctx):
     contract_norm = _norm_text(ctx.content) if ctx.kind == "txt" else None
-    with ThreadPoolExecutor(max_workers=len(CHECK_GROUPS)) as ex:
-        futures = [ex.submit(_run_group, ctx, ids, contract_norm) for ids in CHECK_GROUPS]
+    if not ctx.contract_type and ctx.kind == "txt":
+        ctx.contract_type = detect_contract_type(ctx.content)         # bez modeļa izsaukuma
+    groups = [[c for c in g if applies(c, ctx.contract_type)] for g in CHECK_GROUPS]
+    groups = [g for g in groups if g]
+    ctx.check_ids = [c for g in groups for c in g]
+    with ThreadPoolExecutor(max_workers=len(groups)) as ex:
+        futures = [ex.submit(_run_group, ctx, ids, contract_norm) for ids in groups]
         results = [f.result() for f in futures]      # secība fiksēta; kļūda grupā pārtrauc analīzi
+    if not ctx.contract_type:                        # veids nebija zināms (pdf/attēls vai neskaidrs teksts): nosaka modelis
+        ctx.contract_type = _vote_type([r[5] for r in results])
+        ctx.check_ids = [c for c in ctx.check_ids if applies(c, ctx.contract_type)]
     by_id, extras, unchecked, summary, figures = {}, [], [], "", {}
-    for b, e, summ, fig, unch in results:
+    for b, e, summ, fig, unch, _veids in results:
         by_id.update(b)
         extras += e
         unchecked += unch
@@ -481,7 +563,9 @@ def run_layer1(ctx):
             if figures.get(k) in (None, "", False) and v not in (None, ""):
                 figures[k] = v
     ctx.figures = figures
-    items = [by_id[c] for c in CHECK_IDS if c in by_id]
+    items = [by_id[c] for c in CHECK_IDS if c in by_id and applies(c, ctx.contract_type)]
+    unchecked = [c for c in unchecked if applies(c, ctx.contract_type)]
+    extras = [e for e in extras if e["id"] == "CITS" or applies(e["id"], ctx.contract_type)]
     extras = _clean_extras(extras, contract_norm)
     return items, extras, summary, unchecked, contract_norm
 
@@ -518,7 +602,8 @@ def run_sweep(ctx, items, extras, contract_norm):
     known = [{"punkts": f["punkts"], "tēma": f["nosaukums"] or f["id"], "problēma": f["problema"][:140]}
              for f in items + extras if f["kind"] != "nav"]
     intro = (SWEEP_SYSTEM + f"\nATSKAITES VALODA: {ctx.lang_name}. Tekstus raksti šajā valodā; citātus un labojumu līguma valodā.\n"
-             + (f"\nPAMATNOTEIKUMI (kopsavilkums no likuma):\n{ctx.legal_notes}\n" if ctx.legal_notes else "")
+             + (f"\nLĪGUMA VEIDS: {TYPE_LABEL[ctx.contract_type]}. Nomas līgumam DTIL nepiemēro.\n" if ctx.contract_type else "")
+             + (f"\nPAMATNOTEIKUMI (kopsavilkums no likuma):\n{_notes_for(ctx)}\n" if _notes_for(ctx) else "")
              + "\nJAU ATRASTIE ATRADUMI (JSON):\n" + json.dumps(known, ensure_ascii=False))
     try:
         data = _ask(ctx, _content_parts(ctx, intro))
@@ -595,10 +680,11 @@ def apply_money_rules(ctx, items):
                         "articles": [], "force_red": True, "level": "kritisks"})
 
     rent, dep = _num(fig.get("ires_summa_mened")), _num(fig.get("depozits"))
-    if rent and dep and dep > DEPOSIT_MAX_MONTHS * rent:
+    resid = (ctx.contract_type or "dz") == "dz"          # depozīta un atmaksas robežas ir no DTIL: tikai dzīvojamai īrei
+    if resid and rent and dep and dep > DEPOSIT_MAX_MONTHS * rent:
         breach("DEPOSIT_AMOUNT", txt["deposit"].format(a=dep, b=rent, m=DEPOSIT_MAX_MONTHS))
     days = _num(fig.get("depozita_atmaksa_darba_dienas"))
-    if days and days > REFUND_MAX_WORKDAYS:
+    if resid and days and days > REFUND_MAX_WORKDAYS:
         breach("DEPOSIT_REFUND", txt["refund"].format(a=days, m=REFUND_MAX_WORKDAYS))
     rate = _num(fig.get("soda_likme_diena_proc"))
     if rate and rate > RATE_MAX_PER_DAY:
@@ -616,32 +702,56 @@ def apply_money_rules(ctx, items):
 _LEVEL_RANK = {"kritisks": 3, "bridinajums": 2}
 
 
-def merge_duplicates(findings):
-    """Apvieno 🔴/🟡 ierakstus ar to pašu punkta numuru un to pašu citātu, ja tie ir tā paša kritērija,
-    dala kādu likuma pantu vai ir viena līmeņa. Paliek augstākais līmenis; panti tiek apvienoti."""
-    out, kept = [], []
+def _clause_index(content):
+    """[(normalizēta rinda, punkta numurs)]: katrai līguma rindai tuvākais iepriekšējais numurs ('4.3')."""
+    out, cur = [], ""
+    for line in str(content or "").split("\n"):
+        m = re.match(r"^\s*(\d+(?:\.\d+)*)\.?\s", line)
+        if m:
+            cur = m.group(1)
+        n = _norm_text(line)
+        if n:
+            out.append((n, cur))
+    return out
+
+
+def assign_clauses(ctx, findings):
+    """Punkta numuru no līguma teksta pēc citāta (nevis no modeļa): numurs vairs nesvārstās starp skrējieniem."""
+    if ctx.kind != "txt" or not findings:
+        return
+    index = _clause_index(ctx.content)
     for f in findings:
-        if f["level"] not in _LEVEL_RANK or not f["punkts"]:
-            out.append(f)
+        parts = [p for p in re.split(r"\.\.\.|…", f["quote"] or "") if len(_norm_text(p)) >= 8]
+        if not parts:
             continue
-        q = _norm_text(f["quote"])[:60]
-        target = None
-        for g in kept:
-            if clause_key(g["punkts"]) != clause_key(f["punkts"]):
-                continue
-            if not q or _norm_text(g["quote"])[:60] != q:
-                continue
-            if g["id"] == f["id"] or set(g["articles"]) & set(f["articles"]) or g["level"] == f["level"]:
-                target = g
+        probe = _norm_text(parts[0])[:50]
+        for n, num in index:
+            if num and probe in n:
+                f["punkts"] = num
                 break
-        if target is None:
-            kept.append(f)
+
+
+def merge_duplicates(findings):
+    """Viena problēma = viens ieraksts: 🔴/🟡 ieraksti ar to pašu punkta numuru un to pašu līmeni tiek apvienoti
+    (problēmu teksti savienoti, panti apvienoti); ieraksti bez numura tiek apvienoti pēc kritērija."""
+    out, kept = [], {}
+    for f in findings:
+        if f["level"] not in _LEVEL_RANK:
             out.append(f)
             continue
-        if _LEVEL_RANK[f["level"]] > _LEVEL_RANK[target["level"]]:    # augstākā līmeņa ieraksta teksts uzvar
-            for k in ("level", "id", "problema", "ko_mainit", "labojums", "tulkojums", "nosaukums"):
-                target[k] = f[k]
+        key = (f["level"], clause_key(f["punkts"])) if f["punkts"] else (f["level"], "id", f["id"])
+        target = kept.get(key)
+        if target is None:
+            kept[key] = f
+            out.append(f)
+            continue
+        extra = f["problema"].strip()
+        if extra and _norm_text(extra)[:60] not in _norm_text(target["problema"]) and len(target["problema"]) < 500:
+            target["problema"] = (target["problema"].rstrip() + " " + extra).strip()
         target["articles"] = (target["articles"] + [a for a in f["articles"] if a not in target["articles"]])[:4]
+        if not target["labojums"] and f["labojums"]:
+            for k in ("ko_mainit", "labojums", "tulkojums"):
+                target[k] = f[k]
     return out
 
 
@@ -717,6 +827,12 @@ def run_analysis(ctx):
     items, extras, summary, unchecked, contract_norm = run_layer1(ctx)
     swept = run_sweep(ctx, items, extras, contract_norm)
     allf = items + extras + swept
+    dep = next((f for f in items if f["id"] == "DEPOSIT_AMOUNT"), None)
+    if dep and not dep["atrasts"]:               # līgumā nav depozīta: tā ieturēšanas un atmaksas trūkums nav kļūda
+        for f in items:
+            if f["id"] in ("DEPOSIT_USE", "DEPOSIT_REFUND") and not f["atrasts"]:
+                f["kind"] = "nav"
+    assign_clauses(ctx, allf)
     for f in allf:
         _validate_articles(ctx, f)
         f["level"] = classify(f)
@@ -739,7 +855,9 @@ def run_analysis(ctx):
         except Exception:
             pass                                 # saskarnes kļūda nedrīkst traucēt analīzi
     report = render_report(findings, summary, ctx.labels)
-    info = f"✅ {len(CHECK_IDS) - len(unchecked)}/{len(CHECK_IDS)} (+{len(swept)}) | 🪙 {ctx.tokens_in}↑ {ctx.tokens_out}↓"
+    total = len(ctx.check_ids) or len(CHECK_IDS)
+    info = (f"📄 {TYPE_LABEL.get(ctx.contract_type, '?')} | ✅ {total - len(unchecked)}/{total} (+{len(swept)}) | "
+            f"🪙 {ctx.tokens_in}↑ {ctx.tokens_out}↓")
     if unchecked:
         ctx.complete = False
         info += " | ⚠️ " + ",".join(unchecked)

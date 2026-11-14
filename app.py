@@ -1306,11 +1306,11 @@ def _resp_usage(resp):
     return (getattr(um, "prompt_token_count", 0) or 0, getattr(um, "candidates_token_count", 0) or 0)
 
 
-PROMPT_VER = "v11-objective-money"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
+PROMPT_VER = "v12-stable-types"   # mainot uzvedni, palieliniet; kritēriju/promptu izmaiņas atjaunojas arī automātiski (ae.PROMPT_FINGERPRINT)
 
 
-def legal_notes_text():
-    return "\n".join(f"- {c} {n}. pants: {t}" for (c, n), t in ARTICLE_NOTES.items())
+def legal_notes_text(codes=("DTIL", "CL")):
+    return "\n".join(f"- {c} {n}. pants: {t}" for (c, n), t in ARTICLE_NOTES.items() if c in codes)
 
 
 def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PROMPT_VER, progress=None, store=True):
@@ -1336,7 +1336,7 @@ def analyze_contract(_api_key, lang_name, kind, content, nonce=0, prompt_ver=PRO
         kind=kind, content=content, lang_name=lang_name, labels=T,
         llm=llm,
         valid_articles=lambda code: set(article_index(code).keys()),
-        legal_notes=legal_notes_text(), progress=progress,
+        legal_notes=legal_notes_text(), legal_notes_noma=legal_notes_text(("CL",)), progress=progress,
     )
     report, info = ae.run_analysis(ctx)
     if not report.strip() or "## " not in report:
@@ -1961,6 +1961,34 @@ ARTICLE_NOTES = {
     ("DTIL", 37): "Īres tiesību nostiprināšana un grozīšana zemesgrāmatā ir atbrīvota no zemesgrāmatas kancelejas nodevas.",
     ("DTIL", 39): "Nostiprināšanu var lūgt izīrētājs un īrnieks kopā, vai viens no viņiem, ja otrs to ir pilnvarojis.",
     ("DTIL", 42): "Izīrētājam piemēro naudas sodu par traucējumiem, kas liedz īrniekam lietot telpu vai izmantot apkuri, elektrību, ūdeni, kanalizāciju vai atkritumu izvešanu.",
+    # Civillikums: līgumsods, procenti, noma un īre (īsi pārstāsti pēc likumi.lv teksta)
+    ("CL", 1716): "Līgumsods par saistību neizpildi ir konkrēta naudas summa, ko nedrīkst noteikt atkārtotu vai pieaugošu maksājumu veidā. Līgumsods par nepienācīgu izpildi vai kavējumu var būt pieaugošs, bet kopumā ne vairāk par 10 procentiem no pamatparāda.",
+    ("CL", 1717): "Līgumsoda apmēru nosaka līdzēji, bet tam jābūt samērīgam un atbilstošam godīgai darījumu praksei.",
+    ("CL", 1764): "Procentu apmēru var noteikt līdzēji, bet nesamērīgi un godīgai darījumu praksei neatbilstoši procenti ir prettiesiski.",
+    ("CL", 1765): "Procentu apmērs cieši jānosaka aktā vai darījumā; ja tas nav noteikts, piemēro likumiskos procentus.",
+    ("CL", 2112): "Noma vai īre ir līgums, ar ko viena puse piešķir otrai lietas lietošanu par zināmu nomas vai īres maksu.",
+    ("CL", 2116): "Nomnieks, nododot lietu tālāk trešai personai, nedrīkst to nodot citādai lietošanai vai uz ilgāku laiku, kā uz viņa paša nomas laiku.",
+    ("CL", 2117): "Apakšnomas līgums pastāv patstāvīgi; apakšnomnieks drīkst maksāt tieši pirmajam iznomātājam, ciktāl pirmais nomnieks ir parādā.",
+    ("CL", 2120): "Nomas maksai jābūt patiesai atlīdzībai par lietas lietošanu, to nedrīkst nolikt tikai izskata pēc.",
+    ("CL", 2122): "Nomas un īres maksai jābūt noteiktai.",
+    ("CL", 2126): "Ierakstot nomas vai īres līgumu zemesgrāmatā, nomnieks iegūst lietu tiesību, kas ir spēkā arī pret trešām personām.",
+    ("CL", 2128): "Abām pusēm jāpiegriež līgumam visa rūpība; tās atbild viena otrai par zaudējumiem, kas noticis ļaunprātības vai neuzmanības dēļ, bet nejauši zaudējumi nav jāatlīdzina.",
+    ("CL", 2134): "Iznomātājam jānodod lieta ar piederumiem tādā stāvoklī, lai nomnieks varētu iegūt visu labumu, ko varēja sagaidīt.",
+    ("CL", 2138): "Uz lietas gulošās nastas un apgrūtinājumi, ja nav norunāts citādi, jānes iznomātājam.",
+    ("CL", 2140): "Nepieciešamie un derīgie izdevumi, ko nomnieks taisījis lietai, iznomātājam jāatlīdzina.",
+    ("CL", 2141): "Nomnieks maksā nomas maksu līgumā noteiktos termiņos; kavējot jāmaksā nokavējuma procenti.",
+    ("CL", 2144): "Ja nomnieks patvaļīgi atsakās no nomas pirms termiņa, no viņa var prasīt visas nomas maksas samaksu; ja izbeigšanai ir likumīgs pamats, maksā tikai par patieso nomas laiku.",
+    ("CL", 2151): "Nomnieks drīkst lietot priekšmetu tikai atbilstoši mērķim, kas bija paredzēts iznomājot.",
+    ("CL", 2152): "Pēc nomas beigām nomniekam jāatdod lieta ar piederumiem, cik iespējams labā stāvoklī.",
+    ("CL", 2155): "Ja nomniekam bijuši likumīgi izdevumi lietas labā, viņš var lietu aizturēt līdz to atlīdzināšanai.",
+    ("CL", 2156): "Ja nomniekam ar līgumu uzlikts izdarīt uzlabojumus, no viņa var prasīt to izpildi jau pirms nomas beigām.",
+    ("CL", 2165): "Nomas līgums uz noteiktu termiņu izbeidzas, kad termiņš notecējis.",
+    ("CL", 2166): "Uz nenoteiktu laiku noslēgts nekustama īpašuma nomas līgums, ja nav norunāts citādi, izbeidzas tikai pēc iepriekšēja sešu mēnešu uzteikuma.",
+    ("CL", 2170): "Katrs līdzējs var vienpusēji atkāpties no līguma, ja radies pārmērīgs zaudējums.",
+    ("CL", 2171): "Iznomātājs var prasīt līguma atcelšanu, ja maksa nav samaksāta termiņā, ja viņam rodas neparedzēta nepieciešamība pašam lietot lietu, ja nomnieks bojā lietu vai nomā netiek ievērots līgums.",
+    ("CL", 2172): "Nomnieks var prasīt līguma atcelšanu, ja iznomātājs novilcina nodošanu, neizdara vajadzīgos labojumus vai lietai ir trūkumi, kas būtiski kavē lietošanu.",
+    ("CL", 2173): "Atkāpjoties no līguma, jādod otrai pusei vajadzīgais laiks. Iznomātājs nedrīkst nomnieku izlikt patvarīgi, pat ja līgumā tāda tiesība pielīgta.",
+    ("CL", 2174): "Ja iznomātājs lietu atsavina, jaunajam īpašniekam nomas līgums jāievēro tikai tad, ja tas ierakstīts zemesgrāmatā.",
 }
 
 LINK_RE = re.compile(r"\[([^\]]+)\]\((https://likumi\.lv/ta/id/(322216|90220)#p(\d+))\)")
