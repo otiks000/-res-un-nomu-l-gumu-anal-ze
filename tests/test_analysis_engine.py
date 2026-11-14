@@ -205,7 +205,7 @@ class Engine(unittest.TestCase):
         self.assertEqual(ae.classify(f), "bridinajums")
         g = dict(f, id="DEPOSIT_USE", articles=[("DTIL", 12)])
         self.assertEqual(ae.classify(g), "kritisks")
-        h = dict(f, id="ENTRY", articles=[("DTIL", 18)])         # naudas pants nekāpina ne-naudas kritēriju
+        h = dict(f, id="RESTRICTIONS", articles=[("DTIL", 18)])  # naudas pants nekāpina ne-naudas kritēriju
         self.assertEqual(ae.classify(h), "bridinajums")
 
     def test_duplicates_for_same_clause_are_merged(self):
@@ -239,7 +239,14 @@ class Engine(unittest.TestCase):
     def test_fixed_level_table(self):
         base = {"atrasts": True, "flags": dict.fromkeys(ae.FLAGS, False), "articles": [], "force_red": False}
         c = lambda cid, kind, **kw: ae.classify(dict(base, id=cid, kind=kind, **kw))
-        self.assertEqual(c("ENTRY", "likuma_parkapums", articles=[("DTIL", 18)]), "bridinajums")   # panti līmeni nemaina
+        self.assertEqual(c("RESTRICTIONS", "likuma_parkapums", articles=[("DTIL", 18)]), "bridinajums")   # panti līmeni nemaina
+        for kind in ("likuma_parkapums", "neskaidrs_vai_truksts"):                                    # likuma kritērijs: krāsa nav atkarīga no modeļa veida
+            self.assertEqual(c("TERM", kind), "kritisks")
+            self.assertEqual(c("ENTRY", kind), "kritisks")
+            self.assertEqual(c("LANDLORD_NOTICE", kind), "kritisks")
+        noma = lambda cid, kind: ae.classify(dict(base, id=cid, kind=kind), "noma")
+        self.assertEqual(noma("TERM", "likuma_parkapums"), "bridinajums")                           # nenoteikts termiņš nomā ir atļauts
+        self.assertEqual(noma("LANDLORD_NOTICE", "neskaidrs_vai_truksts"), "kritisks")
         self.assertEqual(c("RENT_CHANGE", "neskaidrs_vai_truksts"), "kritisks")                     # naudas kritērijs = 🔴
         self.assertEqual(c("PARTIES", "neskaidrs_vai_truksts"), "bridinajums")
         self.assertEqual(c("TERM", "neskaidrs_vai_truksts", flags=dict(base["flags"], tukss=True)), "kritisks")  # tukšs termiņš

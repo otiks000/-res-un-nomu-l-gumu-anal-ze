@@ -112,6 +112,12 @@ MISSING_LEVEL = {c[0]: {"kritisks": "kritisks", "apsverams": "bridinajums", "nav
 APPLIES = {"OCCUPANTS": "dz", "VAT": "noma", "USE_PURPOSE": "noma", "IMPROVEMENTS": "noma",
            "INSURANCE": "noma", "PERMITS": "noma", "SIGNAGE": "noma"}
 HARD_BLANK_IDS = MONEY_IDS | {"TERM"}      # tukša vai nenoteikta vērtība šeit ir 🔴
+# Ne-naudas kritēriji, kuros jebkura problēma (likuma pārkāpums vai neskaidrība) ir 🔴. Fiksēts saraksts pēc līguma veida,
+# lai krāsa nebūtu atkarīga no tā, vai modelis punktu nosauca par "pārkāpumu" vai par "neskaidrību".
+LAW_RED_IDS = {
+    "dz": {"TERM", "TENANT_NOTICE", "LANDLORD_NOTICE", "ENTRY"},      # DTIL: noteikts termiņš, uzteikums, netraucēta lietošana
+    "noma": {"TENANT_NOTICE", "LANDLORD_NOTICE"},                     # CL: uzteikums un patvarīga izlikšana
+}
 TYPE_LABEL = {"dz": "dzīvojamo telpu īre", "noma": "telpu noma", "cits": "cits līgums"}
 TYPE_FROM_MODEL = {"dzivojama_ire": "dz", "telpu_noma": "noma", "cits": "cits"}
 
@@ -374,7 +380,7 @@ def _validate_articles(ctx, f):
     f["articles"] = arts[:4]
 
 
-def classify(f):
+def classify(f, tip="dz"):
     """Riska līmeni nosaka Python pēc fiksētas tabulas (kritērijs + jā/nē pazīmes), nevis modeļa izvēlēti panti.
     🔴: tukša/nenoteikta cena, termiņš vai procents, vienpusēja vai neierobežota nauda, naudas kritērija problēma,
     trūkstoša obligāta tēma. 🟡: citu kritēriju problēmas un trūkumi. 💶: naudas fakti. ⚪: neitrāli nosacījumi."""
@@ -392,8 +398,8 @@ def classify(f):
         return "nauda"
     if f["kind"] == "citi_nosacijums":
         return "neitrals"
-    if cid in CHECK_BY_ID:                      # likuma pārkāpums vai neskaidrība: naudas kritērijs 🔴, pārējie 🟡
-        return "kritisks" if cid in MONEY_IDS else "bridinajums"
+    if cid in CHECK_BY_ID:                      # likuma pārkāpums vai neskaidrība: naudas un likuma kritēriji 🔴, pārējie 🟡
+        return "kritisks" if cid in MONEY_IDS or cid in LAW_RED_IDS[_group(tip)] else "bridinajums"
     if f["kind"] == "likuma_parkapums" and any(a in MONEY_ARTICLES for a in f["articles"]):
         return "kritisks"                       # papildu atradumi bez kritērija: naudas pants
     return "bridinajums"
@@ -835,11 +841,11 @@ def run_analysis(ctx):
     assign_clauses(ctx, allf)
     for f in allf:
         _validate_articles(ctx, f)
-        f["level"] = classify(f)
+        f["level"] = classify(f, ctx.contract_type)
     ruled = apply_money_rules(ctx, items)
     allf += ruled
     for f in allf:
-        f["level"] = classify(f)
+        f["level"] = classify(f, ctx.contract_type)
     findings = merge_duplicates([f for f in allf if f["level"] != "nav"])
     # 💶 saraksts nedublē to, kas jau atzīmēts kā 🔴 vai 🟡 (tas pats punkta numurs vai tas pats citāts)
     flagged = [f for f in findings if f["level"] in ("kritisks", "bridinajums")]
