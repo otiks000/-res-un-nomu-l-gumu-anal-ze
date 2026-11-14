@@ -146,6 +146,7 @@ TR_EXTRA = {
         "h_money": "Naudas nosacījumi (neitrāls saraksts bez vērtējuma)",
         "no_proof_errors": "Korektūras kļūdu netika atrasts.",
         "label_proposed": "Piedāvātais formulējums", "label_translation": "Tulkojums", "label_fix": "Labojums",
+        "disclaimer": "Piezīme: šī analīze ir automātiska pārbaude pirms parakstīšanas, nevis juridiska konsultācija. Svarīgiem vai dārgiem līgumiem konsultējieties ar juristu.",
         "sources_head": "Izmantotie avoti", "sources_label": "Pilni likumu teksti likumi.lv:",
         "law1_name": "Dzīvojamo telpu īres likums", "law2_name": "Civillikuma ceturtā daļa",
         "cite_dtil": "Dzīvojamo telpu īres likuma {n}. pants", "cite_cl": "Civillikuma {n}. pants",
@@ -163,6 +164,7 @@ TR_EXTRA = {
         "h_money": "Money terms (neutral list, no judgement)",
         "no_proof_errors": "No proofreading errors were found.",
         "label_proposed": "Proposed wording", "label_translation": "Translation", "label_fix": "Correction",
+        "disclaimer": "Note: this analysis is an automated check before signing, not legal advice. For important or high-value contracts, consult a lawyer.",
         "sources_head": "Sources used", "sources_label": "Full law texts on likumi.lv:",
         "law1_name": "Residential Tenancy Law (Dzīvojamo telpu īres likums)",
         "law2_name": "Civil Law, Part Four (Civillikums)",
@@ -181,6 +183,7 @@ TR_EXTRA = {
         "h_money": "Денежные условия (нейтральный список, без оценки)",
         "no_proof_errors": "Ошибок при корректуре не найдено.",
         "label_proposed": "Предлагаемая формулировка", "label_translation": "Перевод", "label_fix": "Исправление",
+        "disclaimer": "Примечание: этот анализ — автоматическая проверка перед подписанием, а не юридическая консультация. Для важных или дорогостоящих договоров обратитесь к юристу.",
         "sources_head": "Использованные источники", "sources_label": "Полные тексты законов на likumi.lv:",
         "law1_name": "Закон о найме жилых помещений (Dzīvojamo telpu īres likums)",
         "law2_name": "Гражданский закон, часть четвёртая (Civillikums)",
@@ -1370,6 +1373,7 @@ def sources_md():
         f"**{T['sources_label']}** "
         f"[{T['law1_name']}]({LAW_LINKS['DTIL']}) · "
         f"[{T['law2_name']}]({LAW_LINKS['CL']})"
+        f"\n\n{T['disclaimer']}"
     )
 
 

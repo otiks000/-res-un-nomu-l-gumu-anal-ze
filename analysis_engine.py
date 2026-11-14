@@ -723,9 +723,16 @@ def merge_duplicates(findings):
         if extra and _norm_text(extra)[:60] not in _norm_text(target["problema"]) and len(target["problema"]) < 500:
             target["problema"] = (target["problema"].rstrip() + " " + extra).strip()
         target["articles"] = (target["articles"] + [a for a in f["articles"] if a not in target["articles"]])[:4]
-        if not target["labojums"] and f["labojums"]:
-            for k in ("ko_mainit", "labojums", "tulkojums"):
-                target[k] = f[k]
+        # ieteikumi netiek zaudēti: katras apvienotās problēmas labojums tiek saglabāts
+        fixes = target.setdefault("fixes", [target["labojums"]] if target["labojums"] else [])
+        trans = target.setdefault("trans", [target["tulkojums"]] if target["tulkojums"] else [])
+        if f["labojums"] and f["labojums"] not in fixes:
+            fixes.append(f["labojums"])
+        if f["tulkojums"] and f["tulkojums"] not in trans:
+            trans.append(f["tulkojums"])
+        what = _no_quotes(f["ko_mainit"]).rstrip(" .")
+        if what and _norm_text(what) not in _norm_text(target["ko_mainit"]):
+            target["ko_mainit"] = (_no_quotes(target["ko_mainit"]).rstrip(" .") + "; " + what).lstrip("; ")
     return out
 
 
@@ -764,11 +771,13 @@ def render_report(findings, summary, labels):
     for code, f in coded:
         what = _no_quotes(f["ko_mainit"]).rstrip(" .") or _no_quotes(f["problema"]).rstrip(" .")
         line = f"{code}. {_ref(f, with_title=False)}: {what}."
-        if f["labojums"]:
-            line += f" {labels['label_proposed']}: „{f['labojums']}”"
+        fixes = f.get("fixes") or ([f["labojums"]] if f["labojums"] else [])
+        trans = f.get("trans") or ([f["tulkojums"]] if f["tulkojums"] else [])
+        if fixes:
+            line += f" {labels['label_proposed']}: " + " ".join(f"„{x}”" for x in fixes)
         out.append(line)
-        if f["tulkojums"]:
-            out.append(f"{labels['label_translation']}: {f['tulkojums']}")
+        if trans:
+            out.append(f"{labels['label_translation']}: " + " ".join(trans))
         out.append("")
     notes = groups["neitrals"]
     if notes:                                   # ⚪ vienmēr beigās; korektūra turpina numerāciju

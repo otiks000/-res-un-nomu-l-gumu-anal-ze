@@ -221,6 +221,19 @@ class Engine(unittest.TestCase):
         nonum = ae.merge_duplicates([mk("ENTRY", "bridinajums", [], punkts=""), mk("ENTRY", "bridinajums", [], punkts="")])
         self.assertEqual(len(nonum), 1)                            # bez numura apvieno pēc kritērija
 
+    def test_merged_findings_keep_every_recommendation(self):
+        def mk(cid, ko, fix):
+            return {"id": cid, "level": "kritisks", "punkts": "5.1", "quote": "q", "articles": [], "problema": cid,
+                    "ko_mainit": ko, "labojums": fix, "tulkojums": "", "nosaukums": cid}
+        out = ae.merge_duplicates([mk("REPAIRS_MAJOR", "Svītrot remontu", "Remontu veic izīrētājs."),
+                                   mk("FUND", "Svītrot fondu", "Fondu maksā izīrētājs.")])
+        self.assertEqual(len(out), 1)
+        f = dict(out[0], atrasts=True)
+        report = ae.render_report([dict(out[0], level="kritisks")], "x", LABELS)
+        rec = report.split("## 🟢")[1]
+        self.assertIn("Svītrot remontu; Svītrot fondu", rec)
+        self.assertIn("„Remontu veic izīrētājs.” „Fondu maksā izīrētājs.”", rec)
+
     def test_compare_ignores_model_titles_and_duplicates(self):
         a = "## 🔴 K\nK1. 3.2. (Nokavējuma procenti): X.\n> „q”\n\nK2. 3.2. (Līgumsodi): Y.\n\n## 🟡 B\nB1. Pagarināšana: Z.\n"
         b = "## 🔴 K\nK1. 3.2. (Līgumsoda griesti): X.\n\n## 🟡 B\nB1. Pagarināšana: Z.\n"
