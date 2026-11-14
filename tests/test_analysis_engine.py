@@ -244,9 +244,9 @@ class Engine(unittest.TestCase):
             self.assertEqual(c("TERM", kind), "kritisks")
             self.assertEqual(c("ENTRY", kind), "kritisks")
             self.assertEqual(c("LANDLORD_NOTICE", kind), "kritisks")
-        for kind in ("likuma_parkapums", "neskaidrs_vai_truksts"):                                    # zemesgrāmatas aizliegums = 🔴, klusēšana = 🟡
+        for kind in ("likuma_parkapums", "neskaidrs_vai_truksts"):                                    # zemesgrāmatas aizliegums un klusēšana = 🔴
             self.assertEqual(c("LAND_REGISTRY", kind), "kritisks")
-        self.assertEqual(c("LAND_REGISTRY", "neskaidrs_vai_truksts", atrasts=False), "bridinajums")
+        self.assertEqual(c("LAND_REGISTRY", "neskaidrs_vai_truksts", atrasts=False), "kritisks")     # klusēšana arī = 🔴
         noma = lambda cid, kind: ae.classify(dict(base, id=cid, kind=kind), "noma")
         self.assertEqual(noma("TERM", "likuma_parkapums"), "bridinajums")                           # nenoteikts termiņš nomā ir atļauts
         self.assertEqual(noma("LANDLORD_NOTICE", "neskaidrs_vai_truksts"), "kritisks")

@@ -78,7 +78,7 @@ CHECKLIST = [
     ("RESTRICTIONS", "Apakšīre, dzīvnieki un lietošanas ierobežojumi",
      "Apakšīre, mājdzīvnieki, viesi, smēķēšana, citi aizliegumi un to sekas.", "apsverams"),
     ("LAND_REGISTRY", "Zemesgrāmata un īpašnieka maiņa",
-     "Vai paredzēta īres tiesību nostiprināšana zemesgrāmatā; bez tās jaunais īpašnieks var prasīt atbrīvot telpas (DTIL 28., 35. pants).", "apsverams"),
+     "Vai paredzēta īres tiesību nostiprināšana zemesgrāmatā; bez tās jaunais īpašnieks var prasīt atbrīvot telpas (DTIL 28., 35. pants).", "kritisks"),
     ("VACATE", "Telpu atbrīvošana",
      "Telpu atbrīvošanas kārtība un termiņi līguma beigās; soda sankcijas par aizkavēšanos (DTIL 29. pants).", "apsverams"),
     ("DISPUTES", "Strīdu risināšana un piemērojamais likums",
