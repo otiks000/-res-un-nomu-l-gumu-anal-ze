@@ -249,6 +249,8 @@ class Engine(unittest.TestCase):
         self.assertEqual(c("BLANKS", "neskaidrs_vai_truksts"), "bridinajums")
         self.assertEqual(c("CITS", "neskaidrs_vai_truksts", flags=flag(bez_griestiem=True)), "kritisks")  # papildu atradums ar naudas pazīmi
         self.assertEqual(c("CITS", "neskaidrs_vai_truksts"), "bridinajums")
+        self.assertEqual(c("CITS", "likuma_parkapums", articles=[("DTIL", 28)]), "kritisks")         # papildu atradums ar derīgu pantu
+        self.assertEqual(c("CITS", "likuma_parkapums"), "bridinajums")                              # bez panta (vai pants atmests) paliek 🟡
         noma = lambda cid, kind: ae.classify(dict(base, id=cid, kind=kind), "noma")
         self.assertEqual(noma("TERM", "likuma_parkapums"), "bridinajums")                           # nenoteikts termiņš nomā ir atļauts
         self.assertEqual(noma("LANDLORD_NOTICE", "neskaidrs_vai_truksts"), "kritisks")

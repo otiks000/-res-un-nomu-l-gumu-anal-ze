@@ -399,8 +399,8 @@ def classify(f, tip="dz"):
         return "neitrals"
     if cid in CHECK_BY_ID:                      # likuma pārkāpums vai neskaidrība: naudas un likuma kritēriji 🔴, pārējie 🟡
         return "kritisks" if cid in MONEY_IDS or cid in LAW_RED_IDS[_group(tip)] else "bridinajums"
-    if f["kind"] == "likuma_parkapums" and any(a in MONEY_ARTICLES for a in f["articles"]):
-        return "kritisks"                       # papildu atradumi bez kritērija: naudas pants
+    if f["kind"] == "likuma_parkapums" and f["articles"]:
+        return "kritisks"                       # papildu atradums bez kritērija: likuma pārkāpums ar derīgu (esošu) pantu
     return "bridinajums"
 
 
